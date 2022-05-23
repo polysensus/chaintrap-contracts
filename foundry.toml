@@ -1,0 +1,14 @@
+[default]
+# solc_version = '0.8.13'
+solc_version = '0.8.9'
+src = 'chaintrap'
+test = 'forge-tests'
+out = 'build/forge/out'
+libs = ['contracts/node_modules']
+
+[hardhat]
+src = 'chaintrap'
+out = 'forge/out'
+libs = ['contracts/node_modules']
+
+# See more config options https://github.com/gakonst/foundry/tree/master/config

@@ -1,0 +1,6 @@
+@rari-capital/solmate/=node_modules/@rari-capital/solmate/
+@openzeppelin/=node_modules/@openzeppelin/
+openzeppelin-solidity/=node_modules/@openzeppelin/
+chaintrap/=chaintrap/
+forge-std/=forge-std/
+ds-test/=ds-test/

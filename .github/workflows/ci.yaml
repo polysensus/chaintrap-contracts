@@ -1,0 +1,29 @@
+on: [push]
+
+name: ci
+
+jobs:
+  check:
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install contract dependencies and hh test deps
+        run: npm install
+      - name: Run forge tests
+        run: forge test -vvv
+
+      - name: Run hardhat tests
+        run: npx hardhat test
+
