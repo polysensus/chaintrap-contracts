@@ -6,14 +6,15 @@
   "module": "dist/chaintrap.esm.js",
   "browser": "dist/chaintrap.umd.js",
   "files": [
-    "dist"
+    "dist", "abi"
   ],
   "directories": {
     "lib": "lib",
-    "chaintrap": "chaintrap"
+    "chaintrap": "chaintrap",
+    "abi"
   },
   "scripts": {
-    "prepare": "rollup -c",
+    "prepare": "mkdir -p abi && hardhat compile && mv build/hh/artifacts/chaintrap/arena.sol/Arena.json abi/ && rollup -c",
     "build": "rollup -c",
     "dev": "rollup -c -w",
     "test": "forge test -vvv && hardhat test",
