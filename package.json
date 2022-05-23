@@ -11,7 +11,7 @@
   "directories": {
     "lib": "lib",
     "chaintrap": "chaintrap",
-    "abi"
+    "abi": "abi"
   },
   "scripts": {
     "prepare": "mkdir -p abi && hardhat compile && mv build/hh/artifacts/chaintrap/arena.sol/Arena.json abi/ && rollup -c",
