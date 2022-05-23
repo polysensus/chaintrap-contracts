@@ -6,14 +6,14 @@
   "module": "dist/chaintrap.esm.js",
   "browser": "dist/chaintrap.umd.js",
   "files": [
-    "dist",
-    "chaintrap/*.mjs"
+    "dist"
   ],
   "directories": {
     "lib": "lib",
     "chaintrap": "chaintrap"
   },
   "scripts": {
+    "prepare": "rollup -c",
     "build": "rollup -c",
     "dev": "rollup -c -w",
     "test": "forge test -vvv && hardhat test",
