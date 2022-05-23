@@ -6,10 +6,12 @@
   "module": "dist/chaintrap.esm.js",
   "browser": "dist/chaintrap.umd.js",
   "files": [
-    "dist"
+    "dist",
+    "chaintrap/*.mjs"
   ],
   "directories": {
-    "lib": "lib"
+    "lib": "lib",
+    "chaintrap": "chaintrap"
   },
   "scripts": {
     "build": "rollup -c",
