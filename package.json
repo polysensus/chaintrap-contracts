@@ -1,5 +1,5 @@
 {
-  "name": "@chaintrap/contracts",
+  "name": "@polysensus/chaintrap-contracts",
   "version": "0.0.1",
   "description": "smart contracts and supporting javascript for chaintrap",
   "main": "dist/chaintrap.cjs.js",
@@ -32,6 +32,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/polysensus/chaintrap-contracts.git"
+  },
+  "publishConfig": {
+     "registry": "https://npm.pkg.github.com/polysensus"
   },
   "keywords": [
     "solidity",
