@@ -28,10 +28,9 @@ jobs:
         run: npx hardhat test
       - name: publish npm package
         env:
-          POLYSENSUS_APP_ID: ${{ secrets.POLYSENSUS_APP_ID }}
-          POLYSENSUS_APP_PEM: ${{ secrets.POLYSENSUS_APP_PEM }}
+          PAT_PACKAGE_WRITE: ${{ secrets.PAT_PACKAGE_WRITE }}
         run: |
-          [ -z "$PAT_PACKAGE_WRITE" ] && echo "PAT_PACKAGE_WRITEnot set" && exit 1
+          [ -z "$PAT_PACKAGE_WRITE" ] && echo "PAT_PACKAGE_WRITEn ot set" && exit 1
           echo "//npm.pkg.github.com/:_authToken=$PAT_PACKAGE_WRITE" > ~/.npmrc
           npm publish
 
