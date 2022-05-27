@@ -26,4 +26,6 @@ jobs:
 
       - name: Run hardhat tests
         run: npx hardhat test
+      - name: publish npm package
+        run: npm publish
 
