@@ -1,2 +1,2 @@
-Polysenus Limited
+Polysensus Limited
 All rights reserved
