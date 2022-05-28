@@ -6,7 +6,8 @@
   "module": "dist/chaintrap.esm.js",
   "browser": "dist/chaintrap.umd.js",
   "files": [
-    "dist", "abi"
+    "dist",
+    "abi"
   ],
   "directories": {
     "lib": "lib",
@@ -34,7 +35,7 @@
     "url": "git+https://github.com/polysensus/chaintrap-contracts.git"
   },
   "publishConfig": {
-     "registry": "https://npm.pkg.github.com/"
+    "registry": "https://npm.pkg.github.com/"
   },
   "keywords": [
     "solidity",
@@ -67,7 +68,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.0.0",
     "ethereum-waffle": "^3.4.4",
-    "hardhat": "^2.9.3",
+    "hardhat": "^2.9.6",
     "hardhat-deploy": "^0.11.9",
     "hardhat-deploy-ethers": "^0.3.0-beta.13",
     "hardhat-gas-reporter": "^1.0.8",
