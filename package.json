@@ -18,17 +18,17 @@
     "prepare": "mkdir -p abi && npx hardhat compile && cp build/hh/artifacts/chaintrap/arena.sol/Arena.json abi/ && rollup -c",
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "test": "forge test -vvv && hardhat test",
-    "hh-test": "hardhat test",
+    "test": "forge test -vvv && npx hardhat test",
+    "hh-test": "npx hardhat test",
     "gas-report": "env ENABLE_GAS_REPORT=true npm run hh-test",
-    "compile": "hardhat compile",
+    "compile": "npx hardhat compile",
     "lint": "npm run lint:js && npm run lint:sol",
     "lint:fix": "npm run lint:js:fix && npm run lint:sol:fix",
     "lint:js": "eslint --ignore-path .gitignore .",
     "lint:js:fix": "eslint --ignore-path .gitignore . --fix",
     "lint:sol": "solhint 'contracts/**/*.sol' && prettier -c 'contracts/**/*.sol'",
     "lint:sol:fix": "prettier --write \"contracts/**/*.sol\"",
-    "test-clean": "npx run hardhat clean"
+    "test-clean": "npx hardhat clean"
   },
   "repository": {
     "type": "git",
