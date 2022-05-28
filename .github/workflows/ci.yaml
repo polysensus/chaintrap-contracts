@@ -30,7 +30,8 @@ jobs:
         env:
           PAT_PACKAGE_WRITE: ${{ secrets.PAT_PACKAGE_WRITE }}
         run: |
-          [ -z "$PAT_PACKAGE_WRITE" ] && echo "PAT_PACKAGE_WRITEn ot set" && exit 1
-          echo "//npm.pkg.github.com/:_authToken=$PAT_PACKAGE_WRITE" > ~/.npmrc
+          #[ -z "$PAT_PACKAGE_WRITE" ] && echo "PAT_PACKAGE_WRITEn ot set" && exit 1
+          #echo "//npm.pkg.github.com/:_authToken=$PAT_PACKAGE_WRITE" > ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > ~/.npmrc
           npm publish
 
