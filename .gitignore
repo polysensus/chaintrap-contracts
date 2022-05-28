@@ -1,4 +1,7 @@
+deployments
+bin
 cache
 node_modules
 abi
 dist
+hh-deploy.json
