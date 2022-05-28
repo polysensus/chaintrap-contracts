@@ -28,7 +28,8 @@ jobs:
         run: npx hardhat test
       - name: publish npm package
         env:
-          PAT_PACKAGE_WRITE: ${{ secrets.PAT_PACKAGE_WRITE }}
+          ## PAT_PACKAGE_WRITE: ${{ secrets.PAT_PACKAGE_WRITE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           #[ -z "$PAT_PACKAGE_WRITE" ] && echo "PAT_PACKAGE_WRITEn ot set" && exit 1
           #echo "//npm.pkg.github.com/:_authToken=$PAT_PACKAGE_WRITE" > ~/.npmrc
