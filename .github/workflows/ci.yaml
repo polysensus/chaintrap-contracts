@@ -26,13 +26,13 @@ jobs:
 
       - name: Run hardhat tests
         run: npx hardhat test
-      - name: publish npm package
-        env:
-          ## PAT_PACKAGE_WRITE: ${{ secrets.PAT_PACKAGE_WRITE }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          #[ -z "$PAT_PACKAGE_WRITE" ] && echo "PAT_PACKAGE_WRITEn ot set" && exit 1
-          #echo "//npm.pkg.github.com/:_authToken=$PAT_PACKAGE_WRITE" > ~/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > ~/.npmrc
-          npm publish
+
+     #  this needs to go in a release action OR we need to continualy
+     #  delete/overwrite the current release
+     #- name: publish npm package
+     #  env:
+     #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+     #  run: |
+     #    echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > ~/.npmrc
+     #    npm publish
 
