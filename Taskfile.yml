@@ -2,16 +2,10 @@
 version: '3'
 silent: true
 
-tasks:
-  deploy-local:
-    desc: |
-      deploy the contracts to hh and generate a browser localstorage entry
-      identifying them for the web app for testing purposes
-    cmds:
-      - |
-        npx hardhat deploy --export hh-deploy.json >> /dev/null 2>&1
-        echo -n '{"ethprovider":"http://127.0.0.1:8545/"}' \
-          | jq -s '.[0] + .[1]' - hh-deploy.json \
-          | tr -d '\n' | tr -s ' ' \
-          | jq -r '.|tostring'
+# tasks are primarily for actions local to this repository. task is for things
+# that usually don't need options (or can be configured once via a .env) use it
+# especially when you have things that depend on other things
 
+tasks:
+  build: npm run build
+  test: forge test -vvv && npx hardhat test

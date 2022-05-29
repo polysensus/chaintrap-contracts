@@ -1,6 +1,10 @@
 interpreter: bash -c
 name: ctcontracts
 usage: conveniences and ergonomics for chaintrap-contracts
+
+# tusk is for things that are useful to clients of this repository.  or any
+# script like things that *usually* can't avoid sort of optionality. Any time
+# you think of writing a script with options make a task instead.
 options:
   node-address:
     short: "a"

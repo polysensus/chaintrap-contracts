@@ -21,6 +21,7 @@ jobs:
 
       - name: Install contract dependencies and hh test deps
         run: npm install
+
       - name: Run forge tests
         run: forge test -vvv
 
