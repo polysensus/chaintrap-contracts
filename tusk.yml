@@ -6,14 +6,67 @@ usage: conveniences and ergonomics for chaintrap-contracts
 # script like things that *usually* can't avoid sort of optionality. Any time
 # you think of writing a script with options make a task instead.
 options:
+  node-hostname:
+    default: "0.0.0.0"
+  node-port:
+    default: "8545"
   node-address:
     short: "a"
-    default: "http://127.0.0.1:8545"
+    default: "http://localhost:8545"
+
+  localdir:
+    short: d
+    default: .local/hh
+
   launchdir:
     # this is a go-tusk quirk
     environment: PWD
 
 tasks:
+
+  stop-node:
+    usage: |
+      stop (if possible) the hardhat node started via start-node
+    run:
+      - command:
+          exec: |
+            LOCALDIR=$(cd ${launchdir} && pwd)/${localdir}
+            [ ! -f $LOCALDIR/hh-pid ] && exit 0
+            kill $(cat $LOCALDIR/hh-pid)
+
+  start-node:
+    usage: |
+      start (if necessary) a hardhat node listenting on ${node-address}
+    options:
+      localdir:
+        short: d
+        default: .local/hh
+    run:
+      - command:
+          exec: |
+            LOCALDIR=$(cd ${launchdir} && pwd)/${localdir}
+
+            HOSTNAME=${node-hostname}
+            PORT=${node-port}
+
+            mkdir -p ${LOCALDIR}
+
+            # Start the hardhat node
+            if ! lsof -i -P -n | grep LISTEN | grep :$PORT >> /dev/null 2>&1; then
+              npx hardhat node --hostname "$HOSTNAME" --port $PORT &
+              HH_PID=$!
+              echo $HH_PID > ${LOCALDIR}/hh-pid
+            else
+              echo "re-using service"
+            fi
+
+            # Wait for hardhat to be ready (assumes it is hardhat on the port)
+            while ! lsof -i -P -n | grep LISTEN | grep :$PORT >> /dev/null 2>&1; do
+              echo "waiting for the hardhat node to listen on :$PORT"
+              sleep "5";
+            done
+            echo "service up on $PORT"
+
   deploy-local:
     usage: |
       deploy contracts using hardhat
@@ -28,7 +81,8 @@ tasks:
     run:
       - command:
           exec: |
-            set -ex
+            set -e
+            echo "$(pwd)"
 
             # interperet files on the command line relative to the launchdir
             BASEFILE=$(basename ${storagefile})
