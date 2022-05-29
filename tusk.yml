@@ -1,0 +1,40 @@
+interpreter: bash -c
+name: ctcontracts
+usage: conveniences and ergonomics for chaintrap-contracts
+options:
+  node-address:
+    short: "a"
+    default: "http://127.0.0.1:8545"
+  launchdir:
+    # this is a go-tusk quirk
+    environment: PWD
+
+tasks:
+  deploy-local:
+    usage: |
+      deploy contracts using hardhat
+      and generate a browser localstorage value containing the contracts abi and
+      localnode provider address
+
+    options:
+      storagefile:
+        usage: browser localstorage value file to create
+        short: "f"
+        default: "tests/hh-localstorage.txt"
+    run:
+      - command:
+          exec: |
+            set -ex
+
+            # interperet files on the command line relative to the launchdir
+            BASEFILE=$(basename ${storagefile})
+            STORAGEFILE=$(cd ${launchdir} && pwd)/${storagefile}
+            OUTDIR=$(dirname $STORAGEFILE)
+
+            mkdir -p $OUTDIR
+            npx hardhat deploy --export $OUTDIR/hh-deploy.json >> /dev/null 2>&1
+            echo -n '{"ethprovider":"http://${node-address}/"}' \
+              | jq -s '.[0] + .[1]' - $OUTDIR/hh-deploy.json \
+              | tr -d '\n' | tr -s ' ' \
+              | jq '.|tostring' \
+              | tee $OUTDIR/$BASEFILE

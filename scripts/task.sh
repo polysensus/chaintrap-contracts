@@ -1,8 +1,8 @@
 #!/bin/bash
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
-pushd $SCRIPT_DIR/.. >> /dev/null 2>&1
-if [ ! -f ./bin/task ]; then
+if [ ! -f $SCRIPT_DIR/../bin/task ]; then
+  pushd $SCRIPT_DIR/.. >> /dev/null 2>&1
   sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
+  popd >> /dev/null 2>&1
 fi
-popd >> /dev/null 2>&1
 $SCRIPT_DIR/../bin/task "$@"
