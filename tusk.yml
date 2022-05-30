@@ -32,7 +32,7 @@ tasks:
           exec: |
             LOCALDIR=$(cd ${launchdir} && pwd)/${localdir}
             [ ! -f $LOCALDIR/hh-pid ] && exit 0
-            kill $(cat $LOCALDIR/hh-pid)
+            kill -KILL $(cat $LOCALDIR/hh-pid)
 
   start-node:
     usage: |
@@ -53,9 +53,7 @@ tasks:
 
             # Start the hardhat node
             if ! lsof -i -P -n | grep LISTEN | grep :$PORT >> /dev/null 2>&1; then
-              npx hardhat node --hostname "$HOSTNAME" --port $PORT &
-              HH_PID=$!
-              echo $HH_PID > ${LOCALDIR}/hh-pid
+              npx hardhat node --hostname "$HOSTNAME" --port $PORT >> ${LOCALDIR}/hh-log & 2>&1
             else
               echo "re-using service"
             fi
@@ -65,7 +63,10 @@ tasks:
               echo "waiting for the hardhat node to listen on :$PORT"
               sleep "5";
             done
-            echo "service up on $PORT"
+            PID=$(lsof -i -P -n | grep LISTEN | grep :$PORT | tr -s ' ' | cut -d ' ' -f2)
+            echo "service up on $PORT (PID: $PID)"
+            echo $PID > ${LOCALDIR}/hh-pid
+
 
   deploy-local:
     usage: |
