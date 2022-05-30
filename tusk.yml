@@ -1,5 +1,5 @@
 interpreter: bash -c
-name: ctcontracts
+name: devtool
 usage: conveniences and ergonomics for chaintrap-contracts
 
 # tusk is for things that are useful to clients of this repository.  or any
@@ -92,8 +92,9 @@ tasks:
 
             mkdir -p $OUTDIR
             npx hardhat deploy --export $OUTDIR/hh-deploy.json >> /dev/null 2>&1
-            echo -n '{"ethprovider":"http://${node-address}/"}' \
+            echo -n '{"ethprovider":"${node-address}/"}' \
               | jq -s '.[0] + .[1]' - $OUTDIR/hh-deploy.json \
               | tr -d '\n' | tr -s ' ' \
               | jq '.|tostring' \
-              | tee $OUTDIR/$BASEFILE
+              > $OUTDIR/$BASEFILE
+            echo "Wrote: $OUTDIR/$BASEFILE"
