@@ -70,7 +70,7 @@ tasks:
 
   deploy-local:
     usage: |
-      deploy contracts using hardhat
+      deploy contracts to local hardhat node
       and generate a browser localstorage value containing the contracts abi and
       localnode provider address
 
