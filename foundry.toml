@@ -2,7 +2,7 @@
 # solc_version = '0.8.13'
 solc_version = '0.8.9'
 src = 'chaintrap'
-test = 'forge-tests'
+test = 'tests/forge/tests'
 out = 'build/forge/out'
 libs = ['node_modules']
 

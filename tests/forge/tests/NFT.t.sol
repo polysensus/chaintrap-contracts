@@ -2,7 +2,7 @@
 pragma solidity >=0.8.9;
 import "forge-std/src/Test.sol";
 import "forge-std/src/Vm.sol";
-import "../chaintrap/NFT.sol";
+import "chaintrap/NFT.sol";
 
 contract NFTTest is DSTest {
 

@@ -3,7 +3,7 @@ pragma solidity >=0.8.9 <0.9.0;
 
 import "forge-std/src/Test.sol";
 import "forge-std/src/Vm.sol";
-import "../lib/exitlinks.sol";
+import "lib/exitlinks.sol";
 
 contract LinkTest is DSTest {
     using stdStorage for StdStorage;

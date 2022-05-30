@@ -2,5 +2,6 @@
 @openzeppelin/=node_modules/@openzeppelin/
 openzeppelin-solidity/=node_modules/@openzeppelin/
 chaintrap/=chaintrap/
-forge-std/=forge-std/
-ds-test/=ds-test/
+lib/=lib/
+forge-std/=tests/forge/forge-std/
+ds-test/=tests/forge/ds-test/

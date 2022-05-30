@@ -3,9 +3,9 @@ pragma solidity >=0.8.9 <0.9.0;
 
 import "forge-std/src/Test.sol";
 import "forge-std/src/Vm.sol";
-import "../lib/locations.sol";
-import "../lib/transcript.sol";
-import "../lib/game.sol";
+import "lib/locations.sol";
+import "lib/transcript.sol";
+import "lib/game.sol";
 
 contract Factory {
 
