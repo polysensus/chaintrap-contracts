@@ -1,4 +1,6 @@
-deployments
+.local
+tests/hh/deployments
+tests/hh-localstorage.txt
 bin
 cache
 node_modules

@@ -7,5 +7,11 @@ silent: true
 # especially when you have things that depend on other things
 
 tasks:
-  build: npm run build
-  test: forge test -vvv && npx hardhat test
+  build:
+    desc: build the npm package
+    cmds:
+      - npm run build
+  test:
+    desc: run the forge and hardhat tests
+    cmds:
+      - forge test -vvv && npx hardhat test

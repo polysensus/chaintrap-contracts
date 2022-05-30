@@ -21,8 +21,10 @@
      }
    },
    paths: {
+     deploy: "./tests/hh/deploy",
+     deployments: "./tests/hh/deployments",
      sources: "./chaintrap",
-     tests: "./hh-tests",
+     tests: "./tests/hh/tests",
      cache: "./build/hh/cache",
      artifacts: "build/hh/artifacts"
    }

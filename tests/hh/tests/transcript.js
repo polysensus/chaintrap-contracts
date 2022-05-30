@@ -4,7 +4,7 @@ const { ethers } = require("hardhat");
 bytes = ethers.utils.arrayify;
 
 // const { NORTH, WEST, SOUTH, EAST } = require("libchaintrap/src/constants.mjs");
-const _chaintrap = import("../chaintrap/chaintrap.mjs");
+const _chaintrap = import("../../../chaintrap/chaintrap.mjs");
 
 async function locationSides() {
   const chaintrap = await _chaintrap;
