@@ -32,7 +32,7 @@ tasks:
           exec: |
             LOCALDIR=$(cd ${launchdir} && pwd)/${localdir}
             [ ! -f $LOCALDIR/hh-pid ] && exit 0
-            kill -KILL $(cat $LOCALDIR/hh-pid)
+            kill -KILL $(cat $LOCALDIR/hh-pid) || true
 
   start-node:
     usage: |
