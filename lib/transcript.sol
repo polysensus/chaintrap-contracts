@@ -25,6 +25,11 @@ error TEIDNotAnExitUseOutcome();
 /// game master declared them halted.
 error Halted(address player);
 
+
+/// PendingOutcome is raised if the player attempts to commit a move before the
+/// previous move has been accepted by the host
+error PendingOutcome(address player);
+
 struct Move {
     // Elements common to all transcript entry kinds can go  in here
     address player;
@@ -116,6 +121,7 @@ struct Transcript {
     mapping(TEID => ExitUse) exitUses;
     mapping(TEID => ExitUseOutcome) exitUseOutcomes;
     mapping(address => bool) halted;
+    mapping(address => bool) pendingOutcome;
 
     GameID gid;
 }
@@ -152,6 +158,9 @@ library Transcripts {
 
         self._outcomes[i].outcomeDeclared = true;
         self._outcomes[i].moveAccepted = false;
+
+        // Record that the players move is no longer pending
+        self.pendingOutcome[self._moves[i].player] = false;
     }
 
     /// @dev typically reject and halt is used to stop griefing
@@ -162,6 +171,9 @@ library Transcripts {
         self._outcomes[i].moveAccepted = false;
         self._outcomes[i].halted = true;
         self.halted[self._moves[i].player] = true;
+
+        // Record that the players move is no longer pending
+        self.pendingOutcome[self._moves[i].player] = false;
     }
 
 
@@ -172,6 +184,9 @@ library Transcripts {
         self._outcomes[i].moveAccepted = true;
         self._outcomes[i].halted = true;
         self.halted[self._moves[i].player] = true;
+
+        // Record that the players move is no longer pending
+        self.pendingOutcome[self._moves[i].player] = false;
     }
 
     /// ---------------------------
@@ -193,6 +208,13 @@ library Transcripts {
 
         self.requireNotHalted(player);
 
+        // Until the game host confirms or rejects the previous move for this
+        // player, another move cannot be made.
+        if (self.pendingOutcome[player]) {
+            revert PendingOutcome(player);
+        }
+        self.pendingOutcome[player] = true;
+
         (Move storage mv, TEID id) = self._allocMove();
         mv.kind = MoveKind.ExitUse;
         mv.player = player;
@@ -200,6 +222,7 @@ library Transcripts {
         ExitUse storage eu = self.exitUses[id];
         eu.side = committed.side;
         eu.egressIndex = committed.egressIndex;
+
 
         emit UseExit(self.gid, id, eu); // player is the committer of the tx
         return id;
@@ -221,6 +244,9 @@ library Transcripts {
         o.side = outcome.side;
         o.ingressIndex = outcome.ingressIndex;
         o.halt = outcome.halt;
+
+        // Record that the players move is no longer pending
+        self.pendingOutcome[self._moves[i].player] = false;
 
         emit ExitUsed(self.gid, id, self._moves[i].player, outcome);
     }

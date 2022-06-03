@@ -738,6 +738,18 @@ contract TranscriptTest is DSTest {
         (TEID cur, ,) = f.next(cursorStart);
         assertEq(TEID.unwrap(cur), TEID.unwrap(id));
     }
+
+    // testFailMoveWithoutAllow tests that attempting to move twice in a row
+    // without getting the first move's outcome is disallowed
+    function testFailMoveWithoutAllow() public {
+        TEID id;
+
+        f.start();
+
+        id = f.commitExitUse(address(1), exitUse(Locations.SideKind.North, 1));
+        id = f.commitExitUse(address(1), exitUse(Locations.SideKind.North, 1));
+    }
+
     function testTranscriptTEIDs() public {
 
         TEID[5] memory ids;
