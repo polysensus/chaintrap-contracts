@@ -450,8 +450,9 @@ describe("Transcript", function () {
     expect(r.events[0].event).to.equal("UseExit");
     expect(r.events[0].args.eid).to.equal(1);
     expect(r.events[0].args.gid).to.equal(1);
-    expect(r.events[0].args[2].side).to.equal(sides.EAST);
-    expect(r.events[0].args[2].egressIndex).to.equal(0);
+    expect(r.events[0].args.player).to.equal(player.address);
+    expect(r.events[0].args[3].side).to.equal(sides.EAST);
+    expect(r.events[0].args[3].egressIndex).to.equal(0);
   });
   it("Should commit and allow a single ExitUse", async function () {
 

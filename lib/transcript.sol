@@ -137,8 +137,8 @@ library Transcripts {
     }
 
     // NOTE: These are duplicated in contract Arena - this is the only way to expose the abi to ethers.js
-    event UseExit(GameID indexed gid, TEID eid, ExitUse); // player is the committer of the tx
-    event ExitUsed(GameID indexed gid, TEID eid, address player, ExitUseOutcome);
+    event UseExit(GameID indexed gid, TEID eid, address indexed player, ExitUse); // player is the committer of the tx
+    event ExitUsed(GameID indexed gid, TEID eid, address indexed player, ExitUseOutcome);
 
     /// ---------------------------
     /// @dev state changing methods
@@ -224,7 +224,7 @@ library Transcripts {
         eu.egressIndex = committed.egressIndex;
 
 
-        emit UseExit(self.gid, id, eu); // player is the committer of the tx
+        emit UseExit(self.gid, id, player, eu); // player is the committer of the tx
         return id;
     }
 

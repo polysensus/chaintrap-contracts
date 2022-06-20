@@ -21,8 +21,8 @@ contract Arena {
     event PlayerStartLocation(GameID indexed gid, address player, bytes32 startLocation, bytes sceneblob);
 
     // NOTE: These are duplicated in library Transcript - this is the only way to expose the abi to ethers.js
-    event UseExit(GameID indexed gid, TEID eid, ExitUse); // player is the committer of the tx
-    event ExitUsed(GameID indexed gid, TEID eid, address player, ExitUseOutcome);
+    event UseExit(GameID indexed gid, TEID eid, address indexed player, ExitUse); // player is the committer of the tx
+    event ExitUsed(GameID indexed gid, TEID eid, address indexed player, ExitUseOutcome);
 
     Transcript[] transcripts;
     Game[] games;
