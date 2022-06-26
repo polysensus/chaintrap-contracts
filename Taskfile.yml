@@ -10,7 +10,9 @@ tasks:
   build:
     desc: build the npm package
     cmds:
-      - npm run build
+      - |
+        npm run prepare
+        npm run build
   test:
     desc: run the forge and hardhat tests
     cmds:

@@ -45,13 +45,13 @@ struct Outcome {
 
     bool outcomeDeclared;
 
-    // moveAccepted is false if the move was deemed invalid or ileagal
+    /// @dev moveAccepted is false if the move was deemed invalid or ileagal
     bool moveAccepted;
 
-    // when the player completes the dungeon, abandons the game, or dies halted
-    // is set true.  once all players have halted the transcripts can be checked
-    // and any prizes handed out.  Note that not much information leaks as a
-    // consequence of everyone seeing when halted goes true.
+    /// @dev when the player completes the dungeon, abandons the game, or dies halted
+    /// is set true.  once all players have halted the transcripts can be checked
+    /// and any prizes handed out.  Note that not much information leaks as a
+    /// consequence of everyone seeing when halted goes true.
     bool halted;
 }
 
@@ -137,8 +137,9 @@ library Transcripts {
     }
 
     // NOTE: These are duplicated in contract Arena - this is the only way to expose the abi to ethers.js
-    event UseExit(GameID indexed gid, TEID eid, address indexed player, ExitUse); // player is the committer of the tx
-    event ExitUsed(GameID indexed gid, TEID eid, address indexed player, ExitUseOutcome);
+    event UseExit(GameID indexed gid, TEID eid, address indexed player, ExitUse exitUse); // player is the committer of the tx
+    event ExitUsed(GameID indexed gid, TEID eid, address indexed player, ExitUseOutcome outcome);
+    event EntryReject(GameID indexed gid, TEID eid, address indexed player, bool halted);
 
     /// ---------------------------
     /// @dev state changing methods
@@ -161,6 +162,8 @@ library Transcripts {
 
         // Record that the players move is no longer pending
         self.pendingOutcome[self._moves[i].player] = false;
+
+        emit EntryReject(self.gid, id, self._moves[i].player, false /*halted*/);
     }
 
     /// @dev typically reject and halt is used to stop griefing
@@ -174,6 +177,7 @@ library Transcripts {
 
         // Record that the players move is no longer pending
         self.pendingOutcome[self._moves[i].player] = false;
+        emit EntryReject(self.gid, id, self._moves[i].player, true /*halted*/);
     }
 
 
