@@ -1,6 +1,11 @@
 ---
 version: '3'
 silent: true
+env:
+  ENV: .local/dev
+  PROFILE: '{{.PROFILE | default ""}}'
+dotenv: [".env", '{{.ENV}}/.env', '{{.HOME}}/.env']
+
 
 # tasks are primarily for actions local to this repository. task is for things
 # that usually don't need options (or can be configured once via a .env) use it
@@ -17,3 +22,17 @@ tasks:
     desc: run the forge and hardhat tests
     cmds:
       - forge test -vvv && npx hardhat test
+
+  deploy:
+    desc: deploy the contracts
+    cmds:
+      - |
+        PRIVATE_KEY=$(cat .local/dev/wallet-deploy.key)
+        DEPLOYER_ADDR=$(cat .local/dev/wallet-deploy.addr)
+        echo "PRIVATE_KEY: $PRIVATE_KEY"
+        [ -z "$PRIVATE_KEY" ] && echo "no deployment key, try new-deploy-wallet" && exit 1
+
+        echo "RPC_URL: $RPC_URL"
+        echo "Deployer: $DEPLOYER_ADDR"
+        forge create Arena --legacy --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY
+
