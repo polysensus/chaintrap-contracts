@@ -52,7 +52,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
         NPM_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        NPM_REGISTRY_URL: https://npm.pkg.github.com
+        NPM_REGISTRY_URL: https://npm.pkg.github.com:_authToken=${{ secrets.GITHUB_TOKEN }}
 
      #  this needs to go in a release action OR we need to continualy
      #  delete/overwrite the current release
