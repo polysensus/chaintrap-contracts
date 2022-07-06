@@ -45,6 +45,11 @@ jobs:
       run: npm install
     #- name: Test
     #  run: npm_config_yes=true npx best-test@latest
+    - name: Auth via npmrc for pkg.github
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > ~/.npmrc
 
     - name: Publish
       uses: mikeal/merge-release@master
@@ -52,7 +57,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
         NPM_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        NPM_REGISTRY_URL: https://npm.pkg.github.com:_authToken=${{ secrets.GITHUB_TOKEN }}
+        NPM_REGISTRY_URL: https://npm.pkg.github.com
 
      #  this needs to go in a release action OR we need to continualy
      #  delete/overwrite the current release
