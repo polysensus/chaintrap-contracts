@@ -24,6 +24,54 @@ options:
 
 tasks:
 
+  version-update:
+    usage: |
+      increates the version number in package.json
+    options:
+      minor:
+        short: m
+        type: bool
+      message:
+        default: ""
+
+      nocommit:
+        short: C
+        type: bool
+      nopush:
+        short: P
+        type: bool
+
+    run:
+      - command:
+          exec: |
+
+            VERSION=$(cat <<PYEND | python3
+            import json
+            pkg = json.load(open('package.json', 'r'))
+            ver = list(map(int, pkg['version'].split('.')))
+            which = -1
+            if "${minor}" == "true":
+              which = 1
+            ver[which] = ver[which] + 1
+            VERSION='.'.join(map(str, ver))
+            with open('package.json.new', 'w') as f:
+              pkg['version'] = VERSION
+              json.dump(pkg, f, indent=2)
+            print(VERSION)
+            PYEND
+            )
+            cp package.json.new package.json
+            rm package.json.new
+
+            git status -s | egrep "^\?\?" && echo "untracked files" && exit 1
+            git add package.json
+
+            echo "v$VERSION ${message}"
+            ${nocommit} && exit 0
+
+            git commit -m "release: v$VERSION  ${message}"
+            git tag -a v$VERSION -m "release: v$VERSION  ${message}"
+            ! ${nopush} && git push --tags
   stop-node:
     usage: |
       stop (if possible) the hardhat node started via start-node
