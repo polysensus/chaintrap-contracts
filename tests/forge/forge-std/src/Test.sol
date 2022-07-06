@@ -1,19 +1,28 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.6.0 <0.9.0;
 
-import "./Vm.sol";
+import "./Script.sol";
 import "ds-test/test.sol";
-import "./console.sol";
-import "./console2.sol";
 
 // Wrappers around Cheatcodes to avoid footguns
-abstract contract Test is DSTest {
+abstract contract Test is DSTest, Script {
     using stdStorage for StdStorage;
 
-    event WARNING_Deprecated(string msg);
+    uint256 internal constant UINT256_MAX =
+        115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
-    Vm public constant vm = Vm(HEVM_ADDRESS);
     StdStorage internal stdstore;
+
+    /*//////////////////////////////////////////////////////////////////////////
+                                    STD-LOGS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    event log_array(uint256[] val);
+    event log_array(int256[] val);
+    event log_array(address[] val);
+    event log_named_array(string key, uint256[] val);
+    event log_named_array(string key, int256[] val);
+    event log_named_array(string key, address[] val);
 
     /*//////////////////////////////////////////////////////////////////////////
                                     STD-CHEATS
@@ -72,9 +81,14 @@ abstract contract Test is DSTest {
         vm.startPrank(who, origin);
     }
 
+    function changePrank(address who) internal {
+        vm.stopPrank();
+        vm.startPrank(who);
+    }
+
     // DEPRECATED: Use `deal` instead
     function tip(address token, address to, uint256 give) public {
-        emit WARNING_Deprecated("The `tip` stdcheat has been deprecated. Use `deal` instead.");
+        emit log_named_string("WARNING", "Test tip(address,address,uint256): The `tip` stdcheat has been deprecated. Use `deal` instead.");
         stdstore
             .target(token)
             .sig(0x70a08231)
@@ -82,7 +96,7 @@ abstract contract Test is DSTest {
             .checked_write(give);
     }
 
-    // The same as Hevm's `deal`
+    // The same as Vm's `deal`
     // Use the alternative signature for ERC20 tokens
     function deal(address to, uint256 give) public {
         vm.deal(to, give);
@@ -122,6 +136,29 @@ abstract contract Test is DSTest {
         }
     }
 
+    function bound(uint256 x, uint256 min, uint256 max) internal virtual returns (uint256 result) {
+        require(min <= max, "Test bound(uint256,uint256,uint256): Max is less than min.");
+
+        uint256 size = max - min;
+
+        if (size == 0)
+        {
+            result = min;
+        }
+        else if (size == UINT256_MAX)
+        {
+            result = x;
+        }
+        else
+        {
+            ++size; // make `max` inclusive
+            uint256 mod = x % size;
+            result = min + mod;
+        }
+
+        emit log_named_uint("Bound Result", result);
+    }
+
     // Deploy a contract by fetching the contract bytecode from
     // the artifacts directory
     // e.g. `deployCode(code, abi.encode(arg1,arg2,arg3))`
@@ -134,6 +171,11 @@ abstract contract Test is DSTest {
         assembly {
             addr := create(0, add(bytecode, 0x20), mload(bytecode))
         }
+
+        require(
+            addr != address(0),
+            "Test deployCode(string,bytes): Deployment failed."
+        );
     }
 
     function deployCode(string memory what)
@@ -145,11 +187,21 @@ abstract contract Test is DSTest {
         assembly {
             addr := create(0, add(bytecode, 0x20), mload(bytecode))
         }
+
+        require(
+            addr != address(0),
+            "Test deployCode(string): Deployment failed."
+        );
     }
 
     /*//////////////////////////////////////////////////////////////////////////
                                     STD-ASSERTIONS
     //////////////////////////////////////////////////////////////////////////*/
+
+    function fail(string memory err) internal virtual {
+        emit log_named_string("Error", err);
+        fail();
+    }
 
     function assertFalse(bool data) internal virtual {
         assertTrue(!data);
@@ -176,17 +228,58 @@ abstract contract Test is DSTest {
     }
 
     function assertEq(bytes memory a, bytes memory b) internal {
-        if (keccak256(a) != keccak256(b)) {
-            emit log            ("Error: a == b not satisfied [bytes]");
-            emit log_named_bytes("  Expected", b);
-            emit log_named_bytes("    Actual", a);
+        assertEq0(a, b);
+    }
+
+    function assertEq(bytes memory a, bytes memory b, string memory err) internal {
+        assertEq0(a, b, err);
+    }
+
+    function assertEq(uint256[] memory a, uint256[] memory b) internal {
+        if (keccak256(abi.encode(a)) != keccak256(abi.encode(b))) {
+            emit log("Error: a == b not satisfied [uint[]]");
+            emit log_named_array("  Expected", b);
+            emit log_named_array("    Actual", a);
             fail();
         }
     }
 
-    function assertEq(bytes memory a, bytes memory b, string memory err) internal {
-        if (keccak256(a) != keccak256(b)) {
-            emit log_named_string   ("Error", err);
+    function assertEq(int256[] memory a, int256[] memory b) internal {
+        if (keccak256(abi.encode(a)) != keccak256(abi.encode(b))) {
+            emit log("Error: a == b not satisfied [int[]]");
+            emit log_named_array("  Expected", b);
+            emit log_named_array("    Actual", a);
+            fail();
+        }
+    }
+
+    function assertEq(address[] memory a, address[] memory b) internal {
+        if (keccak256(abi.encode(a)) != keccak256(abi.encode(b))) {
+            emit log("Error: a == b not satisfied [address[]]");
+            emit log_named_array("  Expected", b);
+            emit log_named_array("    Actual", a);
+            fail();
+        }
+    }
+
+    function assertEq(uint256[] memory a, uint256[] memory b, string memory err) internal {
+        if (keccak256(abi.encode(a)) != keccak256(abi.encode(b))) {
+            emit log_named_string("Error", err);
+            assertEq(a, b);
+        }
+    }
+
+    function assertEq(int256[] memory a, int256[] memory b, string memory err) internal {
+        if (keccak256(abi.encode(a)) != keccak256(abi.encode(b))) {
+            emit log_named_string("Error", err);
+            assertEq(a, b);
+        }
+    }
+
+
+    function assertEq(address[] memory a, address[] memory b, string memory err) internal {
+        if (keccak256(abi.encode(a)) != keccak256(abi.encode(b))) {
+            emit log_named_string("Error", err);
             assertEq(a, b);
         }
     }
@@ -338,7 +431,7 @@ library stdError {
     bytes public constant indexOOBError = abi.encodeWithSignature("Panic(uint256)", 0x32);
     bytes public constant memOverflowError = abi.encodeWithSignature("Panic(uint256)", 0x41);
     bytes public constant zeroVarError = abi.encodeWithSignature("Panic(uint256)", 0x51);
-    // DEPRECATED: Use Hevm's `expectRevert` without any arguments instead
+    // DEPRECATED: Use Vm's `expectRevert` without any arguments instead
     bytes public constant lowLevelError = bytes(""); // `0x`
 }
 
@@ -360,6 +453,9 @@ struct StdStorage {
 library stdStorage {
     event SlotFound(address who, bytes4 fsig, bytes32 keysHash, uint slot);
     event WARNING_UninitedSlot(address who, uint slot);
+
+    uint256 private constant UINT256_MAX = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
+    int256 private constant INT256_MAX = 57896044618658097711785492504343953926634992332820282019728792003956564819967;
 
     Vm private constant vm_std_store = Vm(address(uint160(uint256(keccak256('hevm cheat code')))));
 
@@ -409,7 +505,7 @@ library stdStorage {
                 emit WARNING_UninitedSlot(who, uint256(reads[0]));
             }
             if (fdat != curr) {
-                require(false, "Packed slot. This would cause dangerous overwriting and currently isnt supported");
+                require(false, "stdStorage find(StdStorage): Packed slot. This would cause dangerous overwriting and currently isn't supported.");
             }
             emit SlotFound(who, fsig, keccak256(abi.encodePacked(ins, field_depth)), uint256(reads[0]));
             self.slots[who][fsig][keccak256(abi.encodePacked(ins, field_depth))] = uint256(reads[0]);
@@ -440,10 +536,10 @@ library stdStorage {
                 vm_std_store.store(who, reads[i], prev);
             }
         } else {
-            require(false, "No storage use detected for target");
+            require(false, "stdStorage find(StdStorage): No storage use detected for target.");
         }
 
-        require(self.finds[who][fsig][keccak256(abi.encodePacked(ins, field_depth))], "NotFound");
+        require(self.finds[who][fsig][keccak256(abi.encodePacked(ins, field_depth))], "stdStorage find(StdStorage): Slot(s) not found.");
 
         delete self._target;
         delete self._sig;
@@ -527,13 +623,43 @@ library stdStorage {
         bytes32 curr = vm_std_store.load(who, slot);
 
         if (fdat != curr) {
-            require(false, "Packed slot. This would cause dangerous overwriting and currently isnt supported");
+            require(false, "stdStorage find(StdStorage): Packed slot. This would cause dangerous overwriting and currently isn't supported.");
         }
         vm_std_store.store(who, slot, set);
         delete self._target;
         delete self._sig;
         delete self._keys;
         delete self._depth;
+    }
+
+    function read(StdStorage storage self) private returns (bytes memory) {
+        address t = self._target;
+        uint256 s = find(self);
+        return abi.encode(vm_std_store.load(t, bytes32(s)));
+    }
+
+    function read_bytes32(StdStorage storage self) internal returns (bytes32) {
+        return abi.decode(read(self), (bytes32));
+    }
+
+
+    function read_bool(StdStorage storage self) internal returns (bool) {
+        int256 v = read_int(self);
+        if (v == 0) return false;
+        if (v == 1) return true;
+        revert("stdStorage read_bool(StdStorage): Cannot decode. Make sure you are reading a bool.");
+    }
+
+    function read_address(StdStorage storage self) internal returns (address) {
+        return abi.decode(read(self), (address));
+    }
+
+    function read_uint(StdStorage storage self) internal returns (uint256) {
+        return abi.decode(read(self), (uint256));
+    }
+
+    function read_int(StdStorage storage self) internal returns (int256) {
+        return abi.decode(read(self), (int256));
     }
 
     function bytesToBytes32(bytes memory b, uint offset) public pure returns (bytes32) {
@@ -566,9 +692,11 @@ library stdStorage {
 //////////////////////////////////////////////////////////////////////////*/
 
 library stdMath {
+    int256 private constant INT256_MIN = -57896044618658097711785492504343953926634992332820282019728792003956564819968;
+
     function abs(int256 a) internal pure returns (uint256) {
         // Required or it will fail when `a = type(int256).min`
-        if (a == -57896044618658097711785492504343953926634992332820282019728792003956564819968)
+        if (a == INT256_MIN)
             return 57896044618658097711785492504343953926634992332820282019728792003956564819968;
 
         return uint256(a >= 0 ? a : -a);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.9;
-import "forge-std/src/Test.sol";
-import "forge-std/src/Vm.sol";
+import "forge-std/Test.sol";
+import "forge-std/Vm.sol";
 import "chaintrap/NFT.sol";
 
 contract NFTTest is DSTest {
