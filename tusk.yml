@@ -64,13 +64,13 @@ tasks:
             rm package.json.new
 
             git status -s | egrep "^\?\?" && echo "untracked files" && exit 1
-            git add package.json
+            git add .
 
             echo "v$VERSION ${message}"
             ${nocommit} && exit 0
 
-            git commit -m "release: v$VERSION  ${message}"
-            git tag -a v$VERSION -m "release: v$VERSION  ${message}"
+            git commit -m "release - v$VERSION  ${message}"
+            git tag -a v$VERSION -m "release - v$VERSION  ${message}"
             ! ${nopush} && git push --tags
   stop-node:
     usage: |
