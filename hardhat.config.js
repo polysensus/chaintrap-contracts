@@ -8,11 +8,14 @@
    defaultNetwork: "hardhat",
    networks: {
      hardhat: {
-      chainId: 6267 // iona/rrr
+      chainId: 31337,
+      gas: "auto",
+      gasPrice: 0,
+      initialBaseFeePerGas: 0
     }
   },
   namedAccounts: {
-    deployer: 0,
+    deployer: 10
   },
   solidity: {
      version: "0.8.9",

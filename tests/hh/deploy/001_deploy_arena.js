@@ -1,18 +1,17 @@
-const func  = async ({getNamedAccounts, deployments}) => {
+const func = async ({ getNamedAccounts, deployments }) => {
+  const { deploy } = deployments
 
-  const {deploy} = deployments;
-
-  const {deployer} = await getNamedAccounts();
+  const { deployer } = await getNamedAccounts()
 
   await deploy('Arena', {
     from: deployer,
-    log: true,
-  });
-};
-
-module.exports = {
-  func: func,
-  default: func,
+    log: true
+  })
 }
 
-module.exports.func.tags = ['Arena'];
+module.exports = {
+  func,
+  default: func
+}
+
+module.exports.func.tags = ['Arena']

@@ -16,6 +16,7 @@ tasks:
     desc: build the npm package
     cmds:
       - |
+        forge build
         npm run prepare
         npm run build
   test:
@@ -34,5 +35,5 @@ tasks:
 
         echo "RPC_URL: $RPC_URL"
         echo "Deployer: $DEPLOYER_ADDR"
-        forge create Arena --legacy --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY
+        forge create chaintrap/arena.sol:Arena --legacy --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY
 

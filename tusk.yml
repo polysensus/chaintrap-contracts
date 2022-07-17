@@ -86,6 +86,9 @@ tasks:
     usage: |
       start (if necessary) a hardhat node listenting on ${node-address}
     options:
+      gasprice:
+        short: g
+        default: 0
       localdir:
         short: d
         default: .local/hh
@@ -123,26 +126,18 @@ tasks:
       localnode provider address
 
     options:
-      storagefile:
-        usage: browser localstorage value file to create
+      hhexport:
+        usage: filename for --export argument to npx hardhat deploy
         short: "f"
-        default: "tests/hh-localstorage.txt"
+        default: "tests/hh-deploy.json"
     run:
       - command:
           exec: |
             set -e
-            echo "$(pwd)"
 
             # interperet files on the command line relative to the launchdir
-            BASEFILE=$(basename ${storagefile})
-            STORAGEFILE=$(cd ${launchdir} && pwd)/${storagefile}
-            OUTDIR=$(dirname $STORAGEFILE)
+            STORAGEFILE=$(cd ${launchdir} && pwd)/${hhexport}
 
-            mkdir -p $OUTDIR
-            npx hardhat deploy --export $OUTDIR/hh-deploy.json >> /dev/null 2>&1
-            echo -n '{"ethprovider":"${node-address}/"}' \
-              | jq -s '.[0] + .[1]' - $OUTDIR/hh-deploy.json \
-              | tr -d '\n' | tr -s ' ' \
-              | jq '.|tostring' \
-              > $OUTDIR/$BASEFILE
-            echo "Wrote: $OUTDIR/$BASEFILE"
+            mkdir -p $(dirname $STORAGEFILE)
+            npx hardhat deploy --export $STORAGEFILE >> /dev/null 2>&1
+            echo "Wrote: $STORAGEFILE"
