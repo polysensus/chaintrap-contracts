@@ -45,6 +45,13 @@ tasks:
       - command:
           exec: |
 
+            CUR_VERSION=$(cat <<PYEND | python3
+            import json
+            pkg = json.load(open('package.json', 'r'))
+            print(pkg['version'])
+            PYEND
+            )
+
             VERSION=$(cat <<PYEND | python3
             import json
             pkg = json.load(open('package.json', 'r'))
@@ -53,6 +60,8 @@ tasks:
             if "${minor}" == "true":
               which = 1
             ver[which] = ver[which] + 1
+            if which == 1:
+              ver[2] = 0
             VERSION='.'.join(map(str, ver))
             with open('package.json.new', 'w') as f:
               pkg['version'] = VERSION
@@ -66,7 +75,10 @@ tasks:
             git status -s | egrep "^\?\?" && echo "untracked files" && exit 1
             git add .
 
-            echo "v$VERSION ${message}"
+            echo ".........................."
+            echo "v$CUR_VERSION => v$VERSION ${message}"
+            echo ".........................."
+
             ${nocommit} && exit 0
 
             git commit -m "release - v$VERSION  ${message}"
