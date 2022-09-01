@@ -1,5 +1,6 @@
 import {ethers} from 'ethers';
 import { TranscriptLocation } from './transcript.mjs';
+const arrayify = ethers.utils.arrayify;
 
 export class Game {
 
@@ -30,8 +31,12 @@ export class Game {
    * game setup
    */
 
-  async joinGame() {
-    const tx = await this.arena.joinGame(this.gid);
+  async joinGame(profile) {
+
+    profile = profile || "0x"
+    if (profile === "") profile = "0x"
+    
+    const tx = await this.arena.joinGame(this.gid, profile);
     const r = await tx.wait();
     this._checkStatus(r, "joinGame reverted");
   }

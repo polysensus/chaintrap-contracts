@@ -17,7 +17,7 @@ contract Arena {
     event GameReset(GameID indexed gid, TID tid);
     event GameStarted(GameID indexed gid);
     event GameCompleted(GameID indexed gid);
-    event PlayerJoined(GameID indexed gid, address player);
+    event PlayerJoined(GameID indexed gid, address player, bytes profile);
     event PlayerStartLocation(GameID indexed gid, address player, bytes32 startLocation, bytes sceneblob);
 
     // NOTE: These are duplicated in library Transcript - this is the only way to expose the abi to ethers.js
@@ -79,13 +79,13 @@ contract Arena {
         return games[i].initialized();
     }
 
-    function joinGame(GameID gid) public {
-        _joinGame(gid, msg.sender);
+    function joinGame(GameID gid, bytes calldata profile) public {
+        _joinGame(gid, msg.sender, profile);
     }
 
-    function _joinGame(GameID gid, address p) public {
-        game(gid).joinGame(p);
-        emit PlayerJoined(gid, p);
+    function _joinGame(GameID gid, address p, bytes calldata profile) public {
+        game(gid).joinGame(p, profile);
+        emit PlayerJoined(gid, p, profile);
     }
 
     function setStartLocation(GameID gid, address p, bytes32 startLocation, bytes calldata sceneblob) public {

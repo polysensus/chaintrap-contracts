@@ -21,6 +21,10 @@
      version: "0.8.9",
      settings: {
        // hh does not support re-mappings yet
+       optimizer : {
+        enabled: true,
+        runs: 20
+       }
      }
    },
    paths: {

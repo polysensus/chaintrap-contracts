@@ -50,8 +50,8 @@ contract ArenaTest is DSTest {
     }
 
 
-    function joinGame(address p) public {
-        arena._joinGame(g1, p);
+    function joinGame(address p, bytes calldata profile) public {
+        arena._joinGame(g1, p, profile);
     }
 
     function playerCount(GameID gid) public view returns (uint8) {
@@ -170,15 +170,13 @@ contract ArenaTest is DSTest {
 
     function testRegisterPlayerArena() public {
 
-        GameID x = arena.createGame(1);
-
         LocationID loc = LocationID.wrap(1);
         bytes32 token = locationToken(uint256(1), LocationID.unwrap(loc));
         TranscriptLocation []memory locations = new TranscriptLocation[](1);
         locations[0].token = token;
         locations[0].id = loc; 
 
-        arena._joinGame(g1, address(1));
+        arena._joinGame(g1, address(1), bytes(""));
         arena.setStartLocation(g1, address(1), token, bytes(""));
 
         arena.startGame(g1);
@@ -190,23 +188,23 @@ contract ArenaTest is DSTest {
 
     function testPlayerCount() public {
 
-        arena._joinGame(g1, address(1));
+        arena._joinGame(g1, address(1), bytes(""));
         uint8 count = arena.playerCount(g1);
         assertEq(count, 1);
     }
 
     function testPlayerCount2() public {
 
-        arena._joinGame(g1, address(1));
-        arena._joinGame(g1, address(2));
+        arena._joinGame(g1, address(1), bytes(""));
+        arena._joinGame(g1, address(2), bytes(""));
         uint8 count = arena.playerCount(g1);
         assertEq(count, 2);
     }
 
     function testGetUnregisteredPlayersByIndex() public {
 
-        arena._joinGame(g1, address(1));
-        arena._joinGame(g1, address(2));
+        arena._joinGame(g1, address(1), bytes(""));
+        arena._joinGame(g1, address(2), bytes(""));
         uint8 count = arena.playerCount(g1);
         for (uint i=0; i<count; i++) {
             Player memory p = arena.player(g1, uint8(i));

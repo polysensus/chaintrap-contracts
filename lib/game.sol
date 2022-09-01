@@ -11,6 +11,8 @@ struct Player {
     LocationID loc;
     bytes32 startLocation;
     bytes sceneblob;
+    /// player profile data, opaque to the contract
+    bytes profile;
     bool halted;
 }
 
@@ -136,7 +138,7 @@ library Games {
         self.completed = true;
     }
 
-    function joinGame(Game storage self, address p) internal hasNotCompleted(self) hasNotStarted(self) {
+    function joinGame(Game storage self, address p, bytes calldata profile) internal hasNotCompleted(self) hasNotStarted(self) {
 
         uint8 i = self.iplayers[p];
 
@@ -156,6 +158,7 @@ library Games {
         i = uint8(self.players.length);
         self.players.push();
         self.players[i].addr = p;
+        self.players[i].profile = profile;
         self.iplayers[p] = i;
     }
 

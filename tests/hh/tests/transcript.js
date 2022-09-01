@@ -161,8 +161,8 @@ class Game {
    * dev game setup creation & player signup
    */
 
-  async joinGame() {
-    return this.g.joinGame();
+  async joinGame(profile) {
+    return this.g.joinGame(profile);
   }
 
   async setStartLocation(player, startToken, sceneblob) {
@@ -357,7 +357,7 @@ describe("Transcript", function () {
     locations.push(locationTE(3));
     ids.push(await commitAndAllowExitUse(EAST, 0, WEST, 0, currentLocationToken()));
 
-    await gp.joinGame();
+    await gp.joinGame("");
     await gm.setStartLocation(player.address, locations[0].token, []);
     await gm.startGame();
     await gm.completeGame();
@@ -387,7 +387,7 @@ describe("Transcript", function () {
     const loc = 2;
     const token = chaintrap.TranscriptLocation.tokenize(blocknumber, loc);
 
-    tx = await arena.connect(player).joinGame(gid);
+    tx = await arena.connect(player).joinGame(gid, "0x");
     r = await tx.wait();
     expect(r.status).to.equal(1);
 

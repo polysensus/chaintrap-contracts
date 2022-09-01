@@ -49,9 +49,8 @@ contract Factory {
     function transcriptLength() public view returns (uint) {
         uint n = 0;
         TEID cur = cursorStart;
-        bool complete = false;
 
-        for(;!complete; (cur, , complete) = head().next(cur)) {
+        for(bool completed = false;!completed; (cur, , completed) = head().next(cur)) {
             n += 1;
         }
         return n;
@@ -165,8 +164,8 @@ contract Factory {
         headGame().complete();
     }
 
-    function registerPlayer(address p, bytes32 startLocation, bytes calldata sceneblob) public {
-        headGame().joinGame(p);
+    function registerPlayer(address p, bytes32 startLocation, bytes calldata sceneblob, bytes calldata profile) public {
+        headGame().joinGame(p, profile);
         headGame().setStartLocation(p, startLocation, sceneblob);
     }
 
@@ -191,14 +190,14 @@ contract Factory {
 
         TEID cur = cursorStart;
         uint16 end = 0;
-        bool complete = false;
+        bool completed = false;
         TranscriptEntry memory te;
         Game storage game = headGame();
         Transcript storage t = trans[trans.length -1];
 
-        for(;!complete && (end == 0 || TEID.unwrap(cur) != end);) {
+        for(;!completed && (end == 0 || TEID.unwrap(cur) != end);) {
 
-            (cur, te, complete) = t.next(cur);
+            (cur, te, completed) = t.next(cur);
 
             Player storage p = game.player(te.player);
             if (p.halted) {
@@ -440,7 +439,7 @@ contract TranscriptTest is DSTest {
         bytes32 token = locationToken(loc);
 
 
-        f.registerPlayer(address(1), token, bytes(""));
+        f.registerPlayer(address(1), token, bytes(""), bytes(""));
         f.start();
         f.complete();
 
@@ -466,7 +465,7 @@ contract TranscriptTest is DSTest {
         LocationID startLocation = LocationID.wrap(1);
         bytes32 startToken = locationToken(startLocation);
 
-        f.registerPlayer(address(1), startToken, bytes(""));
+        f.registerPlayer(address(1), startToken, bytes(""), bytes(""));
 
         f.start();
 
@@ -545,7 +544,7 @@ contract TranscriptTest is DSTest {
         // start position
         locations[i++] = locationTE(loc1);
 
-        f.registerPlayer(address(1), locations[0].token, bytes(""));
+        f.registerPlayer(address(1), locations[0].token, bytes(""), bytes(""));
 
         f.start();
 
@@ -614,7 +613,7 @@ contract TranscriptTest is DSTest {
         LocationID startLocation = LocationID.wrap(1);
         bytes32 startToken = locationToken(startLocation);
 
-        f.registerPlayer(address(1), startToken, bytes(""));
+        f.registerPlayer(address(1), startToken, bytes(""), bytes(""));
 
         f.start();
 
@@ -652,7 +651,7 @@ contract TranscriptTest is DSTest {
         // Only the games master can know the start tokens for the players
         LocationID startLocation = LocationID.wrap(1);
         bytes32 startToken = locationToken(startLocation);
-        f.registerPlayer(address(1), startToken, bytes(""));
+        f.registerPlayer(address(1), startToken, bytes(""), bytes(""));
         f.start();
 
         TEID id = f.commitExitUse(address(1), exitUse(Locations.SideKind.East, 0));
@@ -681,7 +680,7 @@ contract TranscriptTest is DSTest {
         LocationID startLocation = LocationID.wrap(1);
         bytes32 startToken = locationToken(startLocation);
 
-        f.registerPlayer(address(1), startToken, bytes(""));
+        f.registerPlayer(address(1), startToken, bytes(""), bytes(""));
 
         assertTrue(f.playerRegistered(address(1)));
     }
