@@ -12,6 +12,9 @@ export { TranscriptLocation };
 import { Game } from './game.mjs';
 export { Game };
 
+import { TXProfiler } from './txprofile.mjs'
+export { TXProfiler }
+
 function locationKinds() {
     return {
         ROOM: Locations.Kind.Room,

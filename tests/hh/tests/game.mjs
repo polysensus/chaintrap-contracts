@@ -1,5 +1,13 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+// const { expect } = require("chai")
+// const { ethers } = require("hardhat")
+import chai from 'chai'
+const { expect } = chai
+import hardhat from 'hardhat'
+const { ethers } = hardhat
+import { Game } from '../../../chaintrap/game.mjs'
+
+import { TXProfiler } from '../../../chaintrap/txprofile.mjs'
+import { MockProfileClock } from './mocks/profileclock.mjs'
 
 /* The following layout is the default map for theses tests
 
@@ -74,8 +82,31 @@ const { ethers } = require("hardhat");
         f.loadLinks(links);
 
 */
+
+function checkStatus(r, msg) {
+  if (r.status != 1) {
+    throw Error(msg || "transaction not successful")
+  }
+}
+
+async function newGame(arena, maxPlayers) {
+    let tx = await arena.createGame(maxPlayers)
+    let r = await tx.wait()
+    checkStatus(r)
+    return [r.events[0].args.gid, r.events[0].args.tid]
+}
+
 describe("Game", function () {
+
+  before(async function () {
+    const Arena = await ethers.getContractFactory("Arena")
+    this.arena = await Arena.deploy()
+    await this.arena.deployed()
+  })
+
   it("Should create a new game and transcript both with the first ids", async function () {
+
+    // note we need a fresh arena to guarantee gid, tid == 1,1
     const Arena = await ethers.getContractFactory("Arena");
     const arena = await Arena.deploy();
     await arena.deployed();
@@ -85,4 +116,33 @@ describe("Game", function () {
     expect(r.events[0].args.gid).to.equal(1);
     expect(r.events[0].args.tid).to.equal(1);
   });
+
+  it("Should join new game", async function () {
+
+    const [gid, tid] = await newGame(this.arena, 2)
+    const g = new Game(this.arena, gid, tid)
+    const r = await g.joinGame()
+    expect(r.status).to.equal(1)
+  })
+
+  it("Should profile join new game", async function () {
+
+    const tp = new TXProfiler(3)
+    tp.now = new MockProfileClock().now
+
+    const [gid, tid] = await newGame(this.arena, 2)
+    const g = new Game(this.arena, gid, tid, {
+      txissue: (...args) => tp.txissue(...args),
+      txwait: (...args) => tp.txwait(...args)
+    })
+    const r = await g.joinGame()
+    expect(r.status).to.eq(1)
+
+    expect(tp.latency()).to.eq(2)
+    const gas = tp.gas()
+    const price = tp.price()
+    console.log(gas, price)
+    // expect(tp.gas()).to.eq(1)
+    // expect(tp.price()).to.eq(1)
+  })
 });

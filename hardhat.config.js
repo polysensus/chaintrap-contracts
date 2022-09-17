@@ -5,8 +5,13 @@
  require("hardhat-deploy");
 
  module.exports = {
+   // defaultNetwork: "polygon_mumbai",
    defaultNetwork: "hardhat",
    networks: {
+     polygon_mumbai: {
+      url: 'https://polygon-mainnet.g.alchemy.com/v2/MGrFH1fAmoFeCc24hxR_vFd9dTmN0DBR',
+      accounts: ['0xda36da69010b7baef829d14cf2dfd2caafba98a17aef538161741b2c1992a5a2']
+     },
      hardhat: {
       chainId: 31337,
       gas: "auto",

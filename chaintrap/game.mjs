@@ -4,13 +4,16 @@ const arrayify = ethers.utils.arrayify;
 
 export class Game {
 
-  constructor(arena, gid, tid) {
+  constructor(arena, gid, tid, optional={}) {
 
     // Note: arena should be connected to the appopriate signer. commitExitUse
     // will (eventually) revert if its not invoked by the game creator.
-    this.arena = arena;
-    this.gid = gid;
-    this.tid = tid;
+    this.arena = arena
+    this.gid = gid
+    this.tid = tid
+
+    this._txissue = optional?.txissue ? optional.txissue : async (method, ... args) => { return method(...args)}
+    this._txwait = optional?.txwait ? optional.txwait : async (tx) => { return tx.wait() }
   }
 
   tokenLocation(blocknumber, loc) {
@@ -35,16 +38,18 @@ export class Game {
 
     profile = profile || "0x"
     if (profile === "") profile = "0x"
-    
-    const tx = await this.arena.joinGame(this.gid, profile);
-    const r = await tx.wait();
-    this._checkStatus(r, "joinGame reverted");
+
+    const tx = await this._txissue(this.arena.joinGame, this.gid, profile)
+    const r = await this._txwait(tx)
+    this._checkStatus(r, "joinGame reverted")
+    return r
   }
 
   async setStartLocation(player, startToken, sceneblob) {
-    const tx = await this.arena.setStartLocation(this.gid, player, startToken, sceneblob);
-    const r = await tx.wait();
-    this._checkStatus(r, "setStartLocation reverted");
+    const tx = await this._txissue(this.arena.setStartLocation, this.gid, player, startToken, sceneblob)
+    const r = await this_.txwait(tx)
+    this._checkStatus(r, "setStartLocation reverted")
+    return r
   }
 
   async playerCount() {
@@ -65,15 +70,17 @@ export class Game {
    */
 
   async startGame() {
-    const tx = await this.arena.startGame(this.gid);
-    const r = await tx.wait();
-    this._checkStatus(r, "start reverted");
+    const tx = await this._txissue(this.arena.startGame, this.gid)
+    const r = await this._txwait(tx)
+    this._checkStatus(r, "start reverted")
+    return r
   }
 
   async completeGame() {
-    const tx = await this.arena.completeGame(this.gid);
-    const r = await tx.wait();
-    this._checkStatus(r, "complete reverted");
+    const tx = await this._txissue(this.arena.completeGame, this.gid)
+    const r = await this._txwait(tx)
+    this._checkStatus(r, "complete reverted")
+    return r
   }
 
   /**
@@ -82,24 +89,25 @@ export class Game {
 
   async commitExitUse(side, egressIndex)  {
 
-    let commit = {side:side, egressIndex: egressIndex};
+    let commit = {side:side, egressIndex: egressIndex}
 
-    const signer = await this.arena.signer.getAddress();
-    console.log(`commitExitUse gid=${this.gid}, signer=${signer}, commit=${JSON.stringify(commit)}`);
+    const signer = await this.arena.signer.getAddress()
+    console.log(`commitExitUse gid=${this.gid}, signer=${signer}, commit=${JSON.stringify(commit)}`)
 
-    const tx = await this.arena.commitExitUse(this.gid, signer, commit);
-    const r = await tx.wait();
+    const tx = await this._txissue(this.arena.commitExitUse, this.gid, signer, commit)
+    const r = await this._txwait(tx)
     this._checkStatus(r, "commitExitUse reverted");
-    console.log(JSON.stringify(r));
-    return r.events[0].args.eid;
+    console.log(JSON.stringify(r))
+    return r.events[0].args.eid
   }
 
   async allowExitUse(eid, token, scene, side, ingressIndex, halt) {
 
-    const outcome = {location: token, sceneblob: scene, side:side, ingressIndex: ingressIndex, halt: halt};
-    const tx = await this.arena.allowExitUse(this.gid, eid, outcome);
-    const r = await tx.wait();
-    this._checkStatus(r, "allowExitUse reverted");
+    const outcome = {location: token, sceneblob: scene, side:side, ingressIndex: ingressIndex, halt: halt}
+    const tx = await this._txissue(this.arena.allowExitUse, this.gid, eid, outcome)
+    const r = await this._txwait(tx)
+    this._checkStatus(r, "allowExitUse reverted")
+    return r
   }
 
   /**
@@ -107,15 +115,17 @@ export class Game {
    */
 
   async loadTranscriptLocations(locations) {
-    const tx = await this.arena.loadTranscriptLocations(this.gid, locations);
-    const r = await tx.wait();
-    this._checkStatus(r, "loadTranscriptLocations reverted");
+    const tx = await this._txissue(this.arena.loadTranscriptLocations, this.gid, locations)
+    const r = await this._txwait(tx)
+    this._checkStatus(r, "loadTranscriptLocations reverted")
+    return r
   }
 
 
   async playTranscript() {
-    const tx = await this.arena.playTranscript(this.gid, 0, 0);
-    const r = await tx.wait();
-    this._checkStatus(r, "playTranscript reverted");
+    const tx = await this._txissue(this.arena.playTranscript, this.gid, 0, 0)
+    const r = await this._txwait(tx)
+    this._checkStatus(r, "playTranscript reverted")
+    return r
   }
 }

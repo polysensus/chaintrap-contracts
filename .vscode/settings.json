@@ -2,9 +2,9 @@
     "solidity.compileUsingRemoteVersion": "v0.8.13",
     "solidity.packageDefaultDependenciesContractsDirectory": "src",
     "solidity.packageDefaultDependenciesDirectory": "lib",
-    "mochaExplorer.files": "tests/hh/tests/**/*.{j,t}s",
+    "mochaExplorer.files": "tests/hh/tests/**/*.{j,t,mj}s",
     // "mochaExplorer.spec": "tests/hh/tests/**/*.{j,t}s",
     "mochaExplorer.mochaPath": "node_modules/mocha",
-    "mochaExplorer.optsFile": "tests/hh/tests/mocha.opts",
+    "mochaExplorer.timeout": 8000,
     "mochaExplorer.cwd": ".",
   }
