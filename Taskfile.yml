@@ -35,5 +35,17 @@ tasks:
 
         echo "RPC_URL: $RPC_URL"
         echo "Deployer: $DEPLOYER_ADDR"
-        forge create chaintrap/arena.sol:Arena --legacy --rpc-url=$RPC_URL --private-key=$PRIVATE_KEY
+        CONTRACT=chaintrap/arena.sol:Arena
+        forge create $CONTRACT \
+          --legacy \
+          --rpc-url=$RPC_URL \
+          --private-key=$PRIVATE_KEY \
+          --gas-limit=5000000
+        #forge create HelloWorld \
+        #  --constructor-args "Hello" \
+        #  --contracts chaintrap/HelloWorld.sol \
+        #  --legacy \
+        #  --rpc-url=$RPC_URL \
+        #  --private-key=$PRIVATE_KEY \
+        #  --gas-limit=5000000
 
