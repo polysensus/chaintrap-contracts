@@ -47,6 +47,12 @@ export class TXProfiler {
     return sum / this.fifo.length
   }
 
+  lastLatency() {
+    if (!this.fifo.length) return 0
+    const p = this.fifo[0]
+    return p.complete - p.called
+  }
+
   gas() {
     let sum = 0
     if (!this.fifo.length) return 0
