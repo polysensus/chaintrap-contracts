@@ -1,14 +1,18 @@
+import { BigNumber } from "ethers"
 import { pushFIFO } from "./fifo.mjs"
 
 export class TXProfiler {
   constructor (movingAverageWindow=10, optional) {
+    this.movingAverageWindow = movingAverageWindow
+    this.updated = optional?.updated
+    this.now = () => Date.now()
+    this.reset()
+  }
+
+  reset() {
     this.order = 1
     this.pending = {}
-    this.movingAverageWindow = movingAverageWindow
     this.fifo = []
-    this.updated = optional?.updated
-
-    this.now = () => Date.now()
   }
 
   async txissue(method, ...args) {
@@ -47,31 +51,50 @@ export class TXProfiler {
     return sum / this.fifo.length
   }
 
+  gas() {
+    if (!this.fifo.length) return 0
+
+
+    let sum = BigNumber.from(0)
+    this.fifo.forEach(p => {
+      if (!p.gasUsed) return
+      sum = sum.add(p.gasUsed)
+    })
+    return sum.div(this.fifo.length).toNumber()
+  }
+  price () {
+
+    if (!this.fifo.length) return 0
+
+    let sum = BigNumber.from(0)
+
+    this.fifo.forEach(p => {
+      if (p.gasPrice) sum = sum.add(p.gasPrice)
+    })
+
+    return sum.div(this.fifo.length).toNumber()
+  }
+
+  lastSample() {
+    if (!this.fifo.length) return
+    return this.fifo[this.fifo.length - 1]
+  }
+
   lastLatency() {
     if (!this.fifo.length) return 0
-    const p = this.fifo[0]
+    const p = this.fifo[this.fifo.length - 1]
     return p.complete - p.called
   }
 
-  gas() {
-    let sum = 0
+  lastGas() {
     if (!this.fifo.length) return 0
-
-    this.fifo.forEach(p => {
-      if (!p.gasUsed) return
-      sum += p.gasUsed
-    })
-    return sum / this.fifo.length
+    const p = this.fifo[this.fifo.length - 1]
+    return p.gasUsed?.toNumber() ?? 0
   }
-  price () {
-    let sum = 0
 
+  lastPrice() {
     if (!this.fifo.length) return 0
-
-    this.fifo.forEach(p => {
-      if (p.gasPrice) sum += p.gasPrice
-    })
-
-    return sum / this.fifo.length
+    const p = this.fifo[this.fifo.length - 1]
+    return p.gasPrice?.toNumber() ?? 0
   }
 }
