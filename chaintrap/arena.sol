@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.9 <0.9.0;
 
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+
 import "../lib/game.sol";
 
 error InvalidGame(uint256 id);
@@ -9,7 +11,7 @@ error ArenaError(uint);
 
 /// Games are played in an arena. The arena remembers all games that have ever
 /// been played
-contract Arena {
+contract Arena is ERC1155 {
 
     using Transcripts for Transcript;
     using Games for Game;
@@ -36,7 +38,21 @@ contract Arena {
     /// interaction. The game state we can re-create at will.
     mapping (GameID => TID) gid2tid;
 
-    constructor () {
+    /// @dev ERC1155 machinery closely following
+    /// https://github.com/enjin/erc-1155
+    uint256 typeNonce;
+    mapping (uint256 => uint256) typeLast;
+    uint256 constant ID_TYPE_BITS = 32;
+    uint256 constant ID_TYPE_SHIFT = 256 - ID_TYPE_BITS;
+    uint256 constant ID_TYPE_MASK = uint256(uint32(int32(~0))) << ID_TYPE_SHIFT;
+    uint256 constant ID_TYPE_NF_BIT = 1 << 255;
+    uint256 constant ID_NF_MASK = uint224(int224(~0));
+
+    // No public facing type creation
+    uint256 constant GAME_TYPE = (1 << ID_TYPE_SHIFT);
+    uint256 constant TRANSCRIPT_TYPE = (2 << ID_TYPE_SHIFT);
+
+    constructor () ERC1155("") {
         // id 0 is always invalid
 
         transcripts.push();
@@ -44,7 +60,51 @@ contract Arena {
 
         games.push();
         // Don't init games[0]
+
+        createType("", true); // GAME_TYPE
+        createType("", true); // TRANSCRIPT_TYPE
     }
+
+    /// ---------------------------------------------------
+    /// @dev ERC1155 machinery
+    function createType(
+        string memory _uri, bool _isNF
+    ) internal returns (uint256) {
+
+        uint256 ty = (++typeNonce) << ID_TYPE_SHIFT;
+        if (_isNF)
+            ty = ty | ID_TYPE_NF_BIT;
+
+        // emit a Transfer event with Create to help with discovery
+        emit TransferSingle(msg.sender, address(0x0), address(0x0), ty, 0);
+        if (bytes(_uri).length > 0)
+            emit URI(_uri, ty);
+        return ty;
+    }
+
+    /*
+    function isNonFungible(uint256 _id) internal pure returns(bool) {
+        return _id & ID_TYPE_NF_BIT == ID_TYPE_NF_BIT;
+    }
+    function isFungible(uint256 _id) internal pure returns(bool) {
+        return _id & ID_TYPE_NF_BIT == 0;
+    }
+    function nfIndex(uint256 _id) public pure returns(uint256) {
+        return _id & ID_NF_INDEX_MASK;
+    }
+    function nfBaseType(uint256 _id) public pure returns(uint256) {
+        return _id & ID_TYPE_MASK;
+    }
+    function isNFBaseType(uint256 _id) public pure returns(bool) {
+        // A base type has the NF bit but does not have an index.
+        return (_id & ID_TYPE_NF_BIT == ID_TYPE_NF_BIT) && (_id & ID_NF_MASK == 0);
+    }
+    function isNFItem(uint256 _id) public pure returns(bool) {
+        // A base type has the NF bit but does has an index.
+        return (_id & ID_TYPE_NF_BIT == ID_TYPE_NF_BIT) && (_id & ID_NF_MASK != 0);
+    }*/
+
+    /// ---------------------------------------------------
 
     /// ---------------------------------------------------
     /// @dev game setup creation & player signup
@@ -65,6 +125,11 @@ contract Arena {
         transcripts[TID.unwrap(tid)]._init(gid);
 
         gid2tid[gid] = tid;
+
+        _mint(msg.sender, GAME_TYPE | GameID.unwrap(gid), 1, "");
+
+        // The trancscript gets minted to the winer when the game is completed and verified
+        // _mint(msg.sender, TRANSCRIPT_TYPE | TID.unwrap(tid), 1, "");
 
         emit GameCreated(gid, tid, g.creator, g.maxPlayers);
         return gid;
