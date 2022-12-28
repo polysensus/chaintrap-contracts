@@ -1,5 +1,6 @@
 
 const { expect } = require("chai");
+const { keccak256 } = require("ethers/lib/utils.js");
 const { ethers } = require("hardhat");
 bytes = ethers.utils.arrayify;
 
@@ -318,6 +319,10 @@ describe("Transcript", function () {
     // start position
     locations.push(locationTE(1));
 
+    await gp.joinGame("");
+    await gm.setStartLocation(player.address, locations[0].token, []);
+    await gm.startGame();
+
     // In commitAndAllowExit use the player commit to an exit use that takes
     // them to 'currentLocationToken'. The gm allows that.
 
@@ -357,9 +362,6 @@ describe("Transcript", function () {
     locations.push(locationTE(3));
     ids.push(await commitAndAllowExitUse(EAST, 0, WEST, 0, currentLocationToken()));
 
-    await gp.joinGame("");
-    await gm.setStartLocation(player.address, locations[0].token, []);
-    await gm.startGame();
     await gm.completeGame();
 
     await gm.loadDefaultMap();
@@ -378,15 +380,6 @@ describe("Transcript", function () {
 
     const [player] = await ethers.getSigners();
 
-    let commit = {side:sides.EAST, egressIndex: 0};
-    tx = await arena.commitExitUse(gid, player.address, commit);
-    r = await tx.wait();
-    let eid = r.events[0].args.eid;
-
-    blocknumber += 1;
-    const loc = 2;
-    const token = chaintrap.TranscriptLocation.tokenize(blocknumber, loc);
-
     tx = await arena.connect(player).joinGame(gid, "0x");
     r = await tx.wait();
     expect(r.status).to.equal(1);
@@ -398,6 +391,15 @@ describe("Transcript", function () {
     tx = await arena.startGame(gid);
     r = await tx.wait();
     expect(r.status).to.equal(1);
+
+    let commit = {side:sides.EAST, egressIndex: 0};
+    tx = await arena.commitExitUse(gid, player.address, commit);
+    r = await tx.wait();
+    let eid = r.events[0].args.eid;
+
+    blocknumber += 1;
+    const loc = 2;
+    const token = chaintrap.TranscriptLocation.tokenize(blocknumber, loc);
 
     let outcome = {location: token, sceneblob: [], side:sides.WEST, ingressIndex: 1, halt: false};
     tx = await arena.allowExitUse(gid, eid, outcome);
@@ -442,6 +444,18 @@ describe("Transcript", function () {
     expect(tid).to.equal(1);
 
     const [player] = await ethers.getSigners();
+
+    tx = await arena.connect(player).joinGame(gid, "0x");
+    r = await tx.wait();
+    expect(r.status).to.equal(1);
+
+    tx = await arena.setStartLocation(gid, player.address, keccak256("0x01"), []);
+    r = await tx.wait();
+    expect(r.status).to.equal(1);
+
+    tx = await arena.startGame(gid);
+    r = await tx.wait();
+    expect(r.status).to.equal(1);
 
     let commit = {side:sides.EAST, egressIndex: 0};
     tx = await arena.commitExitUse(gid, player.address, commit);

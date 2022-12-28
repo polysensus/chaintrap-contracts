@@ -221,6 +221,7 @@ contract ArenaTest is DSTest {
     function testCreateGameInitialisesTranscript() public {
 
         ExitUse memory u = ExitUse(Locations.SideKind.North, 1);
+        startGame(GameID.wrap(1));
         TEID eid = commitExitUse(GameID.wrap(1), address(1), u);
         assertEq(TEID.unwrap(eid), uint16(1));
     }

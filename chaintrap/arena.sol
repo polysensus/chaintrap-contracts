@@ -4,6 +4,7 @@ pragma solidity >=0.8.9 <0.9.0;
 import "../lib/game.sol";
 
 error InvalidGame(uint256 id);
+
 error ArenaError(uint);
 
 /// Games are played in an arena. The arena remembers all games that have ever
@@ -146,25 +147,25 @@ contract Arena {
     /// ---------------------------------------------------
 
     function reject(GameID gid, TEID id) public {
-        trans(gid).reject(id);
+        opentrans(gid).reject(id);
     }
 
     function rejectAndHalt(GameID gid, TEID id) public {
-        trans(gid).rejectAndHalt(id);
+        opentrans(gid).rejectAndHalt(id);
     }
 
     function allowAndHalt(GameID gid, TEID id) public {
-        trans(gid).allowAndHalt(id);
+        opentrans(gid).allowAndHalt(id);
     }
 
     // --- move specific commit/allow methods
     function commitExitUse(
         GameID gid, address _player, ExitUse calldata committed) public returns (TEID) {
-        return trans(gid).commitExitUse(_player, committed);
+        return opentrans(gid).commitExitUse(_player, committed);
     }
 
     function allowExitUse(GameID gid, TEID id, ExitUseOutcome calldata outcome) public {
-        trans(gid).allowExitUse(id, outcome);
+        opentrans(gid).allowExitUse(id, outcome);
     }
 
 
@@ -237,7 +238,18 @@ contract Arena {
         return (true, i);
     }
 
+    /// @dev opentrans returns the storage for a transcript. The call will
+    /// revert if the game is not open. An open game has been started and is not
+    /// yet completed.
+    function opentrans(GameID gid) internal view returns (Transcript storage) {
+        return _trans(gid, true);
+    }
+
     function trans(GameID gid) internal view returns (Transcript storage) {
+        return _trans(gid, false);
+    }
+
+    function _trans(GameID gid, bool requireOpen) internal view returns (Transcript storage) {
         (bool ok, uint256 ig) = _index(gid);
         if (!ok) {
             revert InvalidGame(ig);
@@ -248,6 +260,15 @@ contract Arena {
 
         if (it == 0 || it >= transcripts.length) {
             revert InvalidTID(it);
+        }
+
+        if (requireOpen) {
+            if (!games[ig].started) {
+                revert GameNotStarted();
+            }
+            if (games[ig].completed) {
+                revert GameComplete();
+            }
         }
 
         return transcripts[it];
