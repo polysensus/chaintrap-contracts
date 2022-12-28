@@ -29,10 +29,10 @@ struct Game {
 
     /// The creator of the game gets a payout provide the game is completed by
     /// at least one player.
-    address _creator;
+    address creator;
 
     /// The 'dungeon' master (often the creator) reveals the result of each player move.
-    address _master;
+    address master;
 
     /// maximum number of players
     uint maxPlayers;
@@ -101,8 +101,8 @@ library Games {
             revert ZeroMaxPlayers();
         }
         self.maxPlayers = maxPlayers;
-        self._creator = msg.sender;
-        self._master = msg.sender;
+        self.creator = msg.sender;
+        self.master = msg.sender;
 
         self.players.push();
         // Nope: self.locationTokens.push();

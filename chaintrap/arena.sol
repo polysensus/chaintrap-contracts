@@ -95,12 +95,26 @@ contract Arena {
     }
 
     function setStartLocation(GameID gid, address p, bytes32 startLocation, bytes calldata sceneblob) public {
-        game(gid).setStartLocation(p, startLocation, sceneblob);
+        (Game storage g, ) = _gametrans(gid, false);
+        if (g.master != msg.sender) {
+            revert SenderMustBeMaster();
+        }
+
+        g.setStartLocation(p, startLocation, sceneblob);
         emit PlayerStartLocation(gid, p, startLocation, sceneblob);
     }
 
     function playerRegistered(GameID gid, address p) public view returns (bool) {
         return game(gid).playerRegistered(p);
+    }
+
+
+    function creator(GameID gid) public view returns (address) {
+        return game(gid).creator;
+    }
+
+    function master(GameID gid) public view returns (address) {
+        return game(gid).master;
     }
 
     /// @notice get the number of players currently known to the game (they may not be registered by the host yet)
@@ -134,7 +148,7 @@ contract Arena {
 
     function startGame(GameID gid) public {
         (Game storage g, ) = _gametrans(gid, false);
-        if (g._master != msg.sender) {
+        if (g.master != msg.sender) {
             revert SenderMustBeMaster();
         }
 
@@ -144,7 +158,7 @@ contract Arena {
 
     function completeGame(GameID gid) public {
         (Game storage g, ) = _gametrans(gid, true);
-        if (g._master != msg.sender) {
+        if (g.master != msg.sender) {
             revert SenderMustBeMaster();
         }
 
@@ -163,7 +177,7 @@ contract Arena {
 
     function reject(GameID gid, TEID id) public {
         (Game storage g, Transcript storage t) = _gametrans(gid, true);
-        if (g._master != msg.sender) {
+        if (g.master != msg.sender) {
             revert SenderMustBeMaster();
         }
         t.reject(id);
@@ -171,7 +185,7 @@ contract Arena {
 
     function rejectAndHalt(GameID gid, TEID id) public {
         (Game storage g, Transcript storage t) = _gametrans(gid, true);
-        if (g._master != msg.sender) {
+        if (g.master != msg.sender) {
             revert SenderMustBeMaster();
         }
         t.rejectAndHalt(id);
@@ -179,7 +193,7 @@ contract Arena {
 
     function allowAndHalt(GameID gid, TEID id) public {
         (Game storage g, Transcript storage t) = _gametrans(gid, true);
-        if (g._master != msg.sender) {
+        if (g.master != msg.sender) {
             revert SenderMustBeMaster();
         }
 
@@ -200,7 +214,7 @@ contract Arena {
     /// @dev allowExitUse is called by the game master to declare the outcome of the players commited exit use.
     function allowExitUse(GameID gid, TEID id, ExitUseOutcome calldata outcome) public {
         (Game storage g, Transcript storage t) = _gametrans(gid, true);
-        if (g._master != msg.sender) {
+        if (g.master != msg.sender) {
             revert SenderMustBeMaster();
         }
         t.allowExitUse(id, outcome);

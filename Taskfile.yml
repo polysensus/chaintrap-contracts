@@ -25,7 +25,24 @@ tasks:
       - forge test -vvv && npx hardhat test
 
   deploy:
+    cmds:
+      - task: deploy-caimst
+      - task: deploy-pol
+
+  deploy-caimst:
+    cmds:
+      - task: deploy-to
+        vars: { RPC_URL: "https://chains.hoy.polysensus.io/chains/caimst-209301/node/ethnode0/WWdEOHJUNVFDRXpPZ0VDb1IxTVpYOmFyZ29uMmlkIDMgNjRNQiAzMi5Kdkt6cEU5U09HNW02a3RBXzViYk8yRFZNeUw3cXBEdm5vQjhlOEtQMk5rPS5pR2JMMXpDRzBxbVRKdnRUN2RkLURxWlhSbDkxTWlYQm1RNDlKVzhjOF9jPQ==" }
+
+  deploy-pol:
+    cmds:
+      - task: deploy-to
+        vars: { RPC_URL: "https://polygon-mumbai.g.alchemy.com/v2/zyiZCXLwVEOZPVoixfOBBVvp7KE1oiqf" }
+
+  deploy-to:
     desc: deploy the contracts
+    vars:
+      RPC_URL: 
     cmds:
       - |
         PRIVATE_KEY=$(cat .local/dev/wallet-deploy.key)
@@ -41,11 +58,3 @@ tasks:
           --rpc-url=$RPC_URL \
           --private-key=$PRIVATE_KEY \
           --gas-limit=5000000
-        #forge create HelloWorld \
-        #  --constructor-args "Hello" \
-        #  --contracts chaintrap/HelloWorld.sol \
-        #  --legacy \
-        #  --rpc-url=$RPC_URL \
-        #  --private-key=$PRIVATE_KEY \
-        #  --gas-limit=5000000
-
