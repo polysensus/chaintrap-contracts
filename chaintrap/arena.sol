@@ -81,6 +81,11 @@ contract Arena {
     }
 
     function joinGame(GameID gid, bytes calldata profile) public {
+        // TODO: consider whether we should allow the master to play their own
+        // game. It does alow for pre play testing, and possibly 'single player'
+        // creation. Anyone can roll a new wallet and play against themselves,
+        // but if we allow master = player then we make it a choice wether self
+        // participation as player and master is detectible.
         _joinGame(gid, msg.sender, profile);
     }
 
@@ -128,12 +133,22 @@ contract Arena {
     /// ---------------------------------------------------
 
     function startGame(GameID gid) public {
-        game(gid).start();
+        (Game storage g, ) = _gametrans(gid, false);
+        if (g._master != msg.sender) {
+            revert SenderMustBeMaster();
+        }
+
+        g.start();
         emit GameStarted(gid);
     }
 
     function completeGame(GameID gid) public {
-        game(gid).complete();
+        (Game storage g, ) = _gametrans(gid, true);
+        if (g._master != msg.sender) {
+            revert SenderMustBeMaster();
+        }
+
+        g.complete();
         emit GameCompleted(gid);
     }
 
@@ -147,27 +162,49 @@ contract Arena {
     /// ---------------------------------------------------
 
     function reject(GameID gid, TEID id) public {
-        opentrans(gid).reject(id);
+        (Game storage g, Transcript storage t) = _gametrans(gid, true);
+        if (g._master != msg.sender) {
+            revert SenderMustBeMaster();
+        }
+        t.reject(id);
     }
 
     function rejectAndHalt(GameID gid, TEID id) public {
-        opentrans(gid).rejectAndHalt(id);
+        (Game storage g, Transcript storage t) = _gametrans(gid, true);
+        if (g._master != msg.sender) {
+            revert SenderMustBeMaster();
+        }
+        t.rejectAndHalt(id);
     }
 
     function allowAndHalt(GameID gid, TEID id) public {
-        opentrans(gid).allowAndHalt(id);
+        (Game storage g, Transcript storage t) = _gametrans(gid, true);
+        if (g._master != msg.sender) {
+            revert SenderMustBeMaster();
+        }
+
+        t.allowAndHalt(id);
     }
 
     // --- move specific commit/allow methods
-    function commitExitUse(
-        GameID gid, address _player, ExitUse calldata committed) public returns (TEID) {
-        return opentrans(gid).commitExitUse(_player, committed);
+
+    /// @dev commitExitUse is called by a registered player to commit to using a specific exit.
+    function commitExitUse(GameID gid, ExitUse calldata committed)  public returns (TEID) {
+        (Game storage g, Transcript storage t) = _gametrans(gid, true);
+        if (!g.playerRegistered(msg.sender)) {
+            revert PlayerNotRegistered(msg.sender);
+        }
+        return t.commitExitUse(msg.sender, committed);
     }
 
+    /// @dev allowExitUse is called by the game master to declare the outcome of the players commited exit use.
     function allowExitUse(GameID gid, TEID id, ExitUseOutcome calldata outcome) public {
-        opentrans(gid).allowExitUse(id, outcome);
+        (Game storage g, Transcript storage t) = _gametrans(gid, true);
+        if (g._master != msg.sender) {
+            revert SenderMustBeMaster();
+        }
+        t.allowExitUse(id, outcome);
     }
-
 
     /// ---------------------------------------------------
     /// @dev map & game loading.
@@ -211,7 +248,7 @@ contract Arena {
     /// ---------------------------------------------------
 
     function playTranscript(GameID gid, TEID cur, TEID end) public returns (TEID) {
-        return game(gid).playTranscript(trans(gid), cur, end);
+        return game(gid).playTranscript(_trans(gid, false), cur, end);
     }
 
 
@@ -238,18 +275,12 @@ contract Arena {
         return (true, i);
     }
 
-    /// @dev opentrans returns the storage for a transcript. The call will
-    /// revert if the game is not open. An open game has been started and is not
-    /// yet completed.
-    function opentrans(GameID gid) internal view returns (Transcript storage) {
-        return _trans(gid, true);
-    }
-
-    function trans(GameID gid) internal view returns (Transcript storage) {
-        return _trans(gid, false);
-    }
-
     function _trans(GameID gid, bool requireOpen) internal view returns (Transcript storage) {
+        (, Transcript storage t) = _gametrans(gid, requireOpen);
+        return t;
+    }
+
+    function _gametrans(GameID gid, bool requireOpen) internal view returns (Game storage, Transcript storage) {
         (bool ok, uint256 ig) = _index(gid);
         if (!ok) {
             revert InvalidGame(ig);
@@ -271,7 +302,7 @@ contract Arena {
             }
         }
 
-        return transcripts[it];
+        return (games[ig], transcripts[it]);
     }
 
     function game(GameID id) internal view returns (Game storage) {

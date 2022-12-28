@@ -11,6 +11,11 @@ contract ArenaTest is DSTest {
     Vm private vm = Vm(HEVM_ADDRESS);
     StdStorage private stdstore;
 
+    address master = address(1000);
+    address master2 = address(2000);
+    address player1 = address(1001);
+    address player2 = address(1002);
+
     Arena private arena;
     Location[] private locs;
     uint16 nextExitID;
@@ -21,6 +26,7 @@ contract ArenaTest is DSTest {
     function setUp() public {
         // Deploy Map contract
         arena = new Arena();
+        vm.prank(master, master);
         g1 = arena.createGame(2);
     }
 
@@ -71,7 +77,8 @@ contract ArenaTest is DSTest {
     }
 
     function commitExitUse(GameID gid, address _player, ExitUse memory committed) public returns (TEID) {
-        return arena.commitExitUse(gid, _player, committed);
+        vm.prank(_player, _player);
+        return arena.commitExitUse(gid, committed);
     }
 
     /* The following layout is the default map for theses tests
@@ -164,6 +171,7 @@ contract ArenaTest is DSTest {
 
     function testCreateGame() public {
         assertTrue(arena.gameValid(g1));
+        vm.prank(master, master);
         GameID g2 = arena.createGame(2);
         assertTrue(arena.gameValid(g2));
     }
@@ -176,53 +184,67 @@ contract ArenaTest is DSTest {
         locations[0].token = token;
         locations[0].id = loc; 
 
-        arena._joinGame(g1, address(1), bytes(""));
-        arena.setStartLocation(g1, address(1), token, bytes(""));
+        vm.prank(player1, player1);
+        arena.joinGame(g1, bytes(""));
+
+        vm.startPrank(master, master);
+        arena.setStartLocation(g1, player1, token, bytes(""));
 
         arena.startGame(g1);
         arena.completeGame(g1);
+        vm.stopPrank();
 
         loadDefaultMap();
-        assertTrue(arena.playerRegistered(g1, address(1)));
+        assertTrue(arena.playerRegistered(g1, player1));
     }
 
     function testPlayerCount() public {
 
-        arena._joinGame(g1, address(1), bytes(""));
+        vm.prank(player1, player1);
+        arena.joinGame(g1, bytes(""));
         uint8 count = arena.playerCount(g1);
         assertEq(count, 1);
     }
 
     function testPlayerCount2() public {
 
-        arena._joinGame(g1, address(1), bytes(""));
-        arena._joinGame(g1, address(2), bytes(""));
+        vm.prank(player1, player1);
+        arena.joinGame(g1, bytes(""));
+        vm.prank(player2, player2);
+        arena.joinGame(g1, bytes(""));
         uint8 count = arena.playerCount(g1);
         assertEq(count, 2);
     }
 
     function testGetUnregisteredPlayersByIndex() public {
 
-        arena._joinGame(g1, address(1), bytes(""));
-        arena._joinGame(g1, address(2), bytes(""));
+        vm.prank(player1, player1);
+        arena.joinGame(g1, bytes(""));
+        vm.prank(player2, player2);
+        arena.joinGame(g1, bytes(""));
         uint8 count = arena.playerCount(g1);
         for (uint i=0; i<count; i++) {
             Player memory p = arena.player(g1, uint8(i));
-            assertEq(p.addr, address(uint160(i+1)));
+            assertEq(p.addr, address(uint160(1000+i+1)));
         }
     }
 
     function testDefaultMapLoads() public {
+        vm.startPrank(master, master);
         arena.startGame(g1);
         arena.completeGame(g1);
+        vm.stopPrank();
         loadDefaultMap();
     }
 
     function testCreateGameInitialisesTranscript() public {
 
         ExitUse memory u = ExitUse(Locations.SideKind.North, 1);
+        vm.prank(player1, player1);
+        arena.joinGame(g1, bytes(""));
+        vm.prank(master, master);
         startGame(GameID.wrap(1));
-        TEID eid = commitExitUse(GameID.wrap(1), address(1), u);
+        TEID eid = commitExitUse(GameID.wrap(1), player1, u);
         assertEq(TEID.unwrap(eid), uint16(1));
     }
 }

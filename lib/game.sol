@@ -56,6 +56,7 @@ error GameNotStarted();
 error GameInProgress();
 error GameComplete();
 error ZeroMaxPlayers();
+error SenderMustBeMaster();
 
 library Games {
 
@@ -100,6 +101,8 @@ library Games {
             revert ZeroMaxPlayers();
         }
         self.maxPlayers = maxPlayers;
+        self._creator = msg.sender;
+        self._master = msg.sender;
 
         self.players.push();
         // Nope: self.locationTokens.push();

@@ -108,9 +108,11 @@ async function createGame() {
     const chaintrap = await _chaintrap;
 
     const Arena = await ethers.getContractFactory("Arena");
-    const arena = await Arena.deploy();
+    let arena = await Arena.deploy();
     await arena.deployed();
 
+    const [master] = await ethers.getSigners();
+    arena = arena.connect(master)
     let tx = await arena.createGame(2);
     let r = await tx.wait();
     const gid = r.events[0].args.gid;
@@ -123,14 +125,17 @@ class Game {
     const chaintrap = await _chaintrap;
 
     const Arena = await ethers.getContractFactory("Arena");
-    const arena = await Arena.deploy();
+    let arena = await Arena.deploy();
     await arena.deployed();
+
+    arena = arena.connect(master);
+
     let tx = await arena.createGame(2);
     let r = await tx.wait();
     const gid = r.events[0].args.gid;
     const tid = r.events[0].args.tid;
 
-    return new Game(new chaintrap.Game(arena.connect(master), gid, tid));
+    return new Game(new chaintrap.Game(arena, gid, tid));
   }
 
   static async connectPlayer(game, player) {
@@ -374,26 +379,28 @@ describe("Transcript", function () {
     const sides = await locationSides();
     const [arena, gid, tid] = await createGame(2);
 
+    const [master, player] = await ethers.getSigners();
+    const am = arena.connect(master)
+    const ap = arena.connect(player)
+
+    tx = await ap.joinGame(gid, "0x");
+    r = await tx.wait();
+    expect(r.status).to.equal(1);
+
     let blocknumber = 1;
     const startLoc = 1;
     const startToken = chaintrap.TranscriptLocation.tokenize(blocknumber, startLoc);
 
-    const [player] = await ethers.getSigners();
-
-    tx = await arena.connect(player).joinGame(gid, "0x");
+    tx = await am.setStartLocation(gid, player.address, startToken, []);
     r = await tx.wait();
     expect(r.status).to.equal(1);
 
-    tx = await arena.setStartLocation(gid, player.address, startToken, []);
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
-
-    tx = await arena.startGame(gid);
+    tx = await am.startGame(gid);
     r = await tx.wait();
     expect(r.status).to.equal(1);
 
     let commit = {side:sides.EAST, egressIndex: 0};
-    tx = await arena.commitExitUse(gid, player.address, commit);
+    tx = await ap.commitExitUse(gid, commit);
     r = await tx.wait();
     let eid = r.events[0].args.eid;
 
@@ -402,10 +409,10 @@ describe("Transcript", function () {
     const token = chaintrap.TranscriptLocation.tokenize(blocknumber, loc);
 
     let outcome = {location: token, sceneblob: [], side:sides.WEST, ingressIndex: 1, halt: false};
-    tx = await arena.allowExitUse(gid, eid, outcome);
+    tx = await am.allowExitUse(gid, eid, outcome);
     r = await tx.wait();
 
-    tx = await arena.completeGame(gid);
+    tx = await am.completeGame(gid);
     r = await tx.wait();
     expect(r.status).to.equal(1);
 
@@ -443,22 +450,24 @@ describe("Transcript", function () {
     expect(gid).to.equal(1);
     expect(tid).to.equal(1);
 
-    const [player] = await ethers.getSigners();
+    const [master, player] = await ethers.getSigners();
+    const am = arena.connect(master)
+    const ap = arena.connect(player)
 
-    tx = await arena.connect(player).joinGame(gid, "0x");
+    tx = await ap.joinGame(gid, "0x");
     r = await tx.wait();
     expect(r.status).to.equal(1);
 
-    tx = await arena.setStartLocation(gid, player.address, keccak256("0x01"), []);
+    tx = await am.setStartLocation(gid, player.address, keccak256("0x01"), []);
     r = await tx.wait();
     expect(r.status).to.equal(1);
 
-    tx = await arena.startGame(gid);
+    tx = await am.startGame(gid);
     r = await tx.wait();
     expect(r.status).to.equal(1);
 
     let commit = {side:sides.EAST, egressIndex: 0};
-    tx = await arena.commitExitUse(gid, player.address, commit);
+    tx = await ap.commitExitUse(gid, commit);
     r = await tx.wait();
     expect(r.status).to.equal(1);
     expect(r.events[0].event).to.equal("UseExit");
@@ -476,21 +485,27 @@ describe("Transcript", function () {
     const arena = await Arena.deploy();
     await arena.deployed();
 
-    let tx = await arena.createGame(2);
+    const [master, player] = await ethers.getSigners();
+    const am = arena.connect(master)
+    const ap = arena.connect(player)
+
+    let tx = await am.createGame(2);
     let r = await tx.wait();
     let gid = r.events[0].args.gid;
     let tid = r.events[0].args.tid;
     expect(gid).to.equal(1);
     expect(tid).to.equal(1);
 
-    tx = await arena.startGame(gid);
+    tx = await ap.joinGame(gid, "0x");
     r = await tx.wait();
     expect(r.status).to.equal(1);
 
-    const [master, player] = await ethers.getSigners();
+    tx = await am.startGame(gid);
+    r = await tx.wait();
+    expect(r.status).to.equal(1);
 
     let commit = {side:sides.EAST, egressIndex: 0};
-    tx = await arena.commitExitUse(gid, player.address, commit);
+    tx = await ap.commitExitUse(gid, commit);
     r = await tx.wait();
     let eid = r.events[0].args.eid;
     expect(eid).to.equal(1);
@@ -498,7 +513,7 @@ describe("Transcript", function () {
     let loctok = ethers.utils.hexlify(ethers.utils.randomBytes(32));
 
     let outcome = {location: loctok, sceneblob: [], side:sides.WEST, ingressIndex: 1, halt: false};
-    tx = await arena.allowExitUse(gid, eid, outcome).then((result)=>{
+    tx = await am.allowExitUse(gid, eid, outcome).then((result)=>{
         return result;
     }, (error)=>{
         console.log('Error', error);

@@ -91,10 +91,7 @@ export class Game {
 
     let commit = {side:side, egressIndex: egressIndex}
 
-    const signer = await this.arena.signer.getAddress()
-    console.log(`commitExitUse gid=${this.gid}, signer=${signer}, commit=${JSON.stringify(commit)}`)
-
-    const tx = await this._txissue(this.arena.commitExitUse, this.gid, signer, commit)
+    const tx = await this._txissue(this.arena.commitExitUse, this.gid, commit)
     const r = await this._txwait(tx)
     this._checkStatus(r, "commitExitUse reverted");
     console.log(JSON.stringify(r))
