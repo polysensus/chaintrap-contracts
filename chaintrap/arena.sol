@@ -14,7 +14,7 @@ contract Arena {
     using Transcripts for Transcript;
     using Games for Game;
 
-    event GameCreated(GameID indexed gid, TID tid);
+    event GameCreated(GameID indexed gid, TID tid, address indexed creator, uint256 maxPlayers);
     event GameReset(GameID indexed gid, TID tid);
     event GameStarted(GameID indexed gid);
     event GameCompleted(GameID indexed gid);
@@ -56,7 +56,8 @@ contract Arena {
         GameID gid = GameID.wrap(games.length);
 
         games.push();
-        games[GameID.unwrap(gid)]._init(maxPlayers);
+        Game storage g = games[GameID.unwrap(gid)];
+        g._init(maxPlayers);
 
         TID tid = TID.wrap(transcripts.length);
         transcripts.push();
@@ -64,7 +65,7 @@ contract Arena {
 
         gid2tid[gid] = tid;
 
-        emit GameCreated(gid, tid);
+        emit GameCreated(gid, tid, g.creator, g.maxPlayers);
         return gid;
     }
 
