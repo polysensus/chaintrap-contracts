@@ -13,6 +13,7 @@ contract Arena {
 
     using Transcripts for Transcript;
     using Games for Game;
+    using Games for GameStatus;
 
     event GameCreated(GameID indexed gid, TID tid, address indexed creator, uint256 maxPlayers);
     event GameReset(GameID indexed gid, TID tid);
@@ -109,6 +110,18 @@ contract Arena {
         return game(gid).playerRegistered(p);
     }
 
+    function gameStatus(GameID id) public view returns (GameStatus memory) {
+        Game storage g = game(id);
+        GameStatus memory gs;
+        gs.creator = g.creator;
+        gs.master = g.master;
+        gs.started = g.started;
+        gs.completed = g.completed;
+
+        gs.maxPlayers = g.maxPlayers;
+        gs.numRegistered = g.players.length - 1;
+        return gs;
+    }
 
     function creator(GameID gid) public view returns (address) {
         return game(gid).creator;

@@ -41,8 +41,6 @@ tasks:
 
   deploy-to:
     desc: deploy the contracts
-    vars:
-      RPC_URL: 
     cmds:
       - |
         PRIVATE_KEY=$(cat .local/dev/wallet-deploy.key)
@@ -50,11 +48,11 @@ tasks:
         echo "PRIVATE_KEY: $PRIVATE_KEY"
         [ -z "$PRIVATE_KEY" ] && echo "no deployment key, try new-deploy-wallet" && exit 1
 
-        echo "RPC_URL: $RPC_URL"
+        echo "RPC_URL: {{.RPC_URL}}" 
         echo "Deployer: $DEPLOYER_ADDR"
         CONTRACT=chaintrap/arena.sol:Arena
         forge create $CONTRACT \
           --legacy \
-          --rpc-url=$RPC_URL \
+          --rpc-url={{.RPC_URL}} \
           --private-key=$PRIVATE_KEY \
           --gas-limit=5000000

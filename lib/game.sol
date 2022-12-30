@@ -40,6 +40,21 @@ struct Game {
     bool completed;
 }
 
+struct GameStatus {
+    /// The creator of the game gets a payout provide the game is completed by
+    /// at least one player.
+    address creator;
+
+    /// The 'dungeon' master (often the creator) reveals the result of each player move.
+    address master;
+
+    /// maximum number of players
+    uint maxPlayers;
+    uint numRegistered;
+    bool started;
+    bool completed;
+}
+
 /// @dev Invalid* errors are raised for ids can't be mapped to their respective items.
 error InvalidPlayer(address player);
 error InvalidPlayerIndex(uint8 player);
