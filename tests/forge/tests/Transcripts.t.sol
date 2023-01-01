@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.9 <0.9.0;
+pragma solidity =0.8.9;
 
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
@@ -21,7 +21,7 @@ contract Factory {
         trans.push();
         trans[0]._init(GameID.wrap(0));
         games.push();
-        games[0]._init(2);
+        games[0]._init(2, address(this));
     }
 
     function reset() public {
@@ -42,7 +42,7 @@ contract Factory {
         trans.push();
         trans[trans.length - 1]._init(GameID.wrap(games.length));
         games.push();
-        games[games.length - 1]._init(2);
+        games[games.length - 1]._init(2, address(this));
     }
 
     // utility methods based on the proxy methods
