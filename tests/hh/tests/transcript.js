@@ -113,7 +113,7 @@ async function createGame() {
 
     const [master] = await ethers.getSigners();
     arena = arena.connect(master)
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
     const gid = r.events[1].args.gid;
     return [arena, gid];
@@ -130,7 +130,7 @@ class Game {
 
     arena = arena.connect(master);
 
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
     const gid = r.events[1].args.gid;
     const tid = r.events[1].args.tid;
@@ -224,7 +224,7 @@ describe("Transcript", function () {
     const arena = await Arena.deploy();
     await arena.deployed();
 
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
     const gid = r.events[1].args.gid;
 
@@ -251,7 +251,7 @@ describe("Transcript", function () {
     const arena = await Arena.deploy();
     await arena.deployed();
 
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
     const gid = r.events[1].args.gid;
     const tid = r.events[1].args.tid;
@@ -377,7 +377,7 @@ describe("Transcript", function () {
   it ("Should play single move game", async function () {
     const chaintrap = await _chaintrap;
     const sides = await locationSides();
-    const [arena, gid, tid] = await createGame(2);
+    const [arena, gid, tid] = await createGame(2, "");
 
     const [master, player] = await ethers.getSigners();
     const am = arena.connect(master)
@@ -443,7 +443,7 @@ describe("Transcript", function () {
     const arena = await Arena.deploy();
     await arena.deployed();
 
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
     let gid = r.events[1].args.gid;
     let tid = r.events[1].args.tid;
@@ -489,7 +489,7 @@ describe("Transcript", function () {
     const am = arena.connect(master)
     const ap = arena.connect(player)
 
-    let tx = await am.createGame(2);
+    let tx = await am.createGame(2, "");
     let r = await tx.wait();
     let gid = r.events[1].args.gid;
     let tid = r.events[1].args.tid;

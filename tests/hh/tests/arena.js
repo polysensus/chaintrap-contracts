@@ -7,7 +7,7 @@ describe("Arena", function () {
     const arena = await Arena.deploy();
     await arena.deployed();
 
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
     expect(r.events[1].args.gid).to.equal(1);
     expect(r.events[1].args.tid).to.equal(1);
@@ -17,11 +17,11 @@ describe("Arena", function () {
     const arena = await Arena.deploy();
     await arena.deployed();
 
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
     expect(r.events[1].args.gid).to.equal(1);
     expect(r.events[1].args.tid).to.equal(1);
-    tx = await arena.createGame(2);
+    tx = await arena.createGame(2, "");
     r = await tx.wait();
     expect(r.events[1].args.gid).to.equal(2);
     expect(r.events[1].args.tid).to.equal(2);
@@ -32,7 +32,7 @@ describe("Arena", function () {
     const arena = await Arena.deploy();
     await arena.deployed();
 
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
     expect(r.events[1].args.gid).to.equal(1);
     expect(r.events[1].args.tid).to.equal(1);

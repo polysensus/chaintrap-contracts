@@ -2,6 +2,7 @@
 pragma solidity =0.8.9;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155URIStorage.sol";
 
 import "../lib/game.sol";
 import "../lib/contextmixin.sol";
@@ -12,7 +13,7 @@ error ArenaError(uint);
 
 /// Games are played in an arena. The arena remembers all games that have ever
 /// been played
-contract Arena is ERC1155, ContextMixin {
+contract Arena is ERC1155URIStorage, ContextMixin {
 
     using Transcripts for Transcript;
     using Games for Game;
@@ -156,7 +157,7 @@ contract Arena is ERC1155, ContextMixin {
 
     /// @notice creates a new game context.
     /// @return returns the id for the game
-    function createGame(uint maxPlayers) public returns (GameID) {
+    function createGame(uint maxPlayers, string calldata tokenURI) public returns (GameID) {
 
         GameID gid = GameID.wrap(games.length);
 
@@ -170,7 +171,13 @@ contract Arena is ERC1155, ContextMixin {
 
         gid2tid[gid] = tid;
 
-        _mint(_msgSender(), GAME_TYPE | GameID.unwrap(gid), 1, "");
+        uint256 tokenId = GAME_TYPE | GameID.unwrap(gid);
+
+        _mint(_msgSender(), tokenId, 1, "");
+
+        if (bytes(tokenURI).length > 0) {
+            _setURI(tokenId, tokenURI);
+        }
 
         // The trancscript gets minted to the winer when the game is completed and verified
         // _mint(_msgSender(), TRANSCRIPT_TYPE | TID.unwrap(tid), 1, "");

@@ -27,7 +27,7 @@ contract ArenaTest is DSTest {
         // Deploy Map contract
         arena = new Arena();
         vm.prank(master, master);
-        g1 = arena.createGame(2);
+        g1 = arena.createGame(2, "");
     }
 
     // proxy methods
@@ -172,7 +172,7 @@ contract ArenaTest is DSTest {
     function testCreateGame() public {
         assertTrue(arena.gameValid(g1));
         vm.prank(master, master);
-        GameID g2 = arena.createGame(2);
+        GameID g2 = arena.createGame(2, "");
         assertTrue(arena.gameValid(g2));
     }
 
