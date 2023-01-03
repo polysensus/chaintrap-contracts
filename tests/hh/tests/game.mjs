@@ -93,7 +93,7 @@ async function newGame(arena, maxPlayers) {
     let tx = await arena.createGame(maxPlayers)
     let r = await tx.wait()
     checkStatus(r)
-    return [r.events[0].args.gid, r.events[0].args.tid]
+    return [r.events[1].args.gid, r.events[0].args.tid]
 }
 
 describe("Game", function () {
@@ -113,8 +113,8 @@ describe("Game", function () {
 
     let tx = await arena.createGame(2);
     let r = await tx.wait();
-    expect(r.events[0].args.gid).to.equal(1);
-    expect(r.events[0].args.tid).to.equal(1);
+    expect(r.events[1].args.gid).to.equal(1);
+    expect(r.events[1].args.tid).to.equal(1);
   });
 
   it("Should join new game", async function () {

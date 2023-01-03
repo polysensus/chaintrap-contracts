@@ -113,9 +113,9 @@ async function createGame() {
 
     const [master] = await ethers.getSigners();
     arena = arena.connect(master)
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
-    const gid = r.events[0].args.gid;
+    const gid = r.events[1].args.gid;
     return [arena, gid];
 }
 
@@ -130,10 +130,10 @@ class Game {
 
     arena = arena.connect(master);
 
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
-    const gid = r.events[0].args.gid;
-    const tid = r.events[0].args.tid;
+    const gid = r.events[1].args.gid;
+    const tid = r.events[1].args.tid;
 
     return new Game(new chaintrap.Game(arena, gid, tid));
   }
@@ -224,9 +224,9 @@ describe("Transcript", function () {
     const arena = await Arena.deploy();
     await arena.deployed();
 
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
-    const gid = r.events[0].args.gid;
+    const gid = r.events[1].args.gid;
 
     tx = await arena.startGame(gid);
     r = await tx.wait();
@@ -251,10 +251,10 @@ describe("Transcript", function () {
     const arena = await Arena.deploy();
     await arena.deployed();
 
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
-    const gid = r.events[0].args.gid;
-    const tid = r.events[0].args.tid;
+    const gid = r.events[1].args.gid;
+    const tid = r.events[1].args.tid;
 
     tx = await arena.startGame(gid);
     r = await tx.wait();
@@ -377,7 +377,7 @@ describe("Transcript", function () {
   it ("Should play single move game", async function () {
     const chaintrap = await _chaintrap;
     const sides = await locationSides();
-    const [arena, gid, tid] = await createGame(2);
+    const [arena, gid, tid] = await createGame(2, "");
 
     const [master, player] = await ethers.getSigners();
     const am = arena.connect(master)
@@ -443,10 +443,10 @@ describe("Transcript", function () {
     const arena = await Arena.deploy();
     await arena.deployed();
 
-    let tx = await arena.createGame(2);
+    let tx = await arena.createGame(2, "");
     let r = await tx.wait();
-    let gid = r.events[0].args.gid;
-    let tid = r.events[0].args.tid;
+    let gid = r.events[1].args.gid;
+    let tid = r.events[1].args.tid;
     expect(gid).to.equal(1);
     expect(tid).to.equal(1);
 
@@ -489,10 +489,10 @@ describe("Transcript", function () {
     const am = arena.connect(master)
     const ap = arena.connect(player)
 
-    let tx = await am.createGame(2);
+    let tx = await am.createGame(2, "");
     let r = await tx.wait();
-    let gid = r.events[0].args.gid;
-    let tid = r.events[0].args.tid;
+    let gid = r.events[1].args.gid;
+    let tid = r.events[1].args.tid;
     expect(gid).to.equal(1);
     expect(tid).to.equal(1);
 

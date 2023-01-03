@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.9 <0.9.0;
+pragma solidity =0.8.9;
 import "./transcript.sol";
 import "./mapstructure.sol";
 import "./gameid.sol";
@@ -106,7 +106,7 @@ library Games {
     /// ---------------------------
     /// @dev state changing methods
 
-    function _init(Game storage self, uint maxPlayers) internal {
+    function _init(Game storage self, uint maxPlayers, address _msgSender) internal {
 
         if (self.players.length != 0 || self.locationTokens.length != 0) {
             revert IsInitialised();
@@ -116,8 +116,8 @@ library Games {
             revert ZeroMaxPlayers();
         }
         self.maxPlayers = maxPlayers;
-        self.creator = msg.sender;
-        self.master = msg.sender;
+        self.creator = _msgSender;
+        self.master = _msgSender;
 
         self.players.push();
         // Nope: self.locationTokens.push();

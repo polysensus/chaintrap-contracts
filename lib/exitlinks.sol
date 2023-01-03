@@ -2,7 +2,7 @@
 /// @note without other arrangements to commit and reveal the linkages, the room
 /// graph is complately exposed as soon as it is on chain.
 
-pragma solidity >=0.8.9 <0.9.0;
+pragma solidity =0.8.9;
 
 type LocationID is uint16;
 type LinkID is uint16;
