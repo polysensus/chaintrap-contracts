@@ -48,6 +48,7 @@ struct GameStatus {
     /// The 'dungeon' master (often the creator) reveals the result of each player move.
     address master;
 
+    string uri;
     /// maximum number of players
     uint maxPlayers;
     uint numRegistered;

@@ -159,6 +159,7 @@ contract Arena is ERC1155URIStorage, ContextMixin {
     /// @return returns the id for the game
     function createGame(uint maxPlayers, string calldata tokenURI) public returns (GameID) {
 
+        uint256 tokenId = GAME_TYPE | uint256(games.length);
         GameID gid = GameID.wrap(games.length);
 
         games.push();
@@ -170,8 +171,6 @@ contract Arena is ERC1155URIStorage, ContextMixin {
         transcripts[TID.unwrap(tid)]._init(gid);
 
         gid2tid[gid] = tid;
-
-        uint256 tokenId = GAME_TYPE | GameID.unwrap(gid);
 
         _mint(_msgSender(), tokenId, 1, "");
 
@@ -231,6 +230,8 @@ contract Arena is ERC1155URIStorage, ContextMixin {
         GameStatus memory gs;
         gs.creator = g.creator;
         gs.master = g.master;
+
+        gs.uri = uri(GAME_TYPE | GameID.unwrap(id));
         gs.started = g.started;
         gs.completed = g.completed;
 
