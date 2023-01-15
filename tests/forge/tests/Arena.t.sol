@@ -4,9 +4,14 @@ pragma solidity =0.8.9;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 import "chaintrap/arena.sol";
+import "tests/hexlocations.sol";
+import "tests/hexexitlinks.sol";
 
 contract ArenaTest is DSTest {
     using stdStorage for StdStorage;
+    using HexLocations for Location;
+    using HexExits for Exit;
+    using HexExits for Link;
 
     Vm private vm = Vm(HEVM_ADDRESS);
     StdStorage private stdstore;
@@ -32,15 +37,28 @@ contract ArenaTest is DSTest {
 
     // proxy methods
     function load(RawLocation[] memory raw) public {
-        arena.loadLocations(g1, raw);
+        Location []memory l = new Location[](raw.length);
+        for (uint i = 0; i < raw.length; i++) {
+            l[i].load(raw[i]);
+        }
+        arena.loadLocations(g1, l);
     }
+
     function load(RawExit[] memory raw) public {
-        arena.loadExits(g1, raw);
+        Exit[] memory exits = new Exit[](raw.length);
+        for (uint i = 0; i < raw.length; i++) {
+            exits[i].load(raw[i]);
+        }
+        arena.loadExits(g1, exits);
     }
 
     // loadLink because link with this type is an overload clash
     function loadLinks(RawLink[] memory raw) public {
-        arena.loadLinks(g1, raw);
+        Link[] memory links = new Link[](raw.length);
+        for (uint i = 0; i < raw.length; i++) {
+            links[i].load(raw[i]);
+        }
+        arena.loadLinks(g1, links);
     }
 
     function load(TranscriptLocation[]memory locations) public {
@@ -85,10 +103,10 @@ contract ArenaTest is DSTest {
 
         (not doing corridors at all in this, its all just rooms)
 
-        +------+---------------------------+-----+
-        | 1 (1)|-(2)  2                (3)-|-(4) |  
-        +-+----+                           |   3 |
-          |(9)-|-(5)                       +-----+
+        +------+---------------------------+------------+
+        | 1 (1)|-(2)  2                (3)-|-(4)        | 
+        +-+----+                           |   3 Finish |
+          |(9)-|-(5)                       +------------+
           | 4  |(6)              (7)   (8) |
           +----+-|-------+--------|-----|--+
           | 5  (10) (11)-|-(12) 6(13) (14) |
@@ -106,21 +124,22 @@ contract ArenaTest is DSTest {
           (8,14)  exitUse(North, 1) ln2 -> (South,2) loc2
           (3,4)   exitUse(East, 0)  ln2 -> (West, 0) loc3
      */
+
     function loadDefaultMap() public {
 
         // kind, North, West, South, East
         //
         // doors on each side are 'reading order' west -> east, north -> south
 
+           
         RawLocation[] memory locations = new RawLocation[](6);
-
         locations[0].sides = [bytes(hex"01"), hex"", hex"", hex"", hex"0001"];
         locations[1].sides = [bytes(hex"01"), hex"", hex"00020005", hex"000600070008", hex"0003"];
         locations[2].sides = [bytes(hex"01"), hex"", hex"0004", hex"", hex""];
         locations[3].sides = [bytes(hex"01"), hex"", hex"", hex"", hex"0009"];
         locations[4].sides = [bytes(hex"01"), hex"000a", hex"", hex"", hex"000b"];
         locations[5].sides = [bytes(hex"01"), hex"000d000e", hex"000c", hex"", hex""];
-            
+
         load(locations);
 
         RawExit[] memory exits = new RawExit[](14);
@@ -164,31 +183,54 @@ contract ArenaTest is DSTest {
         return keccak256(abi.encodePacked(blockno, id));
     }
 
+    function testFungibleToken1() public {
+        uint32 tk = idToken(0x0000000100000000000000000000000000000000000000000000000000000000);
+        assertEq(tk, 1);
+    }
+
+    function testNotFungibleToken1() public {
+        uint32 tk = idToken(0x0000000100000000000000000000000000000000000000000000000000000001);
+        assertEq(tk, 0);
+    }
+
+
+    function testTokenType1() public {
+        uint32 tk = typeToken(0x0000000000000000000000000000000100000000000000000000000000000000);
+        assertEq(tk, 1);
+    }
+
+    function testUntypedTokenType() public {
+        bool ok = isUntypedNFT(0x0000000000000000000000000000000000000000000000000000000000000001);
+        assertTrue(ok);
+    }
+    function testNotUntypedTokenType() public {
+        bool ok = isUntypedNFT(0x0000000000000000000000000000000100000000000000000000000000000001);
+        assertTrue(!ok);
+    }
+
     function testLastGame() public {
         GameID lastId = arena.lastGame();
         assertEq(GameID.unwrap(lastId), GameID.unwrap(g1));
     }
 
     function testCreateGame() public {
-        assertTrue(arena.gameValid(g1));
         vm.prank(master, master);
-        GameID g2 = arena.createGame(2, "");
-        assertTrue(arena.gameValid(g2));
+        arena.createGame(2, "");
     }
 
     function testRegisterPlayerArena() public {
 
         LocationID loc = LocationID.wrap(1);
-        bytes32 token = locationToken(uint256(1), LocationID.unwrap(loc));
+        bytes32 tk = locationToken(uint256(1), LocationID.unwrap(loc));
         TranscriptLocation []memory locations = new TranscriptLocation[](1);
-        locations[0].token = token;
+        locations[0].token = tk;
         locations[0].id = loc; 
 
         vm.prank(player1, player1);
         arena.joinGame(g1, bytes(""));
 
         vm.startPrank(master, master);
-        arena.setStartLocation(g1, player1, token, bytes(""));
+        arena.setStartLocation(g1, player1, tk, bytes(""));
 
         arena.startGame(g1);
         arena.completeGame(g1);

@@ -2,6 +2,7 @@
 pragma solidity =0.8.9;
 import "./errors.sol";
 import "./locations.sol";
+import "./furnishings.sol";
 import "./gameid.sol";
 
 type TID is uint256;
@@ -18,8 +19,10 @@ error InvalidTID(uint256 id);
 /// @dev errors for transcript entries
 error InvalidTranscriptEntry();
 error InvalidTEID(uint16 id);
-error TEIDNotAnExitUse();
-error TEIDNotAnExitUseOutcome();
+error TEIDNotAnExitUse(uint16 id);
+error TEIDNotAnExitUseOutcome(uint16 id);
+error TEIDNotAFurnitureUse(uint16 id);
+error TEIDNotAFurnitureUseOutcome(uint16 id);
 
 /// Halted is raised if the player attempts to commit another move after the
 /// game master declared them halted.
@@ -62,14 +65,7 @@ struct TranscriptEntry {
     bool halted;
 }
 
-/// @dev each Move that changes location generates a new location token They are
-/// (or will be) derived as a combination of location-id & blocknumber.  This
-/// lets us commit to them in 'allow' without leaking a trace of the map to the
-/// chain. We purposefully do _not_ make it unique to the player - so that when
-/// two players get matching location tokens we know that they are in the same
-/// location at the same time. After the game completes the game master makes a
-/// TranscriptionLocation for each location token in the transcript using their
-/// copy of the map.
+/// @dev each Move that changes location generates a new location token
 struct TranscriptLocation {
     uint256 blocknumber; // ahh, this may need to be #header
     bytes32 token;
@@ -109,6 +105,23 @@ struct ExitUseOutcome{
     bool halt; 
 }
 
+// FurnitureUse represents either a player or a game host playing a token 'card'
+// The 
+struct FurnitureUse {
+    bytes32 token; // this is an opaque salted & blinded value, *not* an nft or fungible
+}
+
+struct FurnitureUseOutcome {
+    // transfer, victory, death etc
+    Furnishings.Kind kind;
+    Furnishings.Effect effect;
+    bytes blob;
+    // It is not necessary to include the location is not necessary. The players
+    // current location is considered when validating the outcome, and it is
+    // used to derive the placement token.  So if the outcome is illegal for the
+    // players location, it will naturaly fail.
+}
+
 struct Transcript {
 
     // Single transcript for all players so that there is an aggreed move ordering.
@@ -120,6 +133,9 @@ struct Transcript {
     // map for every kind of transcript entry so we can have specific types for each
     mapping(TEID => ExitUse) exitUses;
     mapping(TEID => ExitUseOutcome) exitUseOutcomes;
+    mapping(TEID => FurnitureUse) furnitureUses;
+    mapping(TEID => FurnitureUseOutcome) furnitureUseOutcomes;
+
     mapping(address => bool) halted;
     mapping(address => bool) pendingOutcome;
 
@@ -133,13 +149,26 @@ library Transcripts {
     enum MoveKind {
         Undefined,
         ExitUse,
+        FurnitureUse,
         Invalid
+    }
+
+    enum FurnitureUseEffect {
+        Undefined,
+        Victory,
+        Death,
+        Transfer
+
+        // XXX: Damage & Bonus etc require an acceptable random oracle. For now we are russian roulette style
     }
 
     // NOTE: These are duplicated in contract Arena - this is the only way to expose the abi to ethers.js
     event UseExit(GameID indexed gid, TEID eid, address indexed player, ExitUse exitUse); // player is the committer of the tx
     event ExitUsed(GameID indexed gid, TEID eid, address indexed player, ExitUseOutcome outcome);
     event EntryReject(GameID indexed gid, TEID eid, address indexed player, bool halted);
+
+    event UseToken(GameID indexed gid, TEID eid, address indexed player, FurnitureUse use);
+    event FurnitureUsed(GameID indexed gid, TEID eid, address indexed player, FurnitureUseOutcome outcome);
 
     /// ---------------------------
     /// @dev state changing methods
@@ -255,6 +284,52 @@ library Transcripts {
         emit ExitUsed(self.gid, id, self._moves[i].player, outcome);
     }
 
+    function commitFurnitureUse(
+        Transcript storage self, address player, FurnitureUse calldata committed) internal returns (TEID) {
+
+        self.requireNotHalted(player);
+
+        // Until the game host confirms or rejects the previous move for this
+        // player, another move cannot be made.
+        if (self.pendingOutcome[player]) {
+            revert PendingOutcome(player);
+        }
+        self.pendingOutcome[player] = true;
+
+        (Move storage mv, TEID id) = self._allocMove();
+        mv.kind = MoveKind.FurnitureUse;
+        mv.player = player;
+
+        FurnitureUse storage tu = self.furnitureUses[id];
+        tu.token = committed.token;
+
+        emit UseToken(self.gid, id, player, tu); // player is the committer of the tx
+        return id;
+    }
+
+    function allowFurnitureUse(Transcript storage self, TEID id, FurnitureUseOutcome calldata outcome) internal {
+        uint16 i = self.checkedTEIDIndex(id);
+
+        self._outcomes[i].outcomeDeclared = true;
+        self._outcomes[i].moveAccepted = true;
+        if (    outcome.effect == Furnishings.Effect.Victory
+            ||  outcome.effect == Furnishings.Effect.Death) {
+            self._outcomes[i].halted = true;
+            self.halted[self._moves[i].player] = true;
+        }
+
+        // XXX: TODO: Transcripts.FurnitureUseEffect.Transfer
+
+        FurnitureUseOutcome storage o = self.furnitureUseOutcomes[id];
+        o.blob = outcome.blob;
+        o.effect = outcome.effect;
+
+        // Record that the players move is no longer pending
+        self.pendingOutcome[self._moves[i].player] = false;
+
+        emit FurnitureUsed(self.gid, id, self._moves[i].player, outcome);
+    }
+
     /// ---------------------------
     /// @dev state reading methods
 
@@ -262,7 +337,7 @@ library Transcripts {
 
         ExitUse storage u = self.exitUses[id];
         if (u.side == Locations.SideKind.Undefined) {
-            revert TEIDNotAnExitUse();
+            revert TEIDNotAnExitUse(TEID.unwrap(id));
         }
 
         return u;
@@ -272,11 +347,30 @@ library Transcripts {
 
         ExitUseOutcome storage o = self.exitUseOutcomes[id];
         if (o.side == Locations.SideKind.Undefined) {
-            revert TEIDNotAnExitUse();
+            revert TEIDNotAnExitUse(TEID.unwrap(id));
         }
 
         return o;
     }
+
+    function furnitureUse(Transcript storage self, TEID id) internal view returns (FurnitureUse storage) {
+
+        FurnitureUse storage u = self.furnitureUses[id];
+        if (u.token == 0) {
+            revert TEIDNotAFurnitureUse(TEID.unwrap(id));
+        }
+        return u;
+    }
+
+    function furnitureUseOutcome(Transcript storage self, TEID id) internal view returns (FurnitureUseOutcome storage) {
+
+        FurnitureUseOutcome storage o = self.furnitureUseOutcomes[id];
+        if (o.effect == Furnishings.Effect.Undefined) {
+            revert TEIDNotAFurnitureUse(TEID.unwrap(id));
+        }
+        return o;
+    }
+
 
     /// ---------------------------
     /// @dev transcript enumeration. using an enumeration api so that we don't

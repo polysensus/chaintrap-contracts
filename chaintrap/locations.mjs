@@ -1,14 +1,15 @@
 import {ethers} from 'ethers';
+import { locationSides } from './chaintrap.mjs';
 const bytes = ethers.utils.arrayify;
 
-class Kind {
+export class Kind {
     static Undefined = 0;
     static Room = 1;
     static Intersection = 2;
     static Corridor = 3;
 }
 
-class SideKind {
+export class SideKind {
     static Undefined = 0;
     static North = 1;
     static West = 2;
@@ -22,7 +23,35 @@ export class Locations {
     static SideKind = SideKind;
 }
 
-export class RawLocation {
+export class Location {
+
+    static fromHex(kind, north, west, south, east) {
+
+        const hexsides = [north, west, south, east];
+        const sides = [[], [], [], []];
+        for (var i = 0; i < hexsides.length; i++) {
+            if (hexsides[i].length === 0) continue;
+
+            var b = ethers.utils.arrayify(hexsides[i])
+            for (var j = 0; j < b.length >> 1; j++) {
+                var exitID = b[j*2+0] << 8 | b[j*2+1];
+                sides[i].push(exitID);
+            }
+        }
+        return new Location(parseInt(kind, 16), sides);
+    }
+
+    constructor(kind, sides) {
+        this.kind = kind;
+        if (!sides) sides = [[], [], [], []];
+        this.sides = sides;
+    }
+    native() {
+        return [this.kind, this.sides];
+    }
+}
+
+class RawLocation {
 
     constructor(kind, north, west, south, east) {
 

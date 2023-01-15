@@ -19,10 +19,22 @@ tasks:
         forge build
         npm run prepare
         npm run build
+
   test:
     desc: run the forge and hardhat tests
     cmds:
-      - forge test -vvv && npx hardhat test
+      - task: test:forge
+      - task: test:hh
+
+  test:forge:
+    desc: run the forge tests
+    cmds:
+      - forge test -vvv
+
+  test:hh:
+    desc: run the hardhat tests
+    cmds:
+      - npx hardhat test
 
   deploy:
     cmds:

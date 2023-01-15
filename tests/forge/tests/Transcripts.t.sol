@@ -5,7 +5,10 @@ import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 import "lib/locations.sol";
 import "lib/transcript.sol";
+import "lib/tokenid.sol";
 import "lib/game.sol";
+import "tests/hexlocations.sol";
+import "tests/hexexitlinks.sol";
 
 contract Factory {
 
@@ -13,15 +16,21 @@ contract Factory {
 
     using Transcripts for Transcript;
     using Games for Game;
+    using HexLocations for Location;
+    using HexExits for Exit;
+    using HexExits for Link;
 
     Transcript[] trans;
     Game[] games;
+    Furniture[] furniture;
 
     constructor () {
         trans.push();
         trans[0]._init(GameID.wrap(0));
         games.push();
-        games[0]._init(2, address(this));
+
+        // This creates an invalid tokenId for the undefined games[0] entry
+        games[0]._init(2, address(this), TokenID.GAME_TYPE | (games.length - 1));
     }
 
     function reset() public {
@@ -41,8 +50,10 @@ contract Factory {
     function push() public {
         trans.push();
         trans[trans.length - 1]._init(GameID.wrap(games.length));
+
+        uint256 tokenId = TokenID.GAME_TYPE | games.length;
         games.push();
-        games[games.length - 1]._init(2, address(this));
+        games[games.length - 1]._init(2, address(this), tokenId);
     }
 
     // utility methods based on the proxy methods
@@ -140,15 +151,16 @@ contract Factory {
     }
 
     // proxy methods
-    function load(RawLocation[] calldata raw) public {
+    function load(Location[] calldata raw) public {
         headGame().load(raw);
     }
-    function load(RawExit[] calldata raw) public {
+ 
+    function load(Exit[] calldata raw) public {
         headGame().load(raw);
     }
 
     // loadLink because link with this type is an overload clash
-    function loadLinks(RawLink[] calldata raw) public {
+    function loadLinks(Link[] calldata raw) public {
         headGame().load(raw);
     }
 
@@ -179,11 +191,11 @@ contract Factory {
 
     // playback and enumeration
     function playCurrentTranscript() public  returns (TEID){
-        return headGame().playTranscript(trans[trans.length-1]);
+        return headGame().playTranscript(trans[trans.length-1], furniture);
     }
 
     function playCurrentTranscript(TEID cur, TEID end) public returns (TEID) {
-        return headGame().playTranscript(trans[trans.length-1], cur, end);
+        return headGame().playTranscript(trans[trans.length-1], furniture, cur, end);
     }
 
     function enumerateCurrentTranscript() public view {
@@ -234,7 +246,9 @@ contract Factory {
 
 contract TranscriptTest is DSTest {
     using stdStorage for StdStorage;
-    using Locations for Location;
+    using HexLocations for Location;
+    using HexExits for Exit;
+    using HexExits for Link;
 
     Vm private vm = Vm(HEVM_ADDRESS);
     Location[] private locs;
@@ -250,6 +264,32 @@ contract TranscriptTest is DSTest {
         locs.push(); // id zero should be invalid always
         f = new Factory();
         blockNumberForLocationTokens = 1;
+    }
+
+    function load(RawLocation[] memory raw) public {
+        Location[] memory tmp = new Location[](raw.length);
+
+        for (uint i=0; i<raw.length; i++) {
+            tmp[i].load(raw[i]);
+        }
+        f.load(tmp);
+    }
+
+    function load(RawExit[] memory raw) public {
+        Exit[] memory tmp = new Exit[](raw.length);
+        for (uint i=0; i<raw.length; i++) {
+            tmp[i].load(raw[i]);
+        }
+        f.load(tmp);
+    }
+
+    // loadLink because link with this type is an overload clash
+    function loadLinks(RawLink[] memory raw) public {
+        Link[] memory tmp = new Link[](raw.length);
+        for (uint i=0; i<raw.length; i++) {
+            tmp[i].load(raw[i]);
+        }
+        f.loadLinks(tmp);
     }
 
     /// XXX: TODO move these to Arena.t.sol
@@ -294,7 +334,7 @@ contract TranscriptTest is DSTest {
         locations[4].sides = [bytes(hex"01"), hex"000a",     hex"",         hex"",             hex"000b"];
         locations[5].sides = [bytes(hex"01"), hex"000d000e", hex"000c",     hex"",             hex""];
             
-        f.load(locations);
+        load(locations);
 
         RawExit[] memory exits = new RawExit[](14);
         // room 1
@@ -319,7 +359,7 @@ contract TranscriptTest is DSTest {
         exits[12] = RawExit(hex"00050006"); // e13
         exits[13] = RawExit(hex"00060006"); // e14
 
-        f.load(exits);
+        load(exits);
 
         RawLink[] memory links = new RawLink[](7);
         links[0] = RawLink(hex"0100010002"); // (1)-(2) ln1
@@ -330,7 +370,7 @@ contract TranscriptTest is DSTest {
         links[5] = RawLink(hex"010008000e"); // (8)-(14) ln6
         links[6] = RawLink(hex"01000b000c"); // (11)-(12) ln7
 
-        f.loadLinks(links);
+        loadLinks(links);
     }
 
     // allow for tokens which represent two players at the same place and time
@@ -381,7 +421,7 @@ contract TranscriptTest is DSTest {
 
         f.start();
         f.complete();
-        f.load(locations);
+        load(locations);
 
         Location memory loc;
         loc.kind = Locations.Kind.Room;
@@ -400,7 +440,7 @@ contract TranscriptTest is DSTest {
 
         f.start();
         f.complete();
-        f.load(exits);
+        load(exits);
 
         Exit memory exit;
         exit.link = LinkID.wrap(1);
@@ -420,7 +460,7 @@ contract TranscriptTest is DSTest {
 
         f.start();
         f.complete();
-        f.loadLinks(links);
+        loadLinks(links);
 
         assertTrue(f.linkEq(LinkID.wrap(1), ln));
     }

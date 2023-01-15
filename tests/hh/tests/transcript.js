@@ -49,12 +49,12 @@ async function loadDefaultMap(arena, gid) {
   const chaintrap = await _chaintrap;
 
   const locations = [
-    new chaintrap.RawLocation("0x01", "",           "",           "",               "0x0001"),
-    new chaintrap.RawLocation("0x01", "",           "0x00020005", "0x000600070008", "0x0003"),
-    new chaintrap.RawLocation("0x01", "",           "0x0004",     "",               ""),
-    new chaintrap.RawLocation("0x01", "",           "",           "",               "0x0009"),
-    new chaintrap.RawLocation("0x01", "0x000a",     "",           "",               "0x000b"),
-    new chaintrap.RawLocation("0x01", "0x000d000e", "0x000c",     "",               ""),
+    chaintrap.Location.fromHex("0x01", "",           "",           "",               "0x0001").native(),
+    chaintrap.Location.fromHex("0x01", "",           "0x00020005", "0x000600070008", "0x0003").native(),
+    chaintrap.Location.fromHex("0x01", "",           "0x0004",     "",               "").native(),
+    chaintrap.Location.fromHex("0x01", "",           "",           "",               "0x0009").native(),
+    chaintrap.Location.fromHex("0x01", "0x000a",     "",           "",               "0x000b").native(),
+    chaintrap.Location.fromHex("0x01", "0x000d000e", "0x000c",     "",               "").native(),
   ];
 
   let tx = await arena.loadLocations(gid, locations);
@@ -63,39 +63,39 @@ async function loadDefaultMap(arena, gid) {
 
   const exits = [
     // room 1
-    new chaintrap.RawExit("0x00010001"), // e1
+    chaintrap.Exit.fromHex("0x00010001").native(), // e1
     // room 2
-    new chaintrap.RawExit("0x00010002"), // e2
-    new chaintrap.RawExit("0x00020002"), // e3
+    chaintrap.Exit.fromHex("0x00010002").native(), // e2
+    chaintrap.Exit.fromHex("0x00020002").native(), // e3
     // room 3
-    new chaintrap.RawExit("0x00020003"), // e4
+    chaintrap.Exit.fromHex("0x00020003").native(), // e4
     // room 2
-    new chaintrap.RawExit("0x00030002"), // e5
-    new chaintrap.RawExit("0x00040002"), // e6
-    new chaintrap.RawExit("0x00050002"), // e7
-    new chaintrap.RawExit("0x00060002"), // e8
+    chaintrap.Exit.fromHex("0x00030002").native(), // e5
+    chaintrap.Exit.fromHex("0x00040002").native(), // e6
+    chaintrap.Exit.fromHex("0x00050002").native(), // e7
+    chaintrap.Exit.fromHex("0x00060002").native(), // e8
     // room 4
-    new chaintrap.RawExit("0x00030004"), // e9
+    chaintrap.Exit.fromHex("0x00030004").native(), // e9
     // room 5
-    new chaintrap.RawExit("0x00040005"), // e10
-    new chaintrap.RawExit("0x00070005"), // e11
+    chaintrap.Exit.fromHex("0x00040005").native(), // e10
+    chaintrap.Exit.fromHex("0x00070005").native(), // e11
     // room 6
-    new chaintrap.RawExit("0x00070006"), // e12
-    new chaintrap.RawExit("0x00050006"), // e13
-    new chaintrap.RawExit("0x00060006"), // e14
+    chaintrap.Exit.fromHex("0x00070006").native(), // e12
+    chaintrap.Exit.fromHex("0x00050006").native(), // e13
+    chaintrap.Exit.fromHex("0x00060006").native(), // e14
   ];
   tx = await arena.loadExits(gid, exits);
   r = await tx.wait();
   expect(r.status).to.equal(1);
 
   const links = [
-    new chaintrap.RawLink("0x0100010002"), // (1)-(2) ln1
-    new chaintrap.RawLink("0x0100030004"), // (3)-(4) ln2
-    new chaintrap.RawLink("0x0100050009"), // (5)-(9) ln3
-    new chaintrap.RawLink("0x010006000a"), // (6)-(10) ln4
-    new chaintrap.RawLink("0x010007000d"), // (7)-(13) ln5
-    new chaintrap.RawLink("0x010008000e"), // (8)-(14) ln6
-    new chaintrap.RawLink("0x01000b000c") // (11)-(12) ln7
+    chaintrap.Link.fromHex("0x0100010002").native(), // (1)-(2) ln1
+    chaintrap.Link.fromHex("0x0100030004").native(), // (3)-(4) ln2
+    chaintrap.Link.fromHex("0x0100050009").native(), // (5)-(9) ln3
+    chaintrap.Link.fromHex("0x010006000a").native(), // (6)-(10) ln4
+    chaintrap.Link.fromHex("0x010007000d").native(), // (7)-(13) ln5
+    chaintrap.Link.fromHex("0x010008000e").native(), // (8)-(14) ln6
+    chaintrap.Link.fromHex("0x01000b000c").native() // (11)-(12) ln7
   ];
 
   tx = await arena.loadLinks(gid, links);
@@ -115,7 +115,7 @@ async function createGame() {
     arena = arena.connect(master)
     let tx = await arena.createGame(2, "");
     let r = await tx.wait();
-    const gid = r.events[1].args.gid;
+    const gid = r.events[0].args.gid;
     return [arena, gid];
 }
 
@@ -132,8 +132,8 @@ class Game {
 
     let tx = await arena.createGame(2, "");
     let r = await tx.wait();
-    const gid = r.events[1].args.gid;
-    const tid = r.events[1].args.tid;
+    const gid = r.events[0].args.gid;
+    const tid = r.events[0].args.tid;
 
     return new Game(new chaintrap.Game(arena, gid, tid));
   }
@@ -226,7 +226,7 @@ describe("Transcript", function () {
 
     let tx = await arena.createGame(2, "");
     let r = await tx.wait();
-    const gid = r.events[1].args.gid;
+    const gid = r.events[0].args.gid;
 
     tx = await arena.startGame(gid);
     r = await tx.wait();
@@ -237,7 +237,7 @@ describe("Transcript", function () {
     expect(r.status).to.equal(1);
 
     const locations = [
-      new chaintrap.RawLocation("0x01", [], [], [], "0x0001")
+      chaintrap.Location.fromHex("0x01", "", "", "", "0x0001").native()
     ];
 
     tx = await arena.loadLocations(gid, locations);
@@ -253,8 +253,8 @@ describe("Transcript", function () {
 
     let tx = await arena.createGame(2, "");
     let r = await tx.wait();
-    const gid = r.events[1].args.gid;
-    const tid = r.events[1].args.tid;
+    const gid = r.events[0].args.gid;
+    const tid = r.events[0].args.tid;
 
     tx = await arena.startGame(gid);
     r = await tx.wait();
@@ -445,8 +445,8 @@ describe("Transcript", function () {
 
     let tx = await arena.createGame(2, "");
     let r = await tx.wait();
-    let gid = r.events[1].args.gid;
-    let tid = r.events[1].args.tid;
+    let gid = r.events[0].args.gid;
+    let tid = r.events[0].args.tid;
     expect(gid).to.equal(1);
     expect(tid).to.equal(1);
 
@@ -491,8 +491,8 @@ describe("Transcript", function () {
 
     let tx = await am.createGame(2, "");
     let r = await tx.wait();
-    let gid = r.events[1].args.gid;
-    let tid = r.events[1].args.tid;
+    let gid = r.events[0].args.gid;
+    let tid = r.events[0].args.tid;
     expect(gid).to.equal(1);
     expect(tid).to.equal(1);
 

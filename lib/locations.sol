@@ -24,17 +24,6 @@ struct Location {
 
     /// @dev corridors have no exits in any side.
     ExitID[][4] sides; /* a static array of sides length 4 each with varaible exits */
-    /// @dev TODO just work with byte strings where each two byte element is a big endian uint16
-}
-
-error InvalidRawLocationKind();
-error RawSidesMustBeEvenLength(uint length);
-error ToManyExitsForSide();
-
-struct RawLocation {
-    /// @dev the first 'side' is a single byte identifying the kind. the subsequent 4 sides are byte arrays
-    /// where each two successive items are the uint16 big-endian exit id's
-    bytes [5]sides;
 }
 
 library Locations {
@@ -45,37 +34,15 @@ library Locations {
 
     /// ---------------------------
     /// @dev state changing methods - loading
-    function kind(RawLocation calldata self) internal pure returns (Locations.Kind) {
-        if (self.sides[0].length > 1 || self.sides[0].length == 0) {
-            revert InvalidRawLocationKind();
-        }
-        if (self.sides[0][0] == 0 || uint8(self.sides[0][0]) >= uint8(Locations.Kind.Invalid)) {
-            revert InvalidRawLocationKind();
-        }
-        return Locations.Kind(uint8(self.sides[0][0]));
-    }
-
-    function setSides(ExitID[] storage sides, bytes calldata rawSides) internal {
-        if (rawSides.length % 2 != 0) {
-            revert RawSidesMustBeEvenLength(rawSides.length);
-        }
-        if (rawSides.length >= 256 * 2) {
-            revert ToManyExitsForSide();
-        }
-
-        for (uint i=0; i<rawSides.length; i+=2 ) {
-
-            uint16 id = uint16(uint8(rawSides[i+0])) << 8;
-            id |= uint8(rawSides[i+1]);
-            sides.push(ExitID.wrap(id));
-        }
-    }
-
-    function load(Location storage self, RawLocation calldata raw) internal {
-        self.kind = kind(raw);
+    function load(Location storage self, Location calldata other) internal {
+        self.kind = other.kind;
 
         for (uint i=0; i<4; i++) {
-            setSides(self.sides[i], raw.sides[i+1]);
+            if (other.sides[i].length == 0) continue;
+            self.sides[i] = new ExitID[](other.sides[i].length);
+            for (uint j=0; j < other.sides[i].length; j ++) {
+                self.sides[i][j] = other.sides[i][j];
+            }
         }
     }
 
