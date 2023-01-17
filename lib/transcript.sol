@@ -13,6 +13,7 @@ TEID constant invalidTEID = TEID.wrap(0);
 
 /// @dev due to how the enumeration `next` method works, the initial cur value must be 0
 TEID constant cursorStart = TEID.wrap(0);
+TEID constant cursorUntilEnd = TEID.wrap(0);
 
 error InvalidTID(uint256 id);
 
@@ -116,6 +117,7 @@ struct FurnitureUseOutcome {
     Furnishings.Kind kind;
     Furnishings.Effect effect;
     bytes blob;
+    bool halt;
     // It is not necessary to include the location is not necessary. The players
     // current location is considered when validating the outcome, and it is
     // used to derive the placement token.  So if the outcome is illegal for the
@@ -136,7 +138,7 @@ struct Transcript {
     mapping(TEID => FurnitureUse) furnitureUses;
     mapping(TEID => FurnitureUseOutcome) furnitureUseOutcomes;
 
-    mapping(address => bool) halted;
+    mapping(address => TEID) halted;
     mapping(address => bool) pendingOutcome;
 
     GameID gid;
@@ -183,6 +185,10 @@ library Transcripts {
         self.gid = gid;
     }
 
+    function haltedAt(Transcript storage self, address player) internal view returns (TEID) {
+        return self.halted[player];
+    }
+
     function reject(Transcript storage self, TEID id) internal {
         uint16 i = self.checkedTEIDIndex(id);
 
@@ -202,7 +208,7 @@ library Transcripts {
         self._outcomes[i].outcomeDeclared = true;
         self._outcomes[i].moveAccepted = false;
         self._outcomes[i].halted = true;
-        self.halted[self._moves[i].player] = true;
+        self.halted[self._moves[i].player] = id;
 
         // Record that the players move is no longer pending
         self.pendingOutcome[self._moves[i].player] = false;
@@ -216,7 +222,7 @@ library Transcripts {
         self._outcomes[i].outcomeDeclared = true;
         self._outcomes[i].moveAccepted = true;
         self._outcomes[i].halted = true;
-        self.halted[self._moves[i].player] = true;
+        self.halted[self._moves[i].player] = id;
 
         // Record that the players move is no longer pending
         self.pendingOutcome[self._moves[i].player] = false;
@@ -268,7 +274,7 @@ library Transcripts {
         self._outcomes[i].moveAccepted = true;
         if (outcome.halt) {
             self._outcomes[i].halted = true;
-            self.halted[self._moves[i].player] = true;
+            self.halted[self._moves[i].player] = id;
         }
 
         ExitUseOutcome storage o = self.exitUseOutcomes[id];
@@ -312,17 +318,18 @@ library Transcripts {
 
         self._outcomes[i].outcomeDeclared = true;
         self._outcomes[i].moveAccepted = true;
-        if (    outcome.effect == Furnishings.Effect.Victory
-            ||  outcome.effect == Furnishings.Effect.Death) {
+        if (outcome.halt) {
             self._outcomes[i].halted = true;
-            self.halted[self._moves[i].player] = true;
+            self.halted[self._moves[i].player] = id;
         }
 
         // XXX: TODO: Transcripts.FurnitureUseEffect.Transfer
 
         FurnitureUseOutcome storage o = self.furnitureUseOutcomes[id];
         o.blob = outcome.blob;
+        o.kind = outcome.kind;
         o.effect = outcome.effect;
+        o.halt = outcome.halt;
 
         // Record that the players move is no longer pending
         self.pendingOutcome[self._moves[i].player] = false;
@@ -400,7 +407,7 @@ library Transcripts {
                 id = TEID.wrap(i);
                 te.player = self._moves[i].player;
                 te.kind = self._moves[i].kind;
-                te.halted = self.halted[te.player];
+                te.halted = (TEID.unwrap(self.halted[te.player]) == i);
                 break;
             }
         }
@@ -419,7 +426,7 @@ library Transcripts {
     }
 
     function requireNotHalted(Transcript storage self, address player) internal view {
-        if (self.halted[player] == true) {
+        if (TEID.unwrap(self.halted[player]) != 0) {
             revert Halted(player);
         }
     }

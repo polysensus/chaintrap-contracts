@@ -42,28 +42,34 @@ contract Arena is ERC1155URIStorage, Ownable, ContextMixin {
 
     // The following events are emitted by transcript playback to reveal the full narative of the game
     event TranscriptPlayerEnteredLocation(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed entered, ExitID enteredVia, LocationID left, ExitID leftVia
+        uint256 indexed gameId, TEID eid, address indexed player,
+        LocationID indexed entered, ExitID enteredVia, LocationID left, ExitID leftVia
         );
 
     event TranscriptPlayerKilledByTrap(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture
+        uint256 indexed gameId, TEID eid, address indexed player,
+        LocationID indexed location, uint256 furniture
     );
 
     event TranscriptPlayerDied(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture
+        uint256 indexed gameId, TEID eid, address indexed player,
+        LocationID indexed location, uint256 furniture
     );
 
     event TranscriptPlayerGainedLife(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture
+        uint256 indexed gameId, TEID eid, address indexed player,
+        LocationID indexed location, uint256 furniture
     );
 
     // only when player.lives > 0
     event TranscriptPlayerLostLife(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture
+        uint256 indexed gameId, TEID eid, address indexed player,
+        LocationID indexed location, uint256 furniture
     );
 
     event TranscriptPlayerVictory(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture
+        uint256 indexed gameId, TEID eid, address indexed player,
+        LocationID indexed location, uint256 furniture
     );
 
     Game[] games;
@@ -359,16 +365,8 @@ contract Arena is ERC1155URIStorage, Ownable, ContextMixin {
 
     function gameStatus(GameID id) public view returns (GameStatus memory) {
         Game storage g = game(id);
-        GameStatus memory gs;
-        gs.creator = g.creator;
-        gs.master = g.master;
-
-        gs.uri = uri(TokenID.GAME_TYPE | GameID.unwrap(id));
-        gs.started = g.started;
-        gs.completed = g.completed;
-
-        gs.maxPlayers = g.maxPlayers;
-        gs.numRegistered = g.players.length - 1;
+        GameStatus memory gs = g.status();
+        gs.uri = uri(g.id);
         return gs;
     }
 

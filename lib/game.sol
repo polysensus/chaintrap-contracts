@@ -107,6 +107,7 @@ struct Game {
 }
 
 struct GameStatus {
+    uint256 id;
     /// The creator of the game gets a payout provide the game is completed by
     /// at least one player.
     address creator;
@@ -155,6 +156,10 @@ library Games {
 
     event TranscriptPlayerVictory(
         uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture
+    );
+    event TranscriptPlayerUsedFurniture(
+        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture,
+        Furnishings.Kind kind, Furnishings.Effect effect
     );
 
     /// ---------------------------
@@ -207,6 +212,21 @@ library Games {
             return false;
         }
         return true;
+    }
+
+    function status(Game storage self) internal view returns (GameStatus memory) {
+        GameStatus memory gs;
+        gs.id = self.id;
+        gs.creator = self.creator;
+        gs.master = self.master;
+
+        // gs.uri = uri(self.id);
+        gs.started = self.started;
+        gs.completed = self.completed;
+
+        gs.maxPlayers = self.maxPlayers;
+        gs.numRegistered = self.players.length - 1;
+        return gs;
     }
 
     /// @dev to enable a re-load (in the event of error during load for example)
@@ -264,7 +284,7 @@ library Games {
 
     function setStartLocation(
         Game storage self, address p, bytes32 startLocation, bytes calldata sceneblob
-        ) hasNotStarted(self) internal {
+        ) hasNotCompleted(self) hasNotStarted(self) internal {
 
         uint8 i = self.iplayers[p];
 
@@ -295,7 +315,7 @@ library Games {
     /// @param furnitureId furniture nft id, sender must be the owner, must be FURNITURE_TYPE
     function placeFurniture(
         Game storage self, bytes32 placement, uint256 furnitureId
-    ) hasNotStarted(self) internal {
+    ) hasNotCompleted(self) hasNotStarted(self) internal {
         requireType(furnitureId, TokenID.FURNITURE_TYPE);
         self.placedTokens.push(placement);
         self.placements[placement] = furnitureId;
@@ -479,9 +499,12 @@ library Games {
         }
         if (!effectOk) revert TranscriptFurnitureOutcomeEffectInvalid(cur, id, o.effect);
 
+        emit TranscriptPlayerUsedFurniture(self.id, cur, p.addr, p.loc, id, o.kind, o.effect);
+
         if(o.effect == Furnishings.Effect.Victory) {
             if (!te.halted) revert TranscriptFurnitureShouldHaveHalted(cur, id, o.kind, o.effect);
             emit TranscriptPlayerVictory(self.id, cur, p.addr, p.loc, id);
+            return;
         }
         if(o.effect == Furnishings.Effect.Death) {
             if (p.lives > 0) {
@@ -495,6 +518,7 @@ library Games {
                 else
                     emit TranscriptPlayerDied(self.id, cur, p.addr, p.loc, id);
             }
+            return;
         }
 
         if (o.effect == Furnishings.Effect.FreeLife) {
