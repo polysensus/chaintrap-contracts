@@ -34,14 +34,13 @@ error Halted(address player);
 /// previous move has been accepted by the host
 error PendingOutcome(address player);
 
-struct Move {
-    // Elements common to all transcript entry kinds can go  in here
+struct Commitment {
+
+    // Player commitment, the values are commited by the participant
     address player;
     Transcripts.MoveKind kind;
-}
 
-struct Outcome {
-    // GameTranscripts.EntryKind kind; kind is obtained from the associated move record
+    // Game owner commitment, the values are committed by the game master.
 
     /// @dev The outcome record is created by the player's initial move.
     /// outcomeDeclared is set to true when the game master process the move and
@@ -129,8 +128,7 @@ struct Transcript {
     // Single transcript for all players so that there is an aggreed move ordering.
     // This is significant if the map state is shared between players.
 
-    Move[]_moves;
-    Outcome[]_outcomes;
+    Commitment[]entries;
 
     // map for every kind of transcript entry so we can have specific types for each
     mapping(TEID => ExitUse) exitUses;
@@ -177,11 +175,10 @@ library Transcripts {
 
     // global initialisation & reset
     function _init(Transcript storage self, GameID gid) internal {
-        if (self._moves.length != 0 || self._outcomes.length != 0) {
+        if (self.entries.length != 0) {
             revert IsInitialised();
         }
-        self._moves.push();
-        self._outcomes.push();
+        self.entries.push();
         self.gid = gid;
     }
 
@@ -192,54 +189,53 @@ library Transcripts {
     function reject(Transcript storage self, TEID id) internal {
         uint16 i = self.checkedTEIDIndex(id);
 
-        self._outcomes[i].outcomeDeclared = true;
-        self._outcomes[i].moveAccepted = false;
+        self.entries[i].outcomeDeclared = true;
+        self.entries[i].moveAccepted = false;
 
         // Record that the players move is no longer pending
-        self.pendingOutcome[self._moves[i].player] = false;
+        self.pendingOutcome[self.entries[i].player] = false;
 
-        emit EntryReject(self.gid, id, self._moves[i].player, false /*halted*/);
+        emit EntryReject(self.gid, id, self.entries[i].player, false /*halted*/);
     }
 
     /// @dev typically reject and halt is used to stop griefing
     function rejectAndHalt(Transcript storage self, TEID id) internal {
         uint16 i = self.checkedTEIDIndex(id);
 
-        self._outcomes[i].outcomeDeclared = true;
-        self._outcomes[i].moveAccepted = false;
-        self._outcomes[i].halted = true;
-        self.halted[self._moves[i].player] = id;
+        self.entries[i].outcomeDeclared = true;
+        self.entries[i].moveAccepted = false;
+        self.entries[i].halted = true;
+        self.halted[self.entries[i].player] = id;
 
         // Record that the players move is no longer pending
-        self.pendingOutcome[self._moves[i].player] = false;
-        emit EntryReject(self.gid, id, self._moves[i].player, true /*halted*/);
+        self.pendingOutcome[self.entries[i].player] = false;
+        emit EntryReject(self.gid, id, self.entries[i].player, true /*halted*/);
     }
 
 
     function allowAndHalt(Transcript storage self, TEID id) internal {
         uint16 i = self.checkedTEIDIndex(id);
 
-        self._outcomes[i].outcomeDeclared = true;
-        self._outcomes[i].moveAccepted = true;
-        self._outcomes[i].halted = true;
-        self.halted[self._moves[i].player] = id;
+        self.entries[i].outcomeDeclared = true;
+        self.entries[i].moveAccepted = true;
+        self.entries[i].halted = true;
+        self.halted[self.entries[i].player] = id;
 
         // Record that the players move is no longer pending
-        self.pendingOutcome[self._moves[i].player] = false;
+        self.pendingOutcome[self.entries[i].player] = false;
     }
 
     /// ---------------------------
     /// @dev Move type specific commit & allow methods
 
-    function _allocMove(Transcript storage self) internal returns (Move storage, TEID) {
-        if (self._moves.length >= type(uint16).max) {
+    function _allocMove(Transcript storage self) internal returns (Commitment storage, TEID) {
+        if (self.entries.length >= type(uint16).max) {
             revert IDExhaustion();
         }
-        uint16 i = uint16(self._moves.length);
-        self._moves.push();
-        self._outcomes.push(); // critical that we create this at the same time.
+        uint16 i = uint16(self.entries.length);
+        self.entries.push();
 
-        return (self._moves[i], TEID.wrap(i));
+        return (self.entries[i], TEID.wrap(i));
     }
 
     function commitExitUse(
@@ -254,9 +250,9 @@ library Transcripts {
         }
         self.pendingOutcome[player] = true;
 
-        (Move storage mv, TEID id) = self._allocMove();
-        mv.kind = MoveKind.ExitUse;
-        mv.player = player;
+        (Commitment storage co, TEID id) = self._allocMove();
+        co.kind = MoveKind.ExitUse;
+        co.player = player;
 
         ExitUse storage eu = self.exitUses[id];
         eu.side = committed.side;
@@ -270,11 +266,11 @@ library Transcripts {
     function allowExitUse(Transcript storage self, TEID id, ExitUseOutcome calldata outcome) internal {
         uint16 i = self.checkedTEIDIndex(id);
 
-        self._outcomes[i].outcomeDeclared = true;
-        self._outcomes[i].moveAccepted = true;
+        self.entries[i].outcomeDeclared = true;
+        self.entries[i].moveAccepted = true;
         if (outcome.halt) {
-            self._outcomes[i].halted = true;
-            self.halted[self._moves[i].player] = id;
+            self.entries[i].halted = true;
+            self.halted[self.entries[i].player] = id;
         }
 
         ExitUseOutcome storage o = self.exitUseOutcomes[id];
@@ -285,9 +281,9 @@ library Transcripts {
         o.halt = outcome.halt;
 
         // Record that the players move is no longer pending
-        self.pendingOutcome[self._moves[i].player] = false;
+        self.pendingOutcome[self.entries[i].player] = false;
 
-        emit ExitUsed(self.gid, id, self._moves[i].player, outcome);
+        emit ExitUsed(self.gid, id, self.entries[i].player, outcome);
     }
 
     function commitFurnitureUse(
@@ -302,9 +298,9 @@ library Transcripts {
         }
         self.pendingOutcome[player] = true;
 
-        (Move storage mv, TEID id) = self._allocMove();
-        mv.kind = MoveKind.FurnitureUse;
-        mv.player = player;
+        (Commitment storage co, TEID id) = self._allocMove();
+        co.kind = MoveKind.FurnitureUse;
+        co.player = player;
 
         FurnitureUse storage tu = self.furnitureUses[id];
         tu.token = committed.token;
@@ -316,11 +312,11 @@ library Transcripts {
     function allowFurnitureUse(Transcript storage self, TEID id, FurnitureUseOutcome calldata outcome) internal {
         uint16 i = self.checkedTEIDIndex(id);
 
-        self._outcomes[i].outcomeDeclared = true;
-        self._outcomes[i].moveAccepted = true;
+        self.entries[i].outcomeDeclared = true;
+        self.entries[i].moveAccepted = true;
         if (outcome.halt) {
-            self._outcomes[i].halted = true;
-            self.halted[self._moves[i].player] = id;
+            self.entries[i].halted = true;
+            self.halted[self.entries[i].player] = id;
         }
 
         // XXX: TODO: Transcripts.FurnitureUseEffect.Transfer
@@ -332,9 +328,9 @@ library Transcripts {
         o.halt = outcome.halt;
 
         // Record that the players move is no longer pending
-        self.pendingOutcome[self._moves[i].player] = false;
+        self.pendingOutcome[self.entries[i].player] = false;
 
-        emit FurnitureUsed(self.gid, id, self._moves[i].player, outcome);
+        emit FurnitureUsed(self.gid, id, self.entries[i].player, outcome);
     }
 
     /// ---------------------------
@@ -402,11 +398,11 @@ library Transcripts {
 
         uint16 i = self.checkedTEIDCursorIndex(cur) + 1;
 
-        for (; i < self._outcomes.length; i++) {
-            if (self._outcomes[i].outcomeDeclared && self._outcomes[i].moveAccepted) {
+        for (; i < self.entries.length; i++) {
+            if (self.entries[i].outcomeDeclared && self.entries[i].moveAccepted) {
                 id = TEID.wrap(i);
-                te.player = self._moves[i].player;
-                te.kind = self._moves[i].kind;
+                te.player = self.entries[i].player;
+                te.kind = self.entries[i].kind;
                 te.halted = (TEID.unwrap(self.halted[te.player]) == i);
                 break;
             }
@@ -414,13 +410,13 @@ library Transcripts {
 
         // if the last entry is rejected then we will enter next() and initialise i to 
         // self._outcomems.length due to  cur + 1
-        return (id, te, i >= self._outcomes.length - 1);
+        return (id, te, i >= self.entries.length - 1);
     }
 
 
     // checks and requires
     function requireValidTEID(Transcript storage self, uint16 i) internal view {
-        if (i == 0 || i >= self._outcomes.length) {
+        if (i == 0 || i >= self.entries.length) {
             revert InvalidTranscriptEntry();
         }
     }
@@ -442,10 +438,10 @@ library Transcripts {
         uint16 i = TEID.unwrap(id);
 
         // i==0 is cursorStart so can't use requireValidTEID, and also note we
-        // require i < self._outcomes.length - 1. The first element in _outcomes
+        // require i < self.entries.length - 1. The first element in _outcomes
         // is always the 'null' entry, so for the single valid outcome case we
         // will have length==2
-        if (!(i < self._outcomes.length - 1)) {
+        if (!(i < self.entries.length - 1)) {
             revert InvalidTEID(i);
         }
 
