@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 /// @note without other arrangements to commit and reveal the linkages, the room
-/// graph is complately exposed as soon as it is on chain.
+/// graph is completely exposed as soon as it is on chain.
 
 pragma solidity =0.8.9;
 
@@ -9,10 +9,15 @@ type LinkID is uint16;
 type ExitID is uint16;
 type KeyID is uint16;
 
+
 LocationID constant invalidLocationID = LocationID.wrap(0);
 LinkID constant invalidLinkID = LinkID.wrap(0);
 ExitID constant invalidExitID = ExitID.wrap(0);
 KeyID constant invalidKeyID = KeyID.wrap(0);
+
+// These are all nft token type instances
+type LocationModID is uint128;
+LocationModID constant invalidLocationModID = LocationModID.wrap(0);
 
 /// @title Link Defines a linkage between two locations.
 /// @note A Link has a pair of Exits adjacent locations. A Door link can further
@@ -40,10 +45,6 @@ struct Link {
     bool _open;
 }
 
-struct RawLink {
-    bytes kindexits; // kind byte followed by a 2 pairs of exit bytes
-}
-
 /// @title Exit defines a link emergence in a single location.
 /// If the Exit is autoclose the door will close behind the player
 struct Exit {
@@ -51,37 +52,15 @@ struct Exit {
     LocationID loc;
 }
 
-struct RawExit {
-    bytes linkloc;
-}
-
 error InvalidExit(uint16 exit);
 /// InvalidLink raised if an invalid link id is provided
 error InvalidLink();
 /// @dev InvalidLinkExit is raised when the provided exit is not part of the expected link
 error InvalidLinkExit(uint16 exit);
-error RawLinkInvalid();
-error RawLinkInvalidBadKind();
-error RawExitInvalid();
-
 error ExitIsLocked();
 
 library Exits {
     using Exits for Exit;
-    function load(Exit storage self, RawExit calldata raw) internal {
-
-        if (raw.linkloc.length != 4) {
-            revert RawExitInvalid();
-        }
-
-        uint16 id = uint16(uint8(raw.linkloc[0])) << 8;
-        id |= uint8(raw.linkloc[1]);
-        self.link = LinkID.wrap(id);
-
-        id = uint16(uint8(raw.linkloc[2])) << 8;
-        id |= uint8(raw.linkloc[3]);
-        self.loc = LocationID.wrap(id);
-    }
 }
 
 library Links {
@@ -93,29 +72,6 @@ library Links {
 
     /// ---------------------------
     /// @dev state changing methods
-    function load(Link storage self, RawLink calldata raw) internal {
-
-        if (raw.kindexits.length != 5) {
-            revert RawLinkInvalid();
-        }
-
-        uint8 kind = uint8(raw.kindexits[0]);
-
-        if (kind == 0 || kind >= uint8(Links.Kind.Invalid)) {
-            revert RawLinkInvalidBadKind();
-        }
-        self.kind = Links.Kind(kind);
-
-        uint16 id = uint16(uint8(raw.kindexits[1])) << 8;
-        id |= uint8(raw.kindexits[2]);
-        self.exits[0] = ExitID.wrap(id);
-
-        id = uint16(uint8(raw.kindexits[3])) << 8;
-        id |= uint8(raw.kindexits[4]);
-        self.exits[1] = ExitID.wrap(id);
-
-        // everything else can be the natural zero values
-    }
 
     /// @dev statefull traversing of a link, dealing with autoclose & locked states
     function traverse(Link storage self, ExitID egressVia) internal returns (ExitID) {

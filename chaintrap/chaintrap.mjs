@@ -1,10 +1,10 @@
 import { Locations } from './locations.mjs'
 export { Locations };
-import { RawLocation } from './locations.mjs'
-export { RawLocation };
+import { Location } from './locations.mjs'
+export { Location };
 
-import {RawLink, RawExit} from './exitlinks.mjs'
-export {RawLink, RawExit}
+import { Link, Exit } from './exitlinks.mjs'
+export { Link, Exit }
 
 import { TranscriptLocation } from './transcript.mjs'
 export { TranscriptLocation };

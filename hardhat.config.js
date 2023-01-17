@@ -13,6 +13,7 @@
       accounts: ['0xda36da69010b7baef829d14cf2dfd2caafba98a17aef538161741b2c1992a5a2']
      },
      hardhat: {
+      allowUnlimitedContractSize: true,
       chainId: 31337,
       gas: "auto",
       gasPrice: 0,

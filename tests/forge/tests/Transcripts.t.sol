@@ -5,7 +5,12 @@ import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 import "lib/locations.sol";
 import "lib/transcript.sol";
+import "lib/tokenid.sol";
 import "lib/game.sol";
+import "tests/hexlocations.sol";
+import "tests/hexexitlinks.sol";
+
+/// @title enumerating the transcript yeilds entries
 
 contract Factory {
 
@@ -13,15 +18,23 @@ contract Factory {
 
     using Transcripts for Transcript;
     using Games for Game;
+    using HexLocations for Location;
+    using HexExits for Exit;
+    using HexExits for Link;
 
     Transcript[] trans;
     Game[] games;
+    Furniture[] furniture;
 
     constructor () {
         trans.push();
         trans[0]._init(GameID.wrap(0));
         games.push();
-        games[0]._init(2, address(this));
+
+        // This creates an invalid tokenId for the undefined games[0] entry
+        games[0]._init(2, address(this), TokenID.GAME_TYPE | (games.length - 1));
+
+        furniture.push();
     }
 
     function reset() public {
@@ -38,11 +51,31 @@ contract Factory {
         return games[games.length-1];
     }
 
+    function headGameStatus() public view returns (GameStatus memory) {
+        return headGame().status();
+    }
+
     function push() public {
         trans.push();
         trans[trans.length - 1]._init(GameID.wrap(games.length));
+
+        uint256 tokenId = TokenID.GAME_TYPE | games.length;
         games.push();
-        games[games.length - 1]._init(2, address(this));
+        games[games.length - 1]._init(2, address(this), tokenId);
+    }
+
+    function nextFurnitureInstance() public view returns (uint256) {
+        return furniture.length;
+    }
+
+    function pushFurniture(
+        Furnishings.Kind kind, Furnishings.Effect effect) public returns (uint256) {
+        uint256 instance = furniture.length;
+        furniture.push();
+        Furniture storage f = furniture[instance];
+        f.kind = kind;
+        f.effects.push(effect);
+        return TokenID.FURNITURE_TYPE | instance;
     }
 
     // utility methods based on the proxy methods
@@ -50,7 +83,7 @@ contract Factory {
         uint n = 0;
         TEID cur = cursorStart;
 
-        for(bool completed = false;!completed; (cur, , completed) = head().next(cur)) {
+        for(bool completed = false;!completed; (cur, , , completed) = head().next(cur)) {
             n += 1;
         }
         return n;
@@ -140,15 +173,16 @@ contract Factory {
     }
 
     // proxy methods
-    function load(RawLocation[] calldata raw) public {
+    function load(Location[] calldata raw) public {
         headGame().load(raw);
     }
-    function load(RawExit[] calldata raw) public {
+ 
+    function load(Exit[] calldata raw) public {
         headGame().load(raw);
     }
 
     // loadLink because link with this type is an overload clash
-    function loadLinks(RawLink[] calldata raw) public {
+    function loadLinks(Link[] calldata raw) public {
         headGame().load(raw);
     }
 
@@ -162,6 +196,17 @@ contract Factory {
 
     function complete() public {
         headGame().complete();
+    }
+
+    function placeFurniture(
+        bytes32 placement, uint256 furnitureId
+    ) public {
+        headGame().placeFurniture(placement, furnitureId);
+    }
+
+    function placementReveal(
+        bytes32 placement, bytes32 salt) public {
+        headGame().placementReveal(placement, salt);
     }
 
     function registerPlayer(address p, bytes32 startLocation, bytes calldata sceneblob, bytes calldata profile) public {
@@ -179,44 +224,61 @@ contract Factory {
 
     // playback and enumeration
     function playCurrentTranscript() public  returns (TEID){
-        return headGame().playTranscript(trans[trans.length-1]);
+        return headGame().playTranscript(trans[trans.length-1], furniture);
     }
 
     function playCurrentTranscript(TEID cur, TEID end) public returns (TEID) {
-        return headGame().playTranscript(trans[trans.length-1], cur, end);
+        return headGame().playTranscript(trans[trans.length-1], furniture, cur, end);
     }
 
-    function enumerateCurrentTranscript() public view {
+    function enumerateCurrentTranscript() public returns (TEID) {
+        Game storage g = headGame();
+        Transcript storage t = trans[trans.length -1];
+        return g.playTranscript(t, furniture, cursorStart, cursorUntilEnd);
+    }
+
+    function transcriptRevertIfHalted() public view {
 
         TEID cur = cursorStart;
         uint16 end = 0;
         bool completed = false;
-        TranscriptEntry memory te;
         Game storage game = headGame();
         Transcript storage t = trans[trans.length -1];
+        Commitment storage co = t.entries[0];
+        bool halted = false;
 
         for(;!completed && (end == 0 || TEID.unwrap(cur) != end);) {
 
-            (cur, te, completed) = t.next(cur);
+            (cur, co, halted, completed) = t.next(cur);
 
-            Player storage p = game.player(te.player);
+            Player storage p = game.player(co.player);
             if (p.halted) {
-                revert Halted(te.player);
+                revert Halted(co.player);
             }
         }
     }
 
-    function next(TEID cur) public view returns (TEID, TranscriptEntry memory, bool) {
-        return head().next(cur);
+    function haltedAt(address player) public view returns (TEID) {
+        return head().haltedAt(player);
+    }
+
+    function next(TEID cur) public view returns (TEID, Commitment memory, bool) {
+        Commitment storage co;
+        bool halted;
+        bool completed;
+        (cur, co, halted, completed) = head().next(cur);
+        Commitment memory com;
+        com.player = co.player;
+        com.kind = co.kind;
+        com.outcomeDeclared = co.outcomeDeclared;
+        com.moveAccepted = co.moveAccepted;
+        com.halted = halted;
+        return (cur, com, completed);
     }
 
     // committing and allowing
-    function reject(TEID id) public {
-        head().reject(id);
-    }
-
-    function rejectAndHalt(TEID id) public {
-        head().rejectAndHalt(id);
+    function reject(TEID id, bool halt) public {
+        head().reject(id, halt);
     }
 
     function allowAndHalt(TEID id) public {
@@ -230,16 +292,26 @@ contract Factory {
     function allowExitUse(TEID id, ExitUseOutcome calldata outcome) public {
         head().allowExitUse(id, outcome);
     }
+
+    function commitFurnitureUse(address player, FurnitureUse calldata committed) public returns (TEID) {
+        return head().commitFurnitureUse(player, committed);
+    }
+
+    function allowFurnitureUse(TEID id, FurnitureUseOutcome calldata outcome) public {
+        head().allowFurnitureUse(id, outcome);
+    }
 }
 
 contract TranscriptTest is DSTest {
     using stdStorage for StdStorage;
-    using Locations for Location;
+    using HexLocations for Location;
+    using HexExits for Exit;
+    using HexExits for Link;
 
     Vm private vm = Vm(HEVM_ADDRESS);
     Location[] private locs;
     uint16 nextExitID;
-    uint256 blockNumberForLocationTokens;
+    uint256 saltForLocationTokens;
 
     Factory private f;
 
@@ -249,7 +321,33 @@ contract TranscriptTest is DSTest {
         nextExitID = 1;
         locs.push(); // id zero should be invalid always
         f = new Factory();
-        blockNumberForLocationTokens = 1;
+        saltForLocationTokens = 12345;
+    }
+
+    function load(RawLocation[] memory raw) public {
+        Location[] memory tmp = new Location[](raw.length);
+
+        for (uint i=0; i<raw.length; i++) {
+            tmp[i].load(raw[i]);
+        }
+        f.load(tmp);
+    }
+
+    function load(RawExit[] memory raw) public {
+        Exit[] memory tmp = new Exit[](raw.length);
+        for (uint i=0; i<raw.length; i++) {
+            tmp[i].load(raw[i]);
+        }
+        f.load(tmp);
+    }
+
+    // loadLink because link with this type is an overload clash
+    function loadLinks(RawLink[] memory raw) public {
+        Link[] memory tmp = new Link[](raw.length);
+        for (uint i=0; i<raw.length; i++) {
+            tmp[i].load(raw[i]);
+        }
+        f.loadLinks(tmp);
     }
 
     /// XXX: TODO move these to Arena.t.sol
@@ -294,7 +392,7 @@ contract TranscriptTest is DSTest {
         locations[4].sides = [bytes(hex"01"), hex"000a",     hex"",         hex"",             hex"000b"];
         locations[5].sides = [bytes(hex"01"), hex"000d000e", hex"000c",     hex"",             hex""];
             
-        f.load(locations);
+        load(locations);
 
         RawExit[] memory exits = new RawExit[](14);
         // room 1
@@ -319,7 +417,7 @@ contract TranscriptTest is DSTest {
         exits[12] = RawExit(hex"00050006"); // e13
         exits[13] = RawExit(hex"00060006"); // e14
 
-        f.load(exits);
+        load(exits);
 
         RawLink[] memory links = new RawLink[](7);
         links[0] = RawLink(hex"0100010002"); // (1)-(2) ln1
@@ -330,32 +428,29 @@ contract TranscriptTest is DSTest {
         links[5] = RawLink(hex"010008000e"); // (8)-(14) ln6
         links[6] = RawLink(hex"01000b000c"); // (11)-(12) ln7
 
-        f.loadLinks(links);
+        loadLinks(links);
     }
 
     // allow for tokens which represent two players at the same place and time
-    function _locationToken(uint16 id) internal returns (bytes32) {
+    function _locationToken(uint16 id) internal view returns (bytes32) {
         // TODO hashy things but the transcript checker doesn't support it yet
-        bytes memory b = abi.encodePacked(blockNumberForLocationTokens, id);
-        blockNumberForLocationTokens += 1;
+        bytes memory b = abi.encodePacked(saltForLocationTokens, id);
         return keccak256(b);
     }
 
-    function locationToken(uint16 id) internal returns (bytes32) {
+    function locationToken(uint16 id) internal view returns (bytes32) {
         // TODO hashy things but the transcript checker doesn't support it yet
         bytes32 token = _locationToken(id);
-        blockNumberForLocationTokens += 1;
         return token;
     }
    
-    function locationToken(LocationID id) internal returns (bytes32) {
+    function locationToken(LocationID id) internal view returns (bytes32) {
         return locationToken(uint16(LocationID.unwrap(id)));
     }
 
-    function locationTE(LocationID id) internal returns (TranscriptLocation memory) {
+    function locationTE(LocationID id) internal view returns (TranscriptLocation memory) {
         TranscriptLocation memory loc;
         loc.id = id;
-        loc.blocknumber = blockNumberForLocationTokens;
         loc.token = locationToken(id);
         return loc;
     }
@@ -375,13 +470,22 @@ contract TranscriptTest is DSTest {
         return ExitUseOutcome(location, bytes(""), kind, ingressIndex, false);
     }
 
+    function furnitureUse(bytes32 token) internal pure returns (FurnitureUse memory) {
+        return FurnitureUse(token);
+    }
+    function furnitureUseOutcome(
+        Furnishings.Kind kind, Furnishings.Effect effect, bool halt
+        ) internal pure returns (FurnitureUseOutcome memory) {
+        return FurnitureUseOutcome(kind, effect, "", halt);
+    }
+
     function testLoadSingleLocation() public {
         RawLocation[] memory locations = new RawLocation[](1);
         locations[0].sides = [bytes(hex"01"), hex"", hex"", hex"", hex"0001"];
 
         f.start();
         f.complete();
-        f.load(locations);
+        load(locations);
 
         Location memory loc;
         loc.kind = Locations.Kind.Room;
@@ -400,7 +504,7 @@ contract TranscriptTest is DSTest {
 
         f.start();
         f.complete();
-        f.load(exits);
+        load(exits);
 
         Exit memory exit;
         exit.link = LinkID.wrap(1);
@@ -420,7 +524,7 @@ contract TranscriptTest is DSTest {
 
         f.start();
         f.complete();
-        f.loadLinks(links);
+        loadLinks(links);
 
         assertTrue(f.linkEq(LinkID.wrap(1), ln));
     }
@@ -675,6 +779,461 @@ contract TranscriptTest is DSTest {
         f.enumerateCurrentTranscript();
     }
 
+    function testPlaceFurnitureAfterStartReverts() public {
+
+        // push a clean game state and transcript
+        f.push();
+
+        uint256 fTokenId = f.pushFurniture(Furnishings.Kind.Finish, Furnishings.Effect.Victory);
+
+        bytes32 furnitureSalt = keccak256('testEnumerateSimplestViableGame:salt:furniture');
+
+        LocationID lastLoc = LocationID.wrap(2);
+
+        bytes32 finishPlacement = keccak256(abi.encode(fTokenId, lastLoc, furnitureSalt));
+
+
+        // Only the games master can know the start tokens for the players
+        LocationID startLocation = LocationID.wrap(1);
+        bytes32 startToken = locationToken(startLocation);
+        f.registerPlayer(address(1), startToken, bytes(""), bytes(""));
+        f.start();
+
+        vm.expectRevert(GameInProgress.selector);
+        f.placeFurniture(finishPlacement, fTokenId);
+    }
+
+    function testPlaceFurnitureAfterCompleteReverts() public {
+
+        // push a clean game state and transcript
+        f.push();
+
+        uint256 fTokenId = f.pushFurniture(Furnishings.Kind.Finish, Furnishings.Effect.Victory);
+
+        bytes32 furnitureSalt = keccak256('testEnumerateSimplestViableGame:salt:furniture');
+
+        LocationID lastLoc = LocationID.wrap(2);
+
+        bytes32 finishPlacement = keccak256(abi.encode(fTokenId, lastLoc, furnitureSalt));
+
+
+        // Only the games master can know the start tokens for the players
+        LocationID startLocation = LocationID.wrap(1);
+        bytes32 startToken = locationToken(startLocation);
+        f.registerPlayer(address(1), startToken, bytes(""), bytes(""));
+        f.start();
+        f.complete();
+
+        vm.expectRevert(GameComplete.selector);
+        f.placeFurniture(finishPlacement, fTokenId);
+    }
+
+    // testEnumeration* tests walk the transcript following the same playback
+    // loop as the game but without executing the steps.
+    function testEnumerateSimplestViableGameWithVictory() public {
+
+        // push a clean game state and transcript
+        f.push();
+
+        uint256 fTokenId = f.pushFurniture(Furnishings.Kind.Finish, Furnishings.Effect.Victory);
+
+        assertEq(nftInstance(fTokenId), f.nextFurnitureInstance() - 1);
+
+        bytes32 furnitureSalt = keccak256('testEnumerateSimplestViableGameWithVictory:salt:furniture');
+
+        LocationID lastLoc = LocationID.wrap(2);
+        bytes32 lastLoctionToken = locationToken(lastLoc);
+
+        bytes32 finishPlacement = keccak256(abi.encode(fTokenId, lastLoc, furnitureSalt));
+
+        f.placeFurniture(finishPlacement, fTokenId);
+
+        // Only the games master can know the start tokens for the players
+        LocationID startLocation = LocationID.wrap(1);
+        bytes32 startToken = locationToken(startLocation);
+        f.registerPlayer(address(1), startToken, bytes(""), bytes(""));
+        f.start();
+
+        TEID id1 = f.commitExitUse(address(1), exitUse(Locations.SideKind.East, 0));
+
+        ExitUseOutcome memory o = exitUseOutcome(lastLoctionToken, Locations.SideKind.West, 0);
+
+        f.allowExitUse(id1, o);
+        assertTrue(!o.halt);
+
+        TEID id = f.commitFurnitureUse(
+            address(1), furnitureUse(finishPlacement)
+        );
+        assertEq(TEID.unwrap(id), 2);
+
+        f.allowFurnitureUse(id, furnitureUseOutcome(Furnishings.Kind.Finish, Furnishings.Effect.Victory, true));
+
+        f.complete();
+
+        loadDefaultMap();
+        f.placementReveal(finishPlacement, furnitureSalt);
+
+        TranscriptLocation []memory locations = new TranscriptLocation[](2);
+        locations[0].token = startToken;
+        locations[0].id = startLocation; 
+        locations[1].token = lastLoctionToken;
+        locations[1].id = lastLoc; 
+
+        f.load(locations);
+
+        // check the indexed topics but not the data
+        GameStatus memory gs = f.headGameStatus();
+
+        // We are borderline stack to deep on this test due to the span of fTokenId
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerEnteredLocation(
+            gs.id, TEID.wrap(1), address(1), LocationID.wrap(2), 
+            // The following are all data and are not checked
+            ExitID.wrap(1), LocationID.wrap(1), ExitID.wrap(2)
+            );
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerUsedFurniture(
+            gs.id, TEID.wrap(1), address(1), LocationID.wrap(2), 
+            // The following are all data and are not checked
+            0 /*fTokenId*/, Furnishings.Kind.Finish, Furnishings.Effect.Victory
+            );
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerVictory(
+            gs.id, TEID.wrap(2), address(1), LocationID.wrap(2),
+            // The following are all data and are not checked
+            0 /*fTokenId*/
+        );
+        f.enumerateCurrentTranscript();
+    }
+
+    // testEnumeration* tests walk the transcript following the same playback
+    // loop as the game but without executing the steps.
+    function testEnumerateSimplestViableGameWithDeath() public {
+
+        // push a clean game state and transcript
+        f.push();
+
+        uint256 fTokenId = f.pushFurniture(Furnishings.Kind.Trap, Furnishings.Effect.Death);
+
+        assertEq(nftInstance(fTokenId), f.nextFurnitureInstance() - 1);
+
+        bytes32 furnitureSalt = keccak256('testEnumerateSimplestViableGameWithVictory:salt:furniture');
+
+        LocationID lastLoc = LocationID.wrap(2);
+        bytes32 lastLoctionToken = locationToken(lastLoc);
+
+        bytes32 finishPlacement = keccak256(abi.encode(fTokenId, lastLoc, furnitureSalt));
+
+        f.placeFurniture(finishPlacement, fTokenId);
+
+        // Only the games master can know the start tokens for the players
+        LocationID startLocation = LocationID.wrap(1);
+        bytes32 startToken = locationToken(startLocation);
+        f.registerPlayer(address(1), startToken, bytes(""), bytes(""));
+        f.start();
+
+        TEID id1 = f.commitExitUse(address(1), exitUse(Locations.SideKind.East, 0));
+
+        ExitUseOutcome memory o = exitUseOutcome(lastLoctionToken, Locations.SideKind.West, 0);
+
+        f.allowExitUse(id1, o);
+        assertTrue(!o.halt);
+
+        TEID id = f.commitFurnitureUse(
+            address(1), furnitureUse(finishPlacement)
+        );
+        assertEq(TEID.unwrap(id), 2);
+
+        f.allowFurnitureUse(id, furnitureUseOutcome(Furnishings.Kind.Trap, Furnishings.Effect.Death, true));
+
+        f.complete();
+
+        loadDefaultMap();
+        f.placementReveal(finishPlacement, furnitureSalt);
+
+        TranscriptLocation []memory locations = new TranscriptLocation[](2);
+        locations[0].token = startToken;
+        locations[0].id = startLocation; 
+        locations[1].token = lastLoctionToken;
+        locations[1].id = lastLoc; 
+
+        f.load(locations);
+
+        // check the indexed topics but not the data
+        GameStatus memory gs = f.headGameStatus();
+
+        // We are borderline stack to deep on this test due to the span of fTokenId
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerEnteredLocation(
+            gs.id, TEID.wrap(1), address(1), LocationID.wrap(2), 
+            // The following are all data and are not checked
+            ExitID.wrap(1), LocationID.wrap(1), ExitID.wrap(2)
+            );
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerUsedFurniture(
+            gs.id, TEID.wrap(1), address(1), LocationID.wrap(2), 
+            // The following are all data and are not checked
+            0 /*fTokenId*/, Furnishings.Kind.Trap, Furnishings.Effect.Death
+            );
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerKilledByTrap(
+            gs.id, TEID.wrap(2), address(1), LocationID.wrap(2),
+            // The following are all data and are not checked
+            0 /*fTokenId*/
+        );
+        f.enumerateCurrentTranscript();
+    }
+
+    function testEnumerateSimplestViableGameWithFreeLife() public {
+
+        // push a clean game state and transcript
+        f.push();
+
+        uint256 fTokenId = f.pushFurniture(Furnishings.Kind.Boon, Furnishings.Effect.FreeLife);
+
+        assertEq(nftInstance(fTokenId), f.nextFurnitureInstance() - 1);
+
+        bytes32 furnitureSalt = keccak256('testEnumerateSimplestViableGameWithVictory:salt:furniture');
+
+        LocationID lastLoc = LocationID.wrap(2);
+        bytes32 lastLoctionToken = locationToken(lastLoc);
+
+        bytes32 finishPlacement = keccak256(abi.encode(fTokenId, lastLoc, furnitureSalt));
+
+        f.placeFurniture(finishPlacement, fTokenId);
+
+        // Only the games master can know the start tokens for the players
+        LocationID startLocation = LocationID.wrap(1);
+        bytes32 startToken = locationToken(startLocation);
+        f.registerPlayer(address(1), startToken, bytes(""), bytes(""));
+        f.start();
+
+        TEID id1 = f.commitExitUse(address(1), exitUse(Locations.SideKind.East, 0));
+
+        ExitUseOutcome memory o = exitUseOutcome(lastLoctionToken, Locations.SideKind.West, 0);
+
+        f.allowExitUse(id1, o);
+        assertTrue(!o.halt);
+
+        TEID id = f.commitFurnitureUse(
+            address(1), furnitureUse(finishPlacement)
+        );
+        assertEq(TEID.unwrap(id), 2);
+
+        f.allowFurnitureUse(id, furnitureUseOutcome(Furnishings.Kind.Boon, Furnishings.Effect.FreeLife, false));
+
+        f.complete();
+
+        loadDefaultMap();
+        f.placementReveal(finishPlacement, furnitureSalt);
+
+        TranscriptLocation []memory locations = new TranscriptLocation[](2);
+        locations[0].token = startToken;
+        locations[0].id = startLocation; 
+        locations[1].token = lastLoctionToken;
+        locations[1].id = lastLoc; 
+
+        f.load(locations);
+
+        // check the indexed topics but not the data
+        GameStatus memory gs = f.headGameStatus();
+
+        // We are borderline stack to deep on this test due to the span of fTokenId
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerEnteredLocation(
+            gs.id, TEID.wrap(1), address(1), LocationID.wrap(2), 
+            // The following are all data and are not checked
+            ExitID.wrap(1), LocationID.wrap(1), ExitID.wrap(2)
+            );
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerUsedFurniture(
+            gs.id, TEID.wrap(1), address(1), LocationID.wrap(2), 
+            // The following are all data and are not checked
+            0 /*fTokenId*/, Furnishings.Kind.Boon, Furnishings.Effect.FreeLife
+            );
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerGainedLife(
+            gs.id, TEID.wrap(2), address(1), LocationID.wrap(2),
+            // The following are all data and are not checked
+            0 /*fTokenId*/
+        );
+        f.enumerateCurrentTranscript();
+    }
+
+
+    // testEnumeration* tests walk the transcript following the same playback
+    // loop as the game but without executing the steps.
+
+    function testEnumerateSimplestViableGameWithFreeLifeAndVictory() public {
+
+        f.push();
+        uint256 fBoonToken = f.pushFurniture(Furnishings.Kind.Boon, Furnishings.Effect.FreeLife);
+        uint256 fTrapToken = f.pushFurniture(Furnishings.Kind.Trap, Furnishings.Effect.Death);
+        uint256 fFinishToken = f.pushFurniture(Furnishings.Kind.Finish, Furnishings.Effect.Victory);
+
+        bytes32 furnitureSalt = keccak256('testEnumerateSimplestViableGameWithVictory:salt:furniture');
+
+        // 1 -> 3 -> 10 -> 13
+        //      FL   D     Victory
+
+        TranscriptLocation []memory locations = new TranscriptLocation[](4);
+        uint i = 0;
+        locations[i].id = LocationID.wrap(1); 
+        locations[i].token = locationToken(locations[i].id);
+        i ++;
+
+        locations[i].id = LocationID.wrap(2); 
+        locations[i].token = locationToken(locations[i].id);
+        i ++;
+
+        locations[i].id = LocationID.wrap(5); 
+        locations[i].token = locationToken(locations[i].id);
+        i ++;
+
+        locations[i].id = LocationID.wrap(6); 
+        locations[i].token = locationToken(locations[i].id);
+
+        bytes32 fBoonPlace = keccak256(abi.encode(fBoonToken, locations[1].id, furnitureSalt));
+        bytes32 fTrapPlace = keccak256(abi.encode(fTrapToken, locations[2].id, furnitureSalt));
+        bytes32 fFinishPlace = keccak256(abi.encode(fFinishToken, locations[3].id, furnitureSalt));
+
+        f.placeFurniture(fBoonPlace, fBoonToken);
+        f.placeFurniture(fTrapPlace, fTrapToken);
+        f.placeFurniture(fFinishPlace, fFinishToken);
+
+        f.registerPlayer(address(1), locations[0].token, bytes(""), bytes(""));
+        f.start();
+
+        TEID tid;
+        ExitUseOutcome memory eo;
+        uint ioloc = 1;
+
+        tid = f.commitExitUse(address(1), exitUse(Locations.SideKind.East, 0));
+        eo = exitUseOutcome(locations[ioloc].token, Locations.SideKind.West, 0);
+        f.allowExitUse(tid, eo);
+        ioloc ++;
+
+        tid = f.commitFurnitureUse(address(1), furnitureUse(fBoonPlace));
+        f.allowFurnitureUse(tid, furnitureUseOutcome(Furnishings.Kind.Boon, Furnishings.Effect.FreeLife, false));
+
+        tid = f.commitExitUse(address(1), exitUse(Locations.SideKind.South, 0));
+        eo = exitUseOutcome(locations[ioloc].token, Locations.SideKind.North, 0);
+        f.allowExitUse(tid, eo);
+        ioloc ++;
+
+        tid = f.commitFurnitureUse(address(1), furnitureUse(fTrapPlace));
+        f.allowFurnitureUse(tid, furnitureUseOutcome(Furnishings.Kind.Trap, Furnishings.Effect.Death, false));
+
+        tid = f.commitExitUse(address(1), exitUse(Locations.SideKind.East, 0));
+        eo = exitUseOutcome(locations[ioloc].token, Locations.SideKind.West, 0);
+        f.allowExitUse(tid, eo);
+        ioloc ++;
+
+        tid = f.commitFurnitureUse(address(1), furnitureUse(fFinishPlace));
+        f.allowFurnitureUse(tid, furnitureUseOutcome(Furnishings.Kind.Finish, Furnishings.Effect.Victory, true));
+
+        f.complete();
+
+        loadDefaultMap();
+
+        f.placementReveal(fBoonPlace, furnitureSalt);
+        f.placementReveal(fTrapPlace, furnitureSalt);
+        f.placementReveal(fFinishPlace, furnitureSalt);
+        f.load(locations);
+
+        GameStatus memory gs = f.headGameStatus();
+
+        uint16 itid = 1;
+        ioloc = 1;
+
+        // enter first room and use boon
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerEnteredLocation(
+            gs.id, TEID.wrap(itid), address(1), locations[ioloc].id, 
+            // The following are all data and are not checked
+            ExitID.wrap(1), locations[ioloc].id, ExitID.wrap(2)
+            );
+        itid ++;
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerUsedFurniture(
+            gs.id, TEID.wrap(itid), address(1), locations[ioloc].id, 
+            // The following are all data and are not checked
+            0 /*fTokenId*/, Furnishings.Kind.Boon, Furnishings.Effect.FreeLife
+            );
+        itid ++;
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerGainedLife(
+            gs.id, TEID.wrap(itid), address(1), locations[ioloc].id,
+            // The following are all data and are not checked
+            0 /*fTokenId*/
+        );
+        itid ++;
+ 
+        // enter second room and use trap
+        ioloc ++;
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerEnteredLocation(
+            gs.id, TEID.wrap(itid), address(1), locations[ioloc].id, 
+            // The following are all data and are not checked
+            ExitID.wrap(1), locations[ioloc].id, ExitID.wrap(2)
+            );
+        itid ++;
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerUsedFurniture(
+            gs.id, TEID.wrap(itid), address(1), locations[ioloc].id, 
+            // The following are all data and are not checked
+            0 /*fTokenId*/, Furnishings.Kind.Trap, Furnishings.Effect.Death
+            );
+        itid ++;
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerLostLife(
+            gs.id, TEID.wrap(itid), address(1), locations[ioloc].id,
+            // The following are all data and are not checked
+            0 /*fTokenId*/
+        );
+        itid ++;
+
+        // enter last room and use finish
+        ioloc ++;
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerEnteredLocation(
+            gs.id, TEID.wrap(itid), address(1), locations[ioloc].id, 
+            // The following are all data and are not checked
+            ExitID.wrap(1), locations[ioloc].id, ExitID.wrap(2)
+            );
+        itid ++;
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerUsedFurniture(
+            gs.id, TEID.wrap(itid), address(1), locations[ioloc].id, 
+            // The following are all data and are not checked
+            0 /*fTokenId*/, Furnishings.Kind.Finish, Furnishings.Effect.Victory
+            );
+        itid ++;
+
+        vm.expectEmit(true, true, true, false);
+        emit Games.TranscriptPlayerVictory(
+            gs.id, TEID.wrap(itid), address(1), locations[ioloc].id,
+            // The following are all data and are not checked
+            0 /*fTokenId*/
+        );
+        itid ++;
+        f.enumerateCurrentTranscript();
+    }
+
     function testRegisterPlayer() public {
 
         LocationID startLocation = LocationID.wrap(1);
@@ -705,25 +1264,21 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcomeHalt(Locations.SideKind.South, 1));
 
         id = f.commitExitUse(address(2), ExitUse(Locations.SideKind.North, 5));
-        f.rejectAndHalt(id);
+        f.reject(id, true);
 
-        TEID halted1;
-        TEID halted2;
         TEID cur = cursorStart;
         bool complete = false;
-        TranscriptEntry memory te;
+        Commitment memory te;
         for(;!complete; (cur, te, complete) = f.next(cur)) {
-            if(te.halted) {
-                if (te.player == address(1)) halted1 = cur;
-                if (te.player == address(2)) halted2 = cur;
-            }
+            // XXX: leave the halt on the rejected move, even though that means it never gets processed in the transcript.
+            // Instead, check for the halted by asking
         }
+        TEID halted1 = f.haltedAt(address(1));
+        TEID halted2 = f.haltedAt(address(2));
 
         assertEq(TEID.unwrap(halted1), uint16(4));
-
-        // *notice* this is 2 because the halt was a reject. so the last
-        // succesful move counts as when the player halted.
-        assertEq(TEID.unwrap(halted2), uint16(2));
+        // Notice 5 was rejected, and may have been re-used by a *different* player
+        assertEq(TEID.unwrap(halted2), uint16(5));
     }
 
     function testTranscriptSingleEntryTEID() public {
@@ -768,11 +1323,11 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(ids[3], exitUseOutcomeHalt(Locations.SideKind.South, 1));
 
         ids[4] = f.commitExitUse(address(2), ExitUse(Locations.SideKind.North, 5));
-        f.rejectAndHalt(ids[4]);
+        f.reject(ids[4], true);
 
         TEID cur = cursorStart;
         bool complete = false;
-        TranscriptEntry memory te;
+        Commitment memory te;
         (cur, te, complete) = f.next(cur);
         assertEq(TEID.unwrap(cur), TEID.unwrap(ids[0]));
         (cur, te, complete) = f.next(cur);
@@ -826,7 +1381,7 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 2));
 
         TEID cur = cursorStart;
-        (TEID id1, TranscriptEntry memory te, bool complete) = f.next(cur);
+        (TEID id1, Commitment memory te, bool complete) = f.next(cur);
         assertEq(TEID.unwrap(id1), uint16(1));
         assertEq(te.player, address(1));
         assertTrue(te.kind == Transcripts.MoveKind.ExitUse);
@@ -845,7 +1400,7 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 4));
 
         TEID cur = cursorStart;
-        TranscriptEntry memory te;
+        Commitment memory te;
         bool complete;
 
         (cur, te, complete) = f.next(cur);
@@ -869,13 +1424,13 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 2));
 
         id = f.commitExitUse(address(2), ExitUse(Locations.SideKind.North, 3));
-        f.reject(id);
+        f.reject(id, false /*halt*/);
 
         id = f.commitExitUse(address(3), ExitUse(Locations.SideKind.North, 5));
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 6));
 
         TEID cur = cursorStart;
-        TranscriptEntry memory te;
+        Commitment memory te;
         bool complete;
 
         (cur, te, complete) = f.next(cur);
@@ -896,7 +1451,7 @@ contract TranscriptTest is DSTest {
         f.start();
 
         TEID id = f.commitExitUse(address(1), ExitUse(Locations.SideKind.North, 1));
-        f.reject(id);
+        f.reject(id, false /*halt*/);
 
         id = f.commitExitUse(address(2), ExitUse(Locations.SideKind.North, 3));
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 2));
@@ -905,7 +1460,7 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 6));
 
         TEID cur = cursorStart;
-        TranscriptEntry memory te;
+        Commitment memory te;
         bool complete;
 
         (cur, te, complete) = f.next(cur);
@@ -932,10 +1487,10 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 4));
 
         id = f.commitExitUse(address(3), ExitUse(Locations.SideKind.North, 5));
-        f.reject(id);
+        f.reject(id, false /*halt*/);
 
         TEID cur = cursorStart;
-        TranscriptEntry memory te;
+        Commitment memory te;
         bool complete;
 
         (cur, te, complete) = f.next(cur);
@@ -952,19 +1507,19 @@ contract TranscriptTest is DSTest {
 
         (cur, te, complete) = f.next(cur);
         assertEq(TEID.unwrap(cur), uint16(0));
-        assertEq(te.player, address(0));
-        assertTrue(te.kind == Transcripts.MoveKind.Undefined);
         assertTrue(!te.halted);
+        assertTrue(te.outcomeDeclared);
+        assertTrue(!te.moveAccepted);
         assertTrue(complete);
-
     }
+
     function testTranscriptCommitRecordsPlayer() public {
 
         f.start();
 
         TEID id = f.commitExitUse(address(1), ExitUse(Locations.SideKind.North, 1));
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 2));
-        (, TranscriptEntry memory te,) = f.next(cursorStart);
+        (, Commitment memory te,) = f.next(cursorStart);
         assertEq(te.player, address(1));
     }
 
@@ -993,7 +1548,7 @@ contract TranscriptTest is DSTest {
         f.start();
 
         TEID id = f.commitExitUse(address(1), ExitUse(Locations.SideKind.North, 1));
-        f.rejectAndHalt(id);
+        f.reject(id, true);
         f.commitExitUse(address(1), ExitUse(Locations.SideKind.South, 2));
     }
 }

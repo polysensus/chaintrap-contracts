@@ -19,7 +19,6 @@ library LocationMaps {
 
     using Links for Link;
     using Locations for Location;
-    using Locations for RawLocation;
     using Links for Exit;
     using Exits for Exit;
 
@@ -48,28 +47,24 @@ library LocationMaps {
     /// ---------------------------
     /// map loading and validation - once its on the chain it is visible to all
 
-    function load(Map storage self, RawLocation[] calldata raw) internal {
-        for (uint16 i=0; i< raw.length; i++) {
+    function load(Map storage self, Location[] calldata locs) internal {
+        for (uint16 i=0; i< locs.length; i++) {
             self.locations.push();
-            self.locations[self.locations.length - 1].load(raw[i]);
+            self.locations[self.locations.length - 1].load(locs[i]);
         }
     }
 
-    function load(Map storage self, RawExit[] calldata raw) internal {
-        for (uint16 i=0; i< raw.length; i++) {
-            self.exits.push();
-            self.exits[self.exits.length - 1].load(raw[i]);
+    function load(Map storage self, Exit[] calldata exits) internal {
+        for (uint16 i=0; i< exits.length; i++) {
+            self.exits.push(exits[i]);
         }
     }
 
-    function load(Map storage self, RawLink[] calldata raw) internal {
-        for (uint16 i=0; i< raw.length; i++) {
-            self.links.push();
-            self.links[self.links.length - 1].load(raw[i]);
+    function load(Map storage self, Link[] calldata links) internal {
+        for (uint16 i=0; i< links.length; i++) {
+            self.links.push(links[i]);
         }
     }
-
-
 
     // --- locations and links
     function traverse(

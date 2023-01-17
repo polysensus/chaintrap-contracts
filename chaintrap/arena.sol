@@ -2,22 +2,28 @@
 pragma solidity =0.8.9;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155URIStorage.sol";
 
+import "../lib/tokenid.sol";
 import "../lib/game.sol";
+import "../lib/furnishings.sol";
 import "../lib/contextmixin.sol";
 
 error InvalidGame(uint256 id);
+error InsufficientBalance(address addr, uint256 id, uint256 balance);
 
 error ArenaError(uint);
 
 /// Games are played in an arena. The arena remembers all games that have ever
 /// been played
-contract Arena is ERC1155URIStorage, ContextMixin {
+contract Arena is ERC1155URIStorage, Ownable, ContextMixin {
 
     using Transcripts for Transcript;
     using Games for Game;
     using Games for GameStatus;
+    using Furnishings for Furniture;
 
     event GameCreated(GameID indexed gid, TID tid, address indexed creator, uint256 maxPlayers);
     event GameReset(GameID indexed gid, TID tid);
@@ -31,8 +37,44 @@ contract Arena is ERC1155URIStorage, ContextMixin {
     event ExitUsed(GameID indexed gid, TEID eid, address indexed player, ExitUseOutcome outcome);
     event EntryReject(GameID indexed gid, TEID eid, address indexed player, bool halted);
 
-    Transcript[] transcripts;
+    event UseToken(GameID indexed gid, TEID eid, address indexed participant, FurnitureUse use);
+    event FurnitureUsed(GameID indexed gid, TEID eid, address indexed participant, FurnitureUseOutcome outcome);
+
+    // The following events are emitted by transcript playback to reveal the full narative of the game
+    event TranscriptPlayerEnteredLocation(
+        uint256 indexed gameId, TEID eid, address indexed player,
+        LocationID indexed entered, ExitID enteredVia, LocationID left, ExitID leftVia
+        );
+
+    event TranscriptPlayerKilledByTrap(
+        uint256 indexed gameId, TEID eid, address indexed player,
+        LocationID indexed location, uint256 furniture
+    );
+
+    event TranscriptPlayerDied(
+        uint256 indexed gameId, TEID eid, address indexed player,
+        LocationID indexed location, uint256 furniture
+    );
+
+    event TranscriptPlayerGainedLife(
+        uint256 indexed gameId, TEID eid, address indexed player,
+        LocationID indexed location, uint256 furniture
+    );
+
+    // only when player.lives > 0
+    event TranscriptPlayerLostLife(
+        uint256 indexed gameId, TEID eid, address indexed player,
+        LocationID indexed location, uint256 furniture
+    );
+
+    event TranscriptPlayerVictory(
+        uint256 indexed gameId, TEID eid, address indexed player,
+        LocationID indexed location, uint256 furniture
+    );
+
     Game[] games;
+    Transcript[] transcripts;
+    Furniture[] furniture;
 
     /// @dev to allow game loading mistakes to be rectified we allow a game to
     /// be discarded. This means there is a many - 1 relationship from  games to
@@ -40,49 +82,90 @@ contract Arena is ERC1155URIStorage, ContextMixin {
     /// interaction. The game state we can re-create at will.
     mapping (GameID => TID) gid2tid;
 
+    /// @dev any token put in this map is bound to a specific game. The *can
+    /// not* be transfered while bound this way.
+    mapping (uint256 => uint256) tokenBinding;
+
+    /// @dev the reverse mapping, the tokens in the array for any gameID will
+    /// all be found in tokenBinding and will map to the same game.
+    mapping (uint256 => uint256[]) boundTokens;
+
+    // XXX: NOTICE It is the callers responsibility to maintain the bindings as
+    // a DAG. no checks are made to avoid loops. Depending on how the bindings
+    // are used, loops may create un-recoverable situations.
+
     /// @dev ERC1155 machinery closely following
     /// https://github.com/enjin/erc-1155
     uint256 typeNonce;
-    mapping (uint256 => uint256) typeLast;
-    uint256 constant ID_TYPE_BITS = 32;
-    uint256 constant ID_TYPE_SHIFT = 256 - ID_TYPE_BITS;
-    uint256 constant ID_TYPE_MASK = uint256(uint32(int32(~0))) << ID_TYPE_SHIFT;
-    uint256 constant ID_TYPE_NF_BIT = 1 << 255;
-    uint256 constant ID_NF_MASK = uint224(int224(~0));
 
-    // No public facing type creation
-    uint256 constant GAME_TYPE = (1 << ID_TYPE_SHIFT);
-    uint256 constant TRANSCRIPT_TYPE = (2 << ID_TYPE_SHIFT);
-
-    constructor () ERC1155("") {
+    constructor () ERC1155("chaintrap-arena") {
+        
         // id 0 is always invalid
 
         transcripts.push();
         transcripts[0]._init(GameID.wrap(0));
 
         games.push();
-        // Don't init games[0]
+        furniture.push();
+        // Don't init xxx [0]
 
-        createType("", true); // GAME_TYPE
-        createType("", true); // TRANSCRIPT_TYPE
+        typeNonce = TokenID.LAST_FIXED_TYPE + 1;
+
+        createFixedType(TokenID.GAME_TYPE, "GAME_TYPE");
+        createFixedType(TokenID.TRANSCRIPT_TYPE, "TRANSCRIPT_TYPE");
+        createFixedType(TokenID.FURNITURE_TYPE, "FURNITURE_TYPE");
     }
 
     /// ---------------------------------------------------
     /// @dev ERC1155 machinery
-    function createType(
-        string memory _uri, bool _isNF
-    ) internal returns (uint256) {
 
-        uint256 ty = (++typeNonce) << ID_TYPE_SHIFT;
-        if (_isNF)
-            ty = ty | ID_TYPE_NF_BIT;
-
-        // emit a Transfer event with Create to help with discovery
-        emit TransferSingle(_msgSender(), address(0x0), address(0x0), ty, 0);
-        if (bytes(_uri).length > 0)
-            emit URI(_uri, ty);
-        return ty;
+    function setURI(string memory newuri) public onlyOwner {
+        _setURI(newuri);
     }
+
+/*
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }*/
+
+    function mint(address account, uint256 id, uint256 amount, bytes memory data)
+        public
+        onlyOwner
+    {
+        _mint(account, id, amount, data);
+    }
+
+    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
+        public
+        onlyOwner
+    {
+        _mintBatch(to, ids, amounts, data);
+    }
+
+    function _beforeTokenTransfer(address operator, address from, address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
+        internal
+        // whenNotPaused
+        override
+    {
+        // XXX: TODO: don't allow transfer of any tokens which are currently bound to open game sessions
+        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+    }
+
+    // The following functions are overrides required by Solidity.
+
+    /*
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC1155, AccessControl)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }*/
 
     /**
      * @dev This is used instead of msg.sender as transactions won't be sent by the original token owner, but by OpenSea.
@@ -127,44 +210,37 @@ contract Arena is ERC1155URIStorage, ContextMixin {
         return ERC1155.isApprovedForAll(_owner, _operator);
     }
 
-    /*
-    function isNonFungible(uint256 _id) internal pure returns(bool) {
-        return _id & ID_TYPE_NF_BIT == ID_TYPE_NF_BIT;
-    }
-    function isFungible(uint256 _id) internal pure returns(bool) {
-        return _id & ID_TYPE_NF_BIT == 0;
-    }
-    function nfIndex(uint256 _id) public pure returns(uint256) {
-        return _id & ID_NF_INDEX_MASK;
-    }
-    function nfBaseType(uint256 _id) public pure returns(uint256) {
-        return _id & ID_TYPE_MASK;
-    }
-    function isNFBaseType(uint256 _id) public pure returns(bool) {
-        // A base type has the NF bit but does not have an index.
-        return (_id & ID_TYPE_NF_BIT == ID_TYPE_NF_BIT) && (_id & ID_NF_MASK == 0);
-    }
-    function isNFItem(uint256 _id) public pure returns(bool) {
-        // A base type has the NF bit but does has an index.
-        return (_id & ID_TYPE_NF_BIT == ID_TYPE_NF_BIT) && (_id & ID_NF_MASK != 0);
-    }*/
-
     /// ---------------------------------------------------
 
     /// ---------------------------------------------------
     /// @dev game setup creation & player signup
     /// ---------------------------------------------------
 
+    function createFixedType(
+        uint256 typeNumber, string memory _uri
+
+    ) internal returns (uint256) {
+
+        uint256 ty = (typeNumber) << TokenID.ID_TYPE_SHIFT;
+
+        // emit a Transfer event with Create to help with discovery
+        emit TransferSingle(_msgSender(), address(0x0), address(0x0), ty, 0);
+        if (bytes(_uri).length > 0)
+            emit URI(_uri, ty);
+        return ty;
+    }
+
+
     /// @notice creates a new game context.
     /// @return returns the id for the game
     function createGame(uint maxPlayers, string calldata tokenURI) public returns (GameID) {
 
-        uint256 tokenId = GAME_TYPE | uint256(games.length);
+        uint256 gTokenId = TokenID.GAME_TYPE | uint256(games.length);
         GameID gid = GameID.wrap(games.length);
 
         games.push();
         Game storage g = games[GameID.unwrap(gid)];
-        g._init(maxPlayers, _msgSender());
+        g._init(maxPlayers, _msgSender(), gTokenId);
 
         TID tid = TID.wrap(transcripts.length);
         transcripts.push();
@@ -172,29 +248,84 @@ contract Arena is ERC1155URIStorage, ContextMixin {
 
         gid2tid[gid] = tid;
 
-        _mint(_msgSender(), tokenId, 1, "");
-
-        if (bytes(tokenURI).length > 0) {
-            _setURI(tokenId, tokenURI);
-        }
+        // XXX: the map owner can set the url later
 
         // The trancscript gets minted to the winer when the game is completed and verified
         // _mint(_msgSender(), TRANSCRIPT_TYPE | TID.unwrap(tid), 1, "");
 
+        // emit the game state first. we may add mints and their events will
+        // force us to update lots of transaction log array values if we put
+        // them first.
         emit GameCreated(gid, tid, g.creator, g.maxPlayers);
+
+        // mint the transferable tokens
+
+        // game first, mint to sender
+        _mint(_msgSender(), gTokenId, 1, "GAME_TYPE");
+        if (bytes(tokenURI).length > 0) {
+            _setURI(gTokenId, tokenURI);
+        }
+
+        // furniture created as a reward/part of new game - mint to contract owner and hand out depending on victory ?
+
+        // Now the victory condition
+        // mint a finish and bind it to the game
+        uint256 fTokenId = TokenID.FURNITURE_TYPE | uint128(furniture.length);
+        FurnitureID fid  = FurnitureID.wrap(uint128(furniture.length));
+        furniture.push();
+        furniture[FurnitureID.unwrap(fid)].kind = Furnishings.Kind.Finish;
+        furniture[FurnitureID.unwrap(fid)].effects.push(Furnishings.Effect.Victory);
+
+        // bind the entrance hall token to the game token
+        tokenBinding[fTokenId] = gTokenId;
+        boundTokens[gTokenId].push(fTokenId);
+
+        _mint(_msgSender(), fTokenId, 1, "furniture/finish/victory");
+
+        // Mint two traps to the dungeon creator. We only support insta-death
+        fTokenId = TokenID.FURNITURE_TYPE | uint128(furniture.length);
+        fid  = FurnitureID.wrap(uint128(furniture.length));
+        furniture.push();
+        furniture[FurnitureID.unwrap(fid)].kind = Furnishings.Kind.Trap;
+        furniture[FurnitureID.unwrap(fid)].effects.push(Furnishings.Effect.Death);
+
+        // bind the entrance hall token to the game token
+        tokenBinding[fTokenId] = gTokenId;
+        boundTokens[gTokenId].push(fTokenId);
+
+        _mint(_msgSender(), fTokenId, 1, "furniture/trap/death");
+
+        fTokenId = TokenID.FURNITURE_TYPE | uint128(furniture.length);
+        fid  = FurnitureID.wrap(uint128(furniture.length));
+        furniture.push();
+        furniture[FurnitureID.unwrap(fid)].kind = Furnishings.Kind.Trap;
+        furniture[FurnitureID.unwrap(fid)].effects.push(Furnishings.Effect.Death);
+
+        // bind the entrance hall token to the game token
+        tokenBinding[fTokenId] = gTokenId;
+        boundTokens[gTokenId].push(fTokenId);
+
+        _mint(_msgSender(), fTokenId, 1, "furniture/trap/death");
+
+        // Now mint a boon
+
+        fTokenId = TokenID.FURNITURE_TYPE | uint128(furniture.length);
+        fid  = FurnitureID.wrap(uint128(furniture.length));
+        furniture.push();
+        furniture[FurnitureID.unwrap(fid)].kind = Furnishings.Kind.Boon;
+        furniture[FurnitureID.unwrap(fid)].effects.push(Furnishings.Effect.FreeLife);
+
+        // bind the entrance hall token to the game token
+        tokenBinding[fTokenId] = gTokenId;
+        boundTokens[gTokenId].push(fTokenId);
+
+        _mint(_msgSender(), fTokenId, 1, "furniture/boon/free_life");
+
         return gid;
     }
 
     function lastGame() public view returns (GameID) {
         return GameID.wrap(games.length - 1);
-    }
-
-    function gameValid(GameID gid) public view returns (bool) {
-        (bool ok, uint256 i) = _index(gid);
-        if (!ok) {
-            return false;
-        }
-        return games[i].initialized();
     }
 
     function joinGame(GameID gid, bytes calldata profile) public {
@@ -221,31 +352,22 @@ contract Arena is ERC1155URIStorage, ContextMixin {
         emit PlayerStartLocation(gid, p, startLocation, sceneblob);
     }
 
+    function placeFurniture(GameID gid, bytes32 placement, uint256 id) public {
+
+        // check ownership & that it is not already placed.#
+        if (balanceOf(_msgSender(), id) == 0) revert InsufficientBalance(_msgSender(), id, 0);
+        game(gid).placeFurniture(placement, id);
+    }
+
     function playerRegistered(GameID gid, address p) public view returns (bool) {
         return game(gid).playerRegistered(p);
     }
 
     function gameStatus(GameID id) public view returns (GameStatus memory) {
         Game storage g = game(id);
-        GameStatus memory gs;
-        gs.creator = g.creator;
-        gs.master = g.master;
-
-        gs.uri = uri(GAME_TYPE | GameID.unwrap(id));
-        gs.started = g.started;
-        gs.completed = g.completed;
-
-        gs.maxPlayers = g.maxPlayers;
-        gs.numRegistered = g.players.length - 1;
+        GameStatus memory gs = g.status();
+        gs.uri = uri(g.id);
         return gs;
-    }
-
-    function creator(GameID gid) public view returns (address) {
-        return game(gid).creator;
-    }
-
-    function master(GameID gid) public view returns (address) {
-        return game(gid).master;
     }
 
     /// @notice get the number of players currently known to the game (they may not be registered by the host yet)
@@ -306,20 +428,12 @@ contract Arena is ERC1155URIStorage, ContextMixin {
     /// generation.
     /// ---------------------------------------------------
 
-    function reject(GameID gid, TEID id) public {
+    function reject(GameID gid, TEID id, bool halt) public {
         (Game storage g, Transcript storage t) = _gametrans(gid, true);
         if (g.master != _msgSender()) {
             revert SenderMustBeMaster();
         }
-        t.reject(id);
-    }
-
-    function rejectAndHalt(GameID gid, TEID id) public {
-        (Game storage g, Transcript storage t) = _gametrans(gid, true);
-        if (g.master != _msgSender()) {
-            revert SenderMustBeMaster();
-        }
-        t.rejectAndHalt(id);
+        t.reject(id, halt);
     }
 
     function allowAndHalt(GameID gid, TEID id) public {
@@ -351,29 +465,44 @@ contract Arena is ERC1155URIStorage, ContextMixin {
         t.allowExitUse(id, outcome);
     }
 
+
+    /// @dev commitFurnitureUse is called by any participant to bind a token to a game session.
+    /// The effect of this on the game session is token specific
+    function commitFurnitureUse(GameID gid, FurnitureUse calldata committed)  public returns (TEID) {
+        (Game storage g, Transcript storage t) = _gametrans(gid, true);
+        if (g.master != _msgSender() && !g.playerRegistered(_msgSender())) {
+            revert NotAParticipant(_msgSender());
+        }
+        return t.commitFurnitureUse(_msgSender(), committed);
+    }
+
+    /// @dev allowFurnitureUse is called by the game master to declare the outcome of the participants commited token use.
+    /// Note that for placement of map items before the game start, the host can 'self allow'
+    function allowFurnitureUse(GameID gid, TEID id, FurnitureUseOutcome calldata outcome) public {
+        (Game storage g, Transcript storage t) = _gametrans(gid, true);
+        if (g.master != _msgSender()) {
+            revert SenderMustBeMaster();
+        }
+        t.allowFurnitureUse(id, outcome);
+    }
+
+
     /// ---------------------------------------------------
     /// @dev map & game loading.
     /// these methods are only called after the game
     /// is complete(closed)
     /// ---------------------------------------------------
 
-    function loadLocations(GameID gid, RawLocation[] calldata raw) public {
-        game(gid).load(raw);
+    function loadLocations(GameID gid, Location[] calldata locations) public {
+        game(gid).load(locations);
     }
 
-    function loadExits(GameID gid, RawExit[]calldata raw) public {
-        return game(gid).load(raw);
+    function loadExits(GameID gid, Exit[] calldata exits) public {
+        return game(gid).load(exits);
     }
 
-    function loadLinks(GameID gid, RawLink[] calldata raw) public {
-        game(gid).load(raw);
-    }
-
-    function load(GameID gid, RawLocation[] calldata raw) public {
-        game(gid).load(raw);
-    }
-    function load(GameID gid, RawExit[] calldata raw) public {
-        game(gid).load(raw);
+    function loadLinks(GameID gid, Link[] calldata links) public {
+        game(gid).load(links);
     }
 
     function loadTranscriptLocations(GameID gid, TranscriptLocation[]calldata locations) public {
@@ -382,9 +511,9 @@ contract Arena is ERC1155URIStorage, ContextMixin {
 
     /// @notice if a mistake is made loading the game map reset it using this
     /// method. The game and transcript ids are unchanged
-    function resetMappedLocations(GameID gid) public {
+    function reset(GameID gid) public {
 
-        game(gid).resetMappedLocations();
+        game(gid).reset();
         emit GameReset(gid, gid2tid[gid]);
     }
 
@@ -393,7 +522,7 @@ contract Arena is ERC1155URIStorage, ContextMixin {
     /// ---------------------------------------------------
 
     function playTranscript(GameID gid, TEID cur, TEID end) public returns (TEID) {
-        return game(gid).playTranscript(_trans(gid, false), cur, end);
+        return game(gid).playTranscript(_trans(gid, false), furniture, cur, end);
     }
 
 
@@ -433,21 +562,22 @@ contract Arena is ERC1155URIStorage, ContextMixin {
 
         TID tid = gid2tid[gid];
         uint256 it = TID.unwrap(tid);
+        Game storage g = games[ig];
 
         if (it == 0 || it >= transcripts.length) {
             revert InvalidTID(it);
         }
 
         if (requireOpen) {
-            if (!games[ig].started) {
+            if (!g.started) {
                 revert GameNotStarted();
             }
-            if (games[ig].completed) {
+            if (g.completed) {
                 revert GameComplete();
             }
         }
 
-        return (games[ig], transcripts[it]);
+        return (g, transcripts[it]);
     }
 
     function game(GameID id) internal view returns (Game storage) {

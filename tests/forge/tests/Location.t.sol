@@ -4,8 +4,10 @@ pragma solidity =0.8.9;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 import "lib/mapstructure.sol";
+import "tests/hexlocations.sol";
 
 contract Calldata {
+    using HexLocations for Location;
 
     ExitID[] _sides;
 
@@ -14,20 +16,18 @@ contract Calldata {
     }
 
     function RawLocation_kind(RawLocation calldata raw) public pure returns (Locations.Kind) {
-        return Locations.kind(raw);
+        Location memory loc;
+        loc.load(raw);
+        return loc.kind;
     }
 
     function RawLocation_setSides(bytes calldata rawSides) public returns (ExitID[] memory) {
         reset();
-        Locations.setSides(_sides, rawSides);
-        ExitID[] memory sides = new ExitID[](_sides.length);
 
-        for (uint8 i =0; i < uint8(sides.length); i++) {
-            sides[i] = _sides[i];
-        }
+        ExitID[] memory sides = new ExitID[](rawSides.length >> 1);
+        HexLocations.loadSides(sides, rawSides);
         return sides;
     }
-
 }
 
 contract LocationTest is DSTest {
