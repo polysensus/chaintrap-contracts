@@ -24,7 +24,7 @@ contract ArenaTest is DSTest {
     Arena private arena;
     Location[] private locs;
     uint16 nextExitID;
-    uint256 blockNumberForLocationTokens;
+    uint256 saltForLocationTokens;
 
     GameID g1;
 

@@ -315,7 +315,7 @@ contract TranscriptTest is DSTest {
     Vm private vm = Vm(HEVM_ADDRESS);
     Location[] private locs;
     uint16 nextExitID;
-    uint256 blockNumberForLocationTokens;
+    uint256 saltForLocationTokens;
 
     Factory private f;
 
@@ -325,7 +325,7 @@ contract TranscriptTest is DSTest {
         nextExitID = 1;
         locs.push(); // id zero should be invalid always
         f = new Factory();
-        blockNumberForLocationTokens = 1;
+        saltForLocationTokens = 12345;
     }
 
     function load(RawLocation[] memory raw) public {
@@ -436,28 +436,25 @@ contract TranscriptTest is DSTest {
     }
 
     // allow for tokens which represent two players at the same place and time
-    function _locationToken(uint16 id) internal returns (bytes32) {
+    function _locationToken(uint16 id) internal view returns (bytes32) {
         // TODO hashy things but the transcript checker doesn't support it yet
-        bytes memory b = abi.encodePacked(blockNumberForLocationTokens, id);
-        blockNumberForLocationTokens += 1;
+        bytes memory b = abi.encodePacked(saltForLocationTokens, id);
         return keccak256(b);
     }
 
-    function locationToken(uint16 id) internal returns (bytes32) {
+    function locationToken(uint16 id) internal view returns (bytes32) {
         // TODO hashy things but the transcript checker doesn't support it yet
         bytes32 token = _locationToken(id);
-        blockNumberForLocationTokens += 1;
         return token;
     }
    
-    function locationToken(LocationID id) internal returns (bytes32) {
+    function locationToken(LocationID id) internal view returns (bytes32) {
         return locationToken(uint16(LocationID.unwrap(id)));
     }
 
     function locationTE(LocationID id) internal returns (TranscriptLocation memory) {
         TranscriptLocation memory loc;
         loc.id = id;
-        loc.blocknumber = blockNumberForLocationTokens;
         loc.token = locationToken(id);
         return loc;
     }
