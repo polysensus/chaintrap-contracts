@@ -60,7 +60,6 @@ struct Commitment {
 
 /// @dev each Move that changes location generates a new location token
 struct TranscriptLocation {
-    uint256 blocknumber; // ahh, this may need to be #header
     bytes32 token;
     LocationID id;
     // May want to include game map vrf beta
