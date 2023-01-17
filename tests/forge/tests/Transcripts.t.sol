@@ -10,6 +10,8 @@ import "lib/game.sol";
 import "tests/hexlocations.sol";
 import "tests/hexexitlinks.sol";
 
+/// @title enumerating the transcript yeilds entries
+
 contract Factory {
 
     /// @dev this exists to enable testing of methods which require calldata
@@ -81,7 +83,7 @@ contract Factory {
         uint n = 0;
         TEID cur = cursorStart;
 
-        for(bool completed = false;!completed; (cur, , completed) = head().next(cur)) {
+        for(bool completed = false;!completed; (cur, , , completed) = head().next(cur)) {
             n += 1;
         }
         return n;
@@ -240,17 +242,18 @@ contract Factory {
         TEID cur = cursorStart;
         uint16 end = 0;
         bool completed = false;
-        TranscriptEntry memory te;
         Game storage game = headGame();
         Transcript storage t = trans[trans.length -1];
+        Commitment storage co = t.entries[0];
+        bool halted = false;
 
         for(;!completed && (end == 0 || TEID.unwrap(cur) != end);) {
 
-            (cur, te, completed) = t.next(cur);
+            (cur, co, halted, completed) = t.next(cur);
 
-            Player storage p = game.player(te.player);
+            Player storage p = game.player(co.player);
             if (p.halted) {
-                revert Halted(te.player);
+                revert Halted(co.player);
             }
         }
     }
@@ -259,8 +262,18 @@ contract Factory {
         return head().haltedAt(player);
     }
 
-    function next(TEID cur) public view returns (TEID, TranscriptEntry memory, bool) {
-        return head().next(cur);
+    function next(TEID cur) public view returns (TEID, Commitment memory, bool) {
+        Commitment storage co;
+        bool halted;
+        bool completed;
+        (cur, co, halted, completed) = head().next(cur);
+        Commitment memory com;
+        com.player = co.player;
+        com.kind = co.kind;
+        com.outcomeDeclared = co.outcomeDeclared;
+        com.moveAccepted = co.moveAccepted;
+        com.halted = halted;
+        return (cur, com, completed);
     }
 
     // committing and allowing
@@ -1262,7 +1275,7 @@ contract TranscriptTest is DSTest {
 
         TEID cur = cursorStart;
         bool complete = false;
-        TranscriptEntry memory te;
+        Commitment memory te;
         for(;!complete; (cur, te, complete) = f.next(cur)) {
             // XXX: leave the halt on the rejected move, even though that means it never gets processed in the transcript.
             // Instead, check for the halted by asking
@@ -1321,7 +1334,7 @@ contract TranscriptTest is DSTest {
 
         TEID cur = cursorStart;
         bool complete = false;
-        TranscriptEntry memory te;
+        Commitment memory te;
         (cur, te, complete) = f.next(cur);
         assertEq(TEID.unwrap(cur), TEID.unwrap(ids[0]));
         (cur, te, complete) = f.next(cur);
@@ -1375,7 +1388,7 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 2));
 
         TEID cur = cursorStart;
-        (TEID id1, TranscriptEntry memory te, bool complete) = f.next(cur);
+        (TEID id1, Commitment memory te, bool complete) = f.next(cur);
         assertEq(TEID.unwrap(id1), uint16(1));
         assertEq(te.player, address(1));
         assertTrue(te.kind == Transcripts.MoveKind.ExitUse);
@@ -1394,7 +1407,7 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 4));
 
         TEID cur = cursorStart;
-        TranscriptEntry memory te;
+        Commitment memory te;
         bool complete;
 
         (cur, te, complete) = f.next(cur);
@@ -1424,7 +1437,7 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 6));
 
         TEID cur = cursorStart;
-        TranscriptEntry memory te;
+        Commitment memory te;
         bool complete;
 
         (cur, te, complete) = f.next(cur);
@@ -1454,7 +1467,7 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 6));
 
         TEID cur = cursorStart;
-        TranscriptEntry memory te;
+        Commitment memory te;
         bool complete;
 
         (cur, te, complete) = f.next(cur);
@@ -1484,7 +1497,7 @@ contract TranscriptTest is DSTest {
         f.reject(id);
 
         TEID cur = cursorStart;
-        TranscriptEntry memory te;
+        Commitment memory te;
         bool complete;
 
         (cur, te, complete) = f.next(cur);
@@ -1501,9 +1514,9 @@ contract TranscriptTest is DSTest {
 
         (cur, te, complete) = f.next(cur);
         assertEq(TEID.unwrap(cur), uint16(0));
-        assertEq(te.player, address(0));
-        assertTrue(te.kind == Transcripts.MoveKind.Undefined);
         assertTrue(!te.halted);
+        assertTrue(te.outcomeDeclared);
+        assertTrue(!te.moveAccepted);
         assertTrue(complete);
 
     }
@@ -1513,7 +1526,7 @@ contract TranscriptTest is DSTest {
 
         TEID id = f.commitExitUse(address(1), ExitUse(Locations.SideKind.North, 1));
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 2));
-        (, TranscriptEntry memory te,) = f.next(cursorStart);
+        (, Commitment memory te,) = f.next(cursorStart);
         assertEq(te.player, address(1));
     }
 

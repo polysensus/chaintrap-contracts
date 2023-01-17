@@ -392,29 +392,29 @@ library Games {
         Game storage self, Transcript storage trans, Furniture[] storage furniture, TEID cur, TEID _end
         ) internal returns (TEID) {
 
-        uint16 end = TEID.unwrap(_end);
         bool cursorComplete = false;
-        TranscriptEntry memory te;
+        bool halted = false;
+        Commitment storage co = trans.entries[0]; // undefined entry
 
-        for(;!cursorComplete && (end == 0 || TEID.unwrap(cur) != end);) {
+        for(;!cursorComplete && (TEID.unwrap(_end) == 0 || TEID.unwrap(cur) != TEID.unwrap(_end));) {
 
-            (cur, te, cursorComplete) = trans.next(cur);
+            (cur, co, halted, cursorComplete) = trans.next(cur);
 
-            Player storage p = player(self, te.player);
+            Player storage p = player(self, co.player);
             if (p.halted) {
-                revert Halted(te.player);
+                revert Halted(co.player);
             }
 
-            if (te.kind == Transcripts.MoveKind.ExitUse) {
+            if (co.kind == Transcripts.MoveKind.ExitUse) {
 
-                self.useExit(cur, trans, te);
-                p.halted = te.halted;
+                self.useExit(cur, trans, player(self, co.player));
+                p.halted = halted;
                 continue;
             }
 
-            if (te.kind == Transcripts.MoveKind.FurnitureUse) {
-                self.useFurniture(cur, trans, te, furniture);
-                p.halted = te.halted;
+            if (co.kind == Transcripts.MoveKind.FurnitureUse) {
+                self.useFurniture(cur, trans, player(self, co.player), halted, furniture);
+                p.halted = halted;
                 continue;
             }
         }
@@ -430,10 +430,9 @@ library Games {
     /// @notice Attempt to move through an exit link. If successful, the player
     /// location is updated to the location on the other side of the link.
     function useExit(
-        Game storage self, TEID cur, Transcript storage trans, TranscriptEntry memory te
+        Game storage self, TEID cur, Transcript storage trans,  Player storage p
         ) internal hasCompleted(self) {
 
-        Player storage p = player(self, te.player);
         ExitUse storage u = trans.exitUse(cur);
         ExitUseOutcome storage o = trans.exitUseOutcome(cur);
 
@@ -459,11 +458,10 @@ library Games {
     }
 
     function useFurniture(
-        Game storage self, TEID cur, Transcript storage trans, TranscriptEntry memory te,
-        Furniture[] storage furniture
+        Game storage self, TEID cur, Transcript storage trans, Player storage p,
+        bool halted, Furniture[] storage furniture
     ) internal hasCompleted(self) {
 
-        Player storage p = player(self, te.player);
         FurnitureUse storage u = trans.furnitureUse(cur);
         FurnitureUseOutcome storage o = trans.furnitureUseOutcome(cur);
 
@@ -502,17 +500,17 @@ library Games {
         emit TranscriptPlayerUsedFurniture(self.id, cur, p.addr, p.loc, id, o.kind, o.effect);
 
         if(o.effect == Furnishings.Effect.Victory) {
-            if (!te.halted) revert TranscriptFurnitureShouldHaveHalted(cur, id, o.kind, o.effect);
+            if (!halted) revert TranscriptFurnitureShouldHaveHalted(cur, id, o.kind, o.effect);
             emit TranscriptPlayerVictory(self.id, cur, p.addr, p.loc, id);
             return;
         }
         if(o.effect == Furnishings.Effect.Death) {
             if (p.lives > 0) {
                 p.lives -= 1;
-                if (te.halted) revert TranscriptFurnitureShouldNotHaveHalted(cur, id, o.kind, o.effect);
+                if (halted) revert TranscriptFurnitureShouldNotHaveHalted(cur, id, o.kind, o.effect);
                 emit TranscriptPlayerLostLife(self.id, cur, p.addr, p.loc, id);
             } else {
-                if (!te.halted) revert TranscriptFurnitureShouldHaveHalted(cur, id, o.kind, o.effect);
+                if (!halted) revert TranscriptFurnitureShouldHaveHalted(cur, id, o.kind, o.effect);
                 if(o.kind == Furnishings.Kind.Trap)
                     emit TranscriptPlayerKilledByTrap(self.id, cur, p.addr, p.loc, id);
                 else

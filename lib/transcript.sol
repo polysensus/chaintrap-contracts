@@ -58,13 +58,6 @@ struct Commitment {
     bool halted;
 }
 
-/// @title enumerating the transcript yeilds entries
-struct TranscriptEntry {
-    address player;
-    Transcripts.MoveKind kind;
-    bool halted;
-}
-
 /// @dev each Move that changes location generates a new location token
 struct TranscriptLocation {
     uint256 blocknumber; // ahh, this may need to be #header
@@ -385,32 +378,27 @@ library Transcripts {
     /// @param self a parameter just like in doxygen (must be followed by parameter name)
     /// @param cur The callers 'current' transcript entry position
     /// @return - The TEID, TranscriptEntry after cur and a boolean indicating if the enumeration is complete.
-    function next(Transcript storage self, TEID cur) internal view returns (TEID, TranscriptEntry memory, bool) {
-
-        TranscriptEntry memory te;
-        te.player = address(0);
-        te.kind = Transcripts.MoveKind.Undefined;
-        te.halted = false;
+    function next(Transcript storage self, TEID cur) internal view returns (TEID, Commitment storage, bool, bool) {
 
         TEID id = invalidTEID;
+        bool halted = false;
+        Commitment storage co = self.entries[0]; // this is the undefined entry
 
         // Can't use checkedTEIDIndex here because the initial cur will be TEID(0)
 
         uint16 i = self.checkedTEIDCursorIndex(cur) + 1;
-
         for (; i < self.entries.length; i++) {
-            if (self.entries[i].outcomeDeclared && self.entries[i].moveAccepted) {
+            co = self.entries[i];
+            if (co.outcomeDeclared && co.moveAccepted) {
                 id = TEID.wrap(i);
-                te.player = self.entries[i].player;
-                te.kind = self.entries[i].kind;
-                te.halted = (TEID.unwrap(self.halted[te.player]) == i);
+                halted = (TEID.unwrap(self.halted[co.player]) == i);
                 break;
             }
         }
 
         // if the last entry is rejected then we will enter next() and initialise i to 
         // self._outcomems.length due to  cur + 1
-        return (id, te, i >= self.entries.length - 1);
+        return (id, co, halted, i >= self.entries.length - 1);
     }
 
 
