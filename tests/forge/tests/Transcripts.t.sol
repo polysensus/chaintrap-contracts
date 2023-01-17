@@ -277,12 +277,8 @@ contract Factory {
     }
 
     // committing and allowing
-    function reject(TEID id) public {
-        head().reject(id);
-    }
-
-    function rejectAndHalt(TEID id) public {
-        head().rejectAndHalt(id);
+    function reject(TEID id, bool halt) public {
+        head().reject(id, halt);
     }
 
     function allowAndHalt(TEID id) public {
@@ -452,7 +448,7 @@ contract TranscriptTest is DSTest {
         return locationToken(uint16(LocationID.unwrap(id)));
     }
 
-    function locationTE(LocationID id) internal returns (TranscriptLocation memory) {
+    function locationTE(LocationID id) internal view returns (TranscriptLocation memory) {
         TranscriptLocation memory loc;
         loc.id = id;
         loc.token = locationToken(id);
@@ -1268,7 +1264,7 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcomeHalt(Locations.SideKind.South, 1));
 
         id = f.commitExitUse(address(2), ExitUse(Locations.SideKind.North, 5));
-        f.rejectAndHalt(id);
+        f.reject(id, true);
 
         TEID cur = cursorStart;
         bool complete = false;
@@ -1327,7 +1323,7 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(ids[3], exitUseOutcomeHalt(Locations.SideKind.South, 1));
 
         ids[4] = f.commitExitUse(address(2), ExitUse(Locations.SideKind.North, 5));
-        f.rejectAndHalt(ids[4]);
+        f.reject(ids[4], true);
 
         TEID cur = cursorStart;
         bool complete = false;
@@ -1428,7 +1424,7 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 2));
 
         id = f.commitExitUse(address(2), ExitUse(Locations.SideKind.North, 3));
-        f.reject(id);
+        f.reject(id, false /*halt*/);
 
         id = f.commitExitUse(address(3), ExitUse(Locations.SideKind.North, 5));
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 6));
@@ -1455,7 +1451,7 @@ contract TranscriptTest is DSTest {
         f.start();
 
         TEID id = f.commitExitUse(address(1), ExitUse(Locations.SideKind.North, 1));
-        f.reject(id);
+        f.reject(id, false /*halt*/);
 
         id = f.commitExitUse(address(2), ExitUse(Locations.SideKind.North, 3));
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 2));
@@ -1491,7 +1487,7 @@ contract TranscriptTest is DSTest {
         f.allowExitUse(id, exitUseOutcome(Locations.SideKind.South, 4));
 
         id = f.commitExitUse(address(3), ExitUse(Locations.SideKind.North, 5));
-        f.reject(id);
+        f.reject(id, false /*halt*/);
 
         TEID cur = cursorStart;
         Commitment memory te;
@@ -1515,8 +1511,8 @@ contract TranscriptTest is DSTest {
         assertTrue(te.outcomeDeclared);
         assertTrue(!te.moveAccepted);
         assertTrue(complete);
-
     }
+
     function testTranscriptCommitRecordsPlayer() public {
 
         f.start();
@@ -1552,7 +1548,7 @@ contract TranscriptTest is DSTest {
         f.start();
 
         TEID id = f.commitExitUse(address(1), ExitUse(Locations.SideKind.North, 1));
-        f.rejectAndHalt(id);
+        f.reject(id, true);
         f.commitExitUse(address(1), ExitUse(Locations.SideKind.South, 2));
     }
 }

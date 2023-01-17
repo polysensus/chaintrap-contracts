@@ -2,7 +2,7 @@
 # solc_version = '0.8.13'
 solc_version = '0.8.9'
 optmizer = true
-optmizer_runs = 20_000
+# optmizer_runs = 200
 src = 'chaintrap'
 test = 'tests/forge/tests'
 out = 'build/forge/out'

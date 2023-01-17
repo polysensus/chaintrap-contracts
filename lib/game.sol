@@ -258,12 +258,12 @@ library Games {
         self.completed = true;
     }
 
-    function joinGame(Game storage self, address p, bytes calldata profile) internal hasNotCompleted(self) hasNotStarted(self) {
+    function joinGame(Game storage self, address playerAddress, bytes calldata profile) internal hasNotCompleted(self) hasNotStarted(self) {
 
-        uint8 i = self.iplayers[p];
+        uint8 i = self.iplayers[playerAddress];
 
         if (i != 0) {
-            revert PlayerAlreadyRegistered(p);
+            revert PlayerAlreadyRegistered(playerAddress);
         }
 
         if (self.players.length >= type(uint8).max - 1) {
@@ -277,26 +277,29 @@ library Games {
 
         i = uint8(self.players.length);
         self.players.push();
-        self.players[i].addr = p;
-        self.players[i].profile = profile;
-        self.iplayers[p] = i;
+
+        Player storage p = self.players[i];
+        p.addr = playerAddress;
+        p.profile = profile;
+        self.iplayers[playerAddress] = i;
     }
 
     function setStartLocation(
-        Game storage self, address p, bytes32 startLocation, bytes calldata sceneblob
+        Game storage self, address pa, bytes32 startLocation, bytes calldata sceneblob
         ) hasNotCompleted(self) hasNotStarted(self) internal {
 
-        uint8 i = self.iplayers[p];
+        uint8 i = self.iplayers[pa];
 
         if (i == 0) {
-            revert PlayerNotRegistered(p);
+            revert PlayerNotRegistered(pa);
         }
 
         // Can't do this until the locations are loaded
         // self.players[i].loc = self.location(startLocation);
 
-        self.players[i].startLocation = startLocation;
-        self.players[i].sceneblob = sceneblob;
+        Player storage p = self.players[i];
+        p.startLocation = startLocation;
+        p.sceneblob = sceneblob;
     }
 
     /// @notice commit the placement of furniture to a particular game
@@ -364,13 +367,15 @@ library Games {
     function load(Game storage self, TranscriptLocation[]calldata locations) internal hasCompleted(self) {
         for (uint16 i=0; i < locations.length; i++) {
 
-            uint16 iloc = LocationID.unwrap(locations[i].id);
+            TranscriptLocation calldata loc = locations[i];
+
+            uint16 iloc = LocationID.unwrap(loc.id);
 
             if (iloc == 0 || iloc >= self.map.locations.length) {
-                revert InvalidTranscriptLocation(locations[i].token, iloc);
+                revert InvalidTranscriptLocation(loc.token, iloc);
             }
-            self.locationTokens.push(locations[i].token);
-            self.tokenLocations[locations[i].token] = LocationID.unwrap(locations[i].id);
+            self.locationTokens.push(loc.token);
+            self.tokenLocations[loc.token] = LocationID.unwrap(loc.id);
         }
 
         // resolve the player start locations so that the transcripts will work

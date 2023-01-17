@@ -62,7 +62,6 @@ struct Commitment {
 struct TranscriptLocation {
     bytes32 token;
     LocationID id;
-    // May want to include game map vrf beta
 }
 
 // ---------------------------
@@ -178,43 +177,30 @@ library Transcripts {
         return self.halted[player];
     }
 
-    function reject(Transcript storage self, TEID id) internal {
+    function _delcareOutcome(
+        Transcript storage self, TEID id, bool accept, bool halt) internal {
+
         uint16 i = self.checkedTEIDIndex(id);
 
         self.entries[i].outcomeDeclared = true;
-        self.entries[i].moveAccepted = false;
+        self.entries[i].moveAccepted = accept;
 
         // Record that the players move is no longer pending
         self.pendingOutcome[self.entries[i].player] = false;
-
-        emit EntryReject(self.gid, id, self.entries[i].player, false /*halted*/);
+        if (halt) {
+            self.entries[i].halted = true;
+            self.halted[self.entries[i].player] = id;
+        }
+        if (!accept)
+            emit EntryReject(self.gid, id, self.entries[i].player, halt /*halted*/);
     }
 
-    /// @dev typically reject and halt is used to stop griefing
-    function rejectAndHalt(Transcript storage self, TEID id) internal {
-        uint16 i = self.checkedTEIDIndex(id);
-
-        self.entries[i].outcomeDeclared = true;
-        self.entries[i].moveAccepted = false;
-        self.entries[i].halted = true;
-        self.halted[self.entries[i].player] = id;
-
-        // Record that the players move is no longer pending
-        self.pendingOutcome[self.entries[i].player] = false;
-        emit EntryReject(self.gid, id, self.entries[i].player, true /*halted*/);
+    function reject(Transcript storage self, TEID id, bool halt) internal {
+        return self._delcareOutcome(id, false, halt);
     }
-
 
     function allowAndHalt(Transcript storage self, TEID id) internal {
-        uint16 i = self.checkedTEIDIndex(id);
-
-        self.entries[i].outcomeDeclared = true;
-        self.entries[i].moveAccepted = true;
-        self.entries[i].halted = true;
-        self.halted[self.entries[i].player] = id;
-
-        // Record that the players move is no longer pending
-        self.pendingOutcome[self.entries[i].player] = false;
+        return self._delcareOutcome(id, true, true);
     }
 
     /// ---------------------------
@@ -249,7 +235,6 @@ library Transcripts {
         ExitUse storage eu = self.exitUses[id];
         eu.side = committed.side;
         eu.egressIndex = committed.egressIndex;
-
 
         emit UseExit(self.gid, id, player, eu); // player is the committer of the tx
         return id;
@@ -304,11 +289,13 @@ library Transcripts {
     function allowFurnitureUse(Transcript storage self, TEID id, FurnitureUseOutcome calldata outcome) internal {
         uint16 i = self.checkedTEIDIndex(id);
 
-        self.entries[i].outcomeDeclared = true;
-        self.entries[i].moveAccepted = true;
+        Commitment storage co = self.entries[i];
+
+        co.outcomeDeclared = true;
+        co.moveAccepted = true;
         if (outcome.halt) {
-            self.entries[i].halted = true;
-            self.halted[self.entries[i].player] = id;
+            co.halted = true;
+            self.halted[co.player] = id;
         }
 
         // XXX: TODO: Transcripts.FurnitureUseEffect.Transfer
@@ -320,9 +307,9 @@ library Transcripts {
         o.halt = outcome.halt;
 
         // Record that the players move is no longer pending
-        self.pendingOutcome[self.entries[i].player] = false;
+        self.pendingOutcome[co.player] = false;
 
-        emit FurnitureUsed(self.gid, id, self.entries[i].player, outcome);
+        emit FurnitureUsed(self.gid, id, co.player, outcome);
     }
 
     /// ---------------------------

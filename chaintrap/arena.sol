@@ -428,20 +428,12 @@ contract Arena is ERC1155URIStorage, Ownable, ContextMixin {
     /// generation.
     /// ---------------------------------------------------
 
-    function reject(GameID gid, TEID id) public {
+    function reject(GameID gid, TEID id, bool halt) public {
         (Game storage g, Transcript storage t) = _gametrans(gid, true);
         if (g.master != _msgSender()) {
             revert SenderMustBeMaster();
         }
-        t.reject(id);
-    }
-
-    function rejectAndHalt(GameID gid, TEID id) public {
-        (Game storage g, Transcript storage t) = _gametrans(gid, true);
-        if (g.master != _msgSender()) {
-            revert SenderMustBeMaster();
-        }
-        t.rejectAndHalt(id);
+        t.reject(id, halt);
     }
 
     function allowAndHalt(GameID gid, TEID id) public {
@@ -570,21 +562,22 @@ contract Arena is ERC1155URIStorage, Ownable, ContextMixin {
 
         TID tid = gid2tid[gid];
         uint256 it = TID.unwrap(tid);
+        Game storage g = games[ig];
 
         if (it == 0 || it >= transcripts.length) {
             revert InvalidTID(it);
         }
 
         if (requireOpen) {
-            if (!games[ig].started) {
+            if (!g.started) {
                 revert GameNotStarted();
             }
-            if (games[ig].completed) {
+            if (g.completed) {
                 revert GameComplete();
             }
         }
 
-        return (games[ig], transcripts[it]);
+        return (g, transcripts[it]);
     }
 
     function game(GameID id) internal view returns (Game storage) {
