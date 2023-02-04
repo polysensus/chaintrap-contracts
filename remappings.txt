@@ -3,6 +3,8 @@
 openzeppelin-solidity/=node_modules/@openzeppelin/
 chaintrap/=chaintrap/
 lib/=lib/
+facets/=chaintrap/facets/
+interfaces/=interfaces/
 tests/=tests/forge/tests/
 forge-std/=tests/forge/forge-std/src
 tests/forge/forge-std/src=tests/forge/forge-std/src
