@@ -1,5 +1,6 @@
 tmp
 .local
+broadcast
 tests/hh/deployments
 tests/hh-localstorage.txt
 bin

@@ -8,6 +8,17 @@ test = 'tests/forge/tests'
 out = 'build/forge/out'
 libs = ['node_modules']
 verbosity = 4
+# fs_permissions = [{ access = "read-write", path = "./"}]
+fs_permissions = [
+    { access = "read", path = "build/forge/out/DiamondLoupeFacet.sol"},
+    { access = "read", path = "build/forge/out/OwnershipFacet.sol"},
+    { access = "read", path = "build/forge/out/ERC165Facet.sol"},
+    { access = "read", path = "build/forge/out/ERC173Facet.sol"},
+    { access = "read", path = "build/forge/out/ArenaFacet.sol"},
+    { access = "read", path = "build/forge/out/ArenaCalls.sol"},
+    { access = "read", path = "build/forge/out/ArenaERC1155.sol"},
+    { access = "read", path = "build/forge/out/ArenaTranscripts.sol"},
+    ]
 
 [profile.hardhat]
 src = 'chaintrap'
