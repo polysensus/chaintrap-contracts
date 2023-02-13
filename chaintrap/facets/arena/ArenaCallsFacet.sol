@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
-import { LibArenaERC1155 } from "lib/erc1155/libarenaerc1155.sol";
+import { LibERC1155Arena } from "lib/erc1155/liberc1155arena.sol";
 import "lib/game.sol";
 import "lib/furnishings.sol";
 import "lib/arena/storage.sol";
@@ -9,7 +9,7 @@ import "lib/arena/accessors.sol";
 
 
 
-contract ArenaCalls {
+contract ArenaCallsFacet {
 
     using Transcripts for Transcript;
     using Games for Game;

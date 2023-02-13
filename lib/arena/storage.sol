@@ -31,7 +31,7 @@ library ArenaStorage {
     }
 
     /// @notice idempotent initialisation for the zero states.
-    function _initOnce() internal {
+    function _idempotentInit() internal {
         ArenaStorage.Layout storage s = layout();
 
         if (s.transcripts.length == 0) {

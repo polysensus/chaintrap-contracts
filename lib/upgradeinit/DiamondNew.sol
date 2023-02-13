@@ -15,7 +15,7 @@ import { IERC165 } from "diamond/interfaces/IERC165.sol";
 
 import { ArenaStorage } from "lib/arena/storage.sol";
 import { ArenaERC1155Storage } from "lib/erc1155/storage.sol";
-import { LibArenaERC1155 } from "lib/erc1155/libarenaerc1155.sol";
+import { LibERC1155Arena } from "lib/erc1155/liberc1155arena.sol";
 
 struct DiamondNewArgs {
     string []typeURIs;
@@ -27,8 +27,6 @@ interface IDiamondNew {
 
 contract DiamondNew {    
 
-    // You can add parameters to this function in order to pass in 
-    // data to set your own state variables
     function init(DiamondNewArgs calldata args) external {
         // adding ERC165 data
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
@@ -37,15 +35,7 @@ contract DiamondNew {
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
         ds.supportedInterfaces[type(IERC173).interfaceId] = true;
 
-
-        // add your own state variables 
-        // EIP-2535 specifies that the `diamondCut` function takes two optional 
-        // arguments: address _init and bytes calldata _calldata
-        // These arguments are used to execute an arbitrary function using delegatecall
-        // in order to set state variables in the diamond during deployment or an upgrade
-        // More info here: https://eips.ethereum.org/EIPS/eip-2535#diamond-interface 
-
-        ArenaStorage._initOnce();
-        ArenaERC1155Storage._initOnce(args.typeURIs);
+        ArenaStorage._idempotentInit();
+        ArenaERC1155Storage._idempotentInit(args.typeURIs);
     }
 }

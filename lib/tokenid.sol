@@ -113,6 +113,6 @@ library TokenID {
     uint256 constant GAME_TYPE = (1 << ID_TYPE_SHIFT);
     uint256 constant TRANSCRIPT_TYPE = (2 << ID_TYPE_SHIFT);
     uint256 constant FURNITURE_TYPE = (3 << ID_TYPE_SHIFT);
-    uint256 constant LAST_FIXED_TYPE = (4096 << ID_TYPE_SHIFT);
+    uint256 constant LAST_FIXED_TYPE = FURNITURE_TYPE;
     uint256 constant MAX_FIXED_TYPE = (4096 << ID_TYPE_SHIFT);
 }

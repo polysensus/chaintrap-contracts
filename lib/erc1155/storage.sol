@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
-import "lib/erc1155/libarenaerc1155.sol";
+import "lib/erc1155/liberc1155arena.sol";
 import "lib/tokenid.sol";
 
 library ArenaERC1155Storage {
@@ -32,7 +32,7 @@ library ArenaERC1155Storage {
         }
     }
 
-    function _initOnce(string[] calldata typeURIs) internal {
+    function _idempotentInit(string[] calldata typeURIs) internal {
         ArenaERC1155Storage.Layout storage s = ArenaERC1155Storage.layout();
         if (s.initialised) return;
 
@@ -40,7 +40,7 @@ library ArenaERC1155Storage {
 
         if (typeURIs.length != 0) {
             for (uint i = 0; i < typeURIs.length; i++) {
-                LibArenaERC1155._logTypeURI(msg.sender, i+1, typeURIs[i]);
+                LibERC1155Arena._logTypeURI(msg.sender, i+1, typeURIs[i]);
             }
         }
         s.initialised = true;

@@ -5,7 +5,7 @@ import "lib/tokenid.sol";
 
 error TokenNotBoundBy(uint256, uint256);
 
-library LibArenaERC1155 {
+library LibERC1155Arena {
 
     event URI(string value, uint256 indexed tokenId);
     event TransferSingle(

@@ -2,7 +2,7 @@
 pragma solidity =0.8.9;
 
 import "@solidstate/contracts/access/ownable/OwnableInternal.sol";
-import "@solidstate/contracts/security/PausableInternal.sol";
+import "lib/solidstate/security/ModPausable.sol";
 import "lib/contextmixin.sol";
 import "lib/tokenid.sol";
 import "lib/game.sol";
@@ -13,9 +13,9 @@ import "lib/arena/accessors.sol";
 
 /// Games are played in an arena. The arena remembers all games that have ever
 /// been played
-contract ArenaTranscripts is
+contract ArenaTranscriptsFacet is
     OwnableInternal,
-    PausableInternal,
+    ModPausable,
     ContextMixin
     {
 

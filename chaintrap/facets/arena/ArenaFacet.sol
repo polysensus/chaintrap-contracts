@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
-import "@solidstate/contracts/access/ownable/OwnableInternal.sol";
-import "@solidstate/contracts/security/PausableInternal.sol";
-import "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
-import "@solidstate/contracts/token/ERC1155/metadata/ERC1155MetadataInternal.sol";
-import { LibArenaERC1155 } from "lib/erc1155/libarenaerc1155.sol";
+// import "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
+// import "@solidstate/contracts/token/ERC1155/metadata/ERC1155MetadataInternal.sol";
+
+import "lib/solidstate/security/ModPausable.sol";
+import "lib/solidstate/access/ownable/ModOwnable.sol";
+
+import { LibERC1155Arena } from "lib/erc1155/liberc1155arena.sol";
+import "lib/interfaces/IArenaEvents.sol";
 import "lib/contextmixin.sol";
 import "lib/tokenid.sol";
 import "lib/game.sol";
@@ -17,62 +20,13 @@ error InsufficientBalance(address addr, uint256 id, uint256 balance);
 
 error ArenaError(uint);
 
-interface IArena {
-    event GameCreated(GameID indexed gid, TID tid, address indexed creator, uint256 maxPlayers);
-    event GameReset(GameID indexed gid, TID tid);
-    event GameStarted(GameID indexed gid);
-    event GameCompleted(GameID indexed gid);
-    event PlayerJoined(GameID indexed gid, address player, bytes profile);
-    event PlayerStartLocation(GameID indexed gid, address player, bytes32 startLocation, bytes sceneblob);
-
-    // NOTE: These are duplicated in library Transcript - this is the only way to expose the abi to ethers.js
-    event UseExit(GameID indexed gid, TEID eid, address indexed player, ExitUse exitUse); // player is the committer of the tx
-    event ExitUsed(GameID indexed gid, TEID eid, address indexed player, ExitUseOutcome outcome);
-    event EntryReject(GameID indexed gid, TEID eid, address indexed player, bool halted);
-
-    event UseToken(GameID indexed gid, TEID eid, address indexed participant, FurnitureUse use);
-    event FurnitureUsed(GameID indexed gid, TEID eid, address indexed participant, FurnitureUseOutcome outcome);
-
-    // The following events are emitted by transcript playback to reveal the full narative of the game
-    event TranscriptPlayerEnteredLocation(
-        uint256 indexed gameId, TEID eid, address indexed player,
-        LocationID indexed entered, ExitID enteredVia, LocationID left, ExitID leftVia
-        );
-
-    event TranscriptPlayerKilledByTrap(
-        uint256 indexed gameId, TEID eid, address indexed player,
-        LocationID indexed location, uint256 furniture
-    );
-
-    event TranscriptPlayerDied(
-        uint256 indexed gameId, TEID eid, address indexed player,
-        LocationID indexed location, uint256 furniture
-    );
-
-    event TranscriptPlayerGainedLife(
-        uint256 indexed gameId, TEID eid, address indexed player,
-        LocationID indexed location, uint256 furniture
-    );
-
-    // only when player.lives > 0
-    event TranscriptPlayerLostLife(
-        uint256 indexed gameId, TEID eid, address indexed player,
-        LocationID indexed location, uint256 furniture
-    );
-
-    event TranscriptPlayerVictory(
-        uint256 indexed gameId, TEID eid, address indexed player,
-        LocationID indexed location, uint256 furniture
-    );
-}
-
 /// Games are played in an arena. The arena remembers all games that have ever
 /// been played
-contract ArenaFacet is IArena,
-    ERC1155BaseInternal,
-    ERC1155MetadataInternal,
-    OwnableInternal,
-    PausableInternal,
+contract ArenaFacet is IArenaEvents,
+    // ERC1155BaseInternal,
+    // ERC1155MetadataInternal,
+    ModOwnable,
+    ModPausable,
     ContextMixin
     {
 
@@ -101,98 +55,6 @@ contract ArenaFacet is IArena,
     /// ---------------------------------------------------
 
 
-    /// @notice creates a new game context.
-    /// @return returns the id for the game
-    function createGame(
-        uint maxPlayers, string calldata tokenURI
-    ) public whenNotPaused returns (GameID) {
-
-        ArenaStorage.Layout storage s = ArenaStorage.layout();
-
-        uint256 gTokenId = TokenID.GAME_TYPE | uint256(s.games.length);
-        GameID gid = GameID.wrap(s.games.length);
-
-        s.games.push();
-        Game storage g = s.games[GameID.unwrap(gid)];
-        g._init(maxPlayers, _msgSender(), gTokenId);
-
-        TID tid = TID.wrap(s.transcripts.length);
-        s.transcripts.push();
-        s.transcripts[TID.unwrap(tid)]._init(gid);
-
-        s.gid2tid[gid] = tid;
-
-        // XXX: the map owner can set the url later
-
-        // The trancscript gets minted to the winer when the game is completed and verified
-        _mint(_msgSender(), TokenID.TRANSCRIPT_TYPE | TID.unwrap(tid), 1, "");
-
-        // emit the game state first. we may add mints and their events will
-        // force us to update lots of transaction log array values if we put
-        // them first.
-        emit GameCreated(gid, tid, g.creator, g.maxPlayers);
-
-        // mint the transferable tokens
-
-        // game first, mint to sender
-        _mint(_msgSender(), gTokenId, 1, "GAME_TYPE");
-        if (bytes(tokenURI).length > 0) {
-            _setTokenURI(gTokenId, tokenURI);
-        }
-
-        // furniture created as a reward/part of new game - mint to contract owner and hand out depending on victory ?
-
-        // Now the victory condition
-        // mint a finish and bind it to the game
-        uint256 fTokenId = TokenID.FURNITURE_TYPE | uint128(s.furniture.length);
-        FurnitureID fid  = FurnitureID.wrap(uint128(s.furniture.length));
-        s.furniture.push();
-        s.furniture[FurnitureID.unwrap(fid)].kind = Furnishings.Kind.Finish;
-        s.furniture[FurnitureID.unwrap(fid)].effects.push(Furnishings.Effect.Victory);
-
-        // bind the entrance hall token to the game token
-        LibArenaERC1155.bindToken(fTokenId, gTokenId);
-
-        _mint(_msgSender(), fTokenId, 1, "furniture/finish/victory");
-
-        // Mint two traps to the dungeon creator. We only support insta-death
-        fTokenId = TokenID.FURNITURE_TYPE | uint128(s.furniture.length);
-        fid  = FurnitureID.wrap(uint128(s.furniture.length));
-        s.furniture.push();
-        s.furniture[FurnitureID.unwrap(fid)].kind = Furnishings.Kind.Trap;
-        s.furniture[FurnitureID.unwrap(fid)].effects.push(Furnishings.Effect.Death);
-
-        // bind the entrance hall token to the game token
-        LibArenaERC1155.bindToken(fTokenId, gTokenId);
-
-        _mint(_msgSender(), fTokenId, 1, "furniture/trap/death");
-
-        fTokenId = TokenID.FURNITURE_TYPE | uint128(s.furniture.length);
-        fid  = FurnitureID.wrap(uint128(s.furniture.length));
-        s.furniture.push();
-        s.furniture[FurnitureID.unwrap(fid)].kind = Furnishings.Kind.Trap;
-        s.furniture[FurnitureID.unwrap(fid)].effects.push(Furnishings.Effect.Death);
-
-        // bind the entrance hall token to the game token
-        LibArenaERC1155.bindToken(fTokenId, gTokenId);
-
-        _mint(_msgSender(), fTokenId, 1, "furniture/trap/death");
-
-        // Now mint a boon
-
-        fTokenId = TokenID.FURNITURE_TYPE | uint128(s.furniture.length);
-        fid  = FurnitureID.wrap(uint128(s.furniture.length));
-        s.furniture.push();
-        s.furniture[FurnitureID.unwrap(fid)].kind = Furnishings.Kind.Boon;
-        s.furniture[FurnitureID.unwrap(fid)].effects.push(Furnishings.Effect.FreeLife);
-
-        // bind the entrance hall token to the game token
-        LibArenaERC1155.bindToken(fTokenId, gTokenId);
-
-        _mint(_msgSender(), fTokenId, 1, "furniture/boon/free_life");
-
-        return gid;
-    }
 
     function joinGame(
         GameID gid, bytes calldata profile

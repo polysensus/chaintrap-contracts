@@ -40,5 +40,5 @@
      tests: "./tests/hh/tests",
      cache: "./build/hh/cache",
      artifacts: "build/hh/artifacts"
-   }
+   },
  };
