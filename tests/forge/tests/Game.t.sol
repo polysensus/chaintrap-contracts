@@ -3,7 +3,7 @@ pragma solidity =0.8.9;
 
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
-import "chaintrap/arena.sol";
+import "lib/game.sol";
 
 contract GameTest is DSTest {
     using Games for Game;

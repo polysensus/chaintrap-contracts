@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 
 import {IDiamondCut} from "diamond/interfaces/IDiamondCut.sol";
 import {DiamondCutFacet} from "diamond/facets/DiamondCutFacet.sol";
-import {DiamondNew, DiamondNewArgs, IDiamondNew} from "chaintrap/upgradeinit/DiamondNew.sol";
+import {DiamondNew, DiamondNewArgs, IDiamondNew} from "lib/upgradeinit/DiamondNew.sol";
 
 import {Diamond} from "diamond/Diamond.sol";
 

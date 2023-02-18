@@ -7,9 +7,9 @@ import "lib/furnishings.sol";
 import "lib/arena/storage.sol";
 import "lib/arena/accessors.sol";
 
+import "lib/interfaces/IArenaCalls.sol";
 
-
-contract ArenaCallsFacet {
+contract ArenaCallsFacet is IArenaCalls {
 
     using Transcripts for Transcript;
     using Games for Game;

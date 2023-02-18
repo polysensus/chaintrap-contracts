@@ -14,7 +14,9 @@ import { LibERC1155Arena } from "lib/erc1155/liberc1155arena.sol";
 import { ArenaStorage } from "lib/arena/storage.sol";
 import "lib/game.sol";
 
-contract ERC1155ArenaFacet is IArenaEvents,
+import "lib/interfaces/IERC1155Arena.sol";
+
+contract ERC1155ArenaFacet is IArenaEvents, IERC1155Arena,
     SolidStateERC1155,
     ModOwnable,
     ModPausable,

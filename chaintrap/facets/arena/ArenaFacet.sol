@@ -16,13 +16,15 @@ import "lib/furnishings.sol";
 import "lib/arena/storage.sol";
 import "lib/arena/accessors.sol";
 
+import "lib/interfaces/IArena.sol";
+
 error InsufficientBalance(address addr, uint256 id, uint256 balance);
 
 error ArenaError(uint);
 
 /// Games are played in an arena. The arena remembers all games that have ever
 /// been played
-contract ArenaFacet is IArenaEvents,
+contract ArenaFacet is IArenaEvents, IArena,
     // ERC1155BaseInternal,
     // ERC1155MetadataInternal,
     ModOwnable,
@@ -53,8 +55,6 @@ contract ArenaFacet is IArenaEvents,
     /// ---------------------------------------------------
     /// @dev game setup creation & player signup
     /// ---------------------------------------------------
-
-
 
     function joinGame(
         GameID gid, bytes calldata profile
