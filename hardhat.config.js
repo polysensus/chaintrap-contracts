@@ -37,8 +37,6 @@
      }
    },
    paths: {
-     deploy: "./tests/hh/deploy",
-     deployments: "./tests/hh/deployments",
      // using hardhat-foundry to get hh to work with foundry & get the benefit
      // of source remappings. this means using sources here is redundant.
      // sources: "chaintrap",

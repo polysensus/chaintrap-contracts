@@ -17,7 +17,7 @@
   "scripts": {
     "copy-facet-abis": "mkdir -p abi && cp build/forge/out/Diamond.sol/Diamond.json abi/ && for d in $(ls -d build/forge/out/*Facet.sol); do cp $d/*Facet.json abi/; done",
     "copy-arena-iface-abis": "mkdir -p abi && cp build/forge/out/IERC1155Arena.sol/IERC1155Arena.json abi && for d in $(ls -d build/forge/out/IArena*.sol); do cp $d/IArena*.json abi/; done",
-    "prepare": "npx hardhat compile && npm run copy-facet-abis && npm run copy-arena-iface-abis && rollup -c",
+    "prepare": "forge build && npm run copy-facet-abis && npm run copy-arena-iface-abis && rollup -c",
     "build": "rollup -c",
     "dev": "rollup -c -w",
     "test": "forge test -vvv && npx hardhat test",
