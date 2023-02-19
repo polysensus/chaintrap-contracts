@@ -4,10 +4,13 @@ import chai from 'chai'
 const { expect } = chai
 import hardhat from 'hardhat'
 const { ethers } = hardhat
-import { Game } from '../../../chaintrap/game.mjs'
-
-import { TXProfiler } from '../../../chaintrap/txprofile.mjs'
+import { deployArena } from "./deploy.js";
 import { MockProfileClock } from './mocks/profileclock.mjs'
+import { createArenaProxy } from './arenaproxy.mjs'
+
+import { Game } from '../../../chaintrap/game.mjs'
+import { TXProfiler } from '../../../chaintrap/txprofile.mjs'
+
 
 /* The following layout is the default map for theses tests
 
@@ -89,25 +92,28 @@ function checkStatus(r, msg) {
   }
 }
 
-async function newGame(proxy, maxPlayers) {
-    let tx = await proxy.ERC1155ArenaFacet.createGame(maxPlayers)
+async function newGame(arena, maxPlayers) {
+    let tx = await arena.createGame(maxPlayers, "")
     let r = await tx.wait()
     checkStatus(r)
-    return [r.events[1].args.gid, r.events[0].args.tid]
+    return [r.events[1].args.gid, r.events[1].args.tid]
 }
 
 describe("Game", function () {
 
   let proxy;
+  let arena;
 
   before(async function () {
     proxy = await deployArena();
+    const signers = await ethers.getSigners();
+    arena = createArenaProxy(proxy.address, signers[0]);
   })
 
   it("Should join new game", async function () {
 
-    const [gid, tid] = await newGame(proxy, 2)
-    const g = new Game(this.proxy.address, gid, tid)
+    const [gid, tid] = await newGame(arena, 2)
+    const g = new Game(arena, gid, tid)
     const r = await g.joinGame()
     expect(r.status).to.equal(1)
   })
@@ -117,8 +123,8 @@ describe("Game", function () {
     const tp = new TXProfiler(3)
     tp.now = new MockProfileClock().now
 
-    const [gid, tid] = await newGame(this.arena, 2)
-    const g = new Game(this.arena, gid, tid, {
+    const [gid, tid] = await newGame(arena, 2)
+    const g = new Game(arena, gid, tid, {
       txissue: (...args) => tp.txissue(...args),
       txwait: (...args) => tp.txwait(...args)
     })
