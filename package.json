@@ -15,22 +15,19 @@
     "abi": "abi"
   },
   "scripts": {
-    "copy-facet-abis": "mkdir -p abi && cp build/forge/out/Diamond.sol/Diamond.json abi/ && for d in $(ls -d build/forge/out/*Facet.sol); do cp $d/*Facet.json abi/; done",
-    "copy-arena-iface-abis": "mkdir -p abi && cp build/forge/out/IERC1155Arena.sol/IERC1155Arena.json abi && for d in $(ls -d build/forge/out/IArena*.sol); do cp $d/IArena*.json abi/; done",
-    "prepare": "forge build && npm run copy-facet-abis && npm run copy-arena-iface-abis && rollup -c",
+    "prepare": "task build:contracts",
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "test": "forge test --ffi -vvv && npx hardhat test",
-    "hh-test": "npx hardhat test",
+    "test": "task test",
+    "hh-test": "task test:hh",
     "gas-report": "env ENABLE_GAS_REPORT=true npm run hh-test",
-    "compile": "npx hardhat compile",
+    "compile": "forge build --sizes",
     "lint": "npm run lint:js && npm run lint:sol",
     "lint:fix": "npm run lint:js:fix && npm run lint:sol:fix",
     "lint:js": "eslint --ignore-path .gitignore .",
     "lint:js:fix": "eslint --ignore-path .gitignore . --fix",
     "lint:sol": "solhint 'contracts/**/*.sol' && prettier -c 'contracts/**/*.sol'",
-    "lint:sol:fix": "prettier --write \"contracts/**/*.sol\"",
-    "test-clean": "npx hardhat clean"
+    "lint:sol:fix": "prettier --write \"contracts/**/*.sol\""
   },
   "repository": {
     "type": "git",
