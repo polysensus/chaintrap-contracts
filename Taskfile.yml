@@ -59,7 +59,6 @@ tasks:
     cmds:
       - npx mocha --require esm --timeout 20000  'tests/**/*.{mjs,js}'
 
-
   deploy:
     cmds:
       - task: deploy-caimst
@@ -112,6 +111,7 @@ tasks:
           --collisions-only
         # note exit status will be 1 if the exclude file doesn't reconcile all the collisions
         echo "ok"
+
   facet:list:
     desc: generate the deployable list of facets
     cmds:
