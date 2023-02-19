@@ -39,7 +39,7 @@ tasks:
         npx diamond-deploy list \
           -I facet -i build/forge/out \
           --collisions-only --format json \
-          | jq -r '.[] | select(.name=="ERC1155ArenaFacet")' \
+          | jq -r '[ .[] | select(.name=="ERC1155ArenaFacet") ]' \
           | tee abi/facets-exclude.json \
           || true
 
