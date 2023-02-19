@@ -14,6 +14,14 @@ jobs:
         with:
           node-version: 16
 
+      - name: Checkout the diamond-deploy repository
+        uses: actions/checkout@v3
+        with:
+          repository: polysensus/diamond-deploy
+          submodules: recursive
+          path: diamond-deploy
+
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
@@ -27,6 +35,19 @@ jobs:
           sh -c "$(curl --location https://taskfile.dev/install.sh)" -- \
             -d -b $GITHUB_WORKSPACE/bin
           echo $GITHUB_WORKSPACE/bin >> $GITHUB_PATH
+
+      - name: Install with localy checked out diamond-deploy
+
+        run: |
+          pushd diamond-deploy
+          npm install
+          popd
+
+          pushd chaintrap-contracts
+          npm uninstall --save "@polysensus/diamond-deploy"
+          npm install ../diamond-deploy --save-dev
+          npm install
+          popd
 
       - name: Install contract dependencies and hh test deps
         run: npm install
