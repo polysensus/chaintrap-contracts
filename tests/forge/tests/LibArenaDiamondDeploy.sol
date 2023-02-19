@@ -7,7 +7,7 @@ import {DiamondLoupeFacet} from "diamond/facets/DiamondLoupeFacet.sol";
 import {OwnershipFacet} from "diamond/facets/OwnershipFacet.sol";
 import {Diamond} from "diamond/Diamond.sol";
 
-import {DiamondNew, DiamondNewArgs, IDiamondNew} from "lib/upgradeinit/DiamondNew.sol";
+import {DiamondNew, DiamondNewArgs, IDiamondNew} from "chaintrap/upgradeinit/DiamondNew.sol";
 import {ArenaCallsFacet} from "chaintrap/facets/arena/ArenaCallsFacet.sol";
 import {ArenaFacet} from "chaintrap/facets/arena/ArenaFacet.sol";
 import {ArenaTranscriptsFacet} from "chaintrap/facets/arena/ArenaTranscriptsFacet.sol";

@@ -1,6 +1,9 @@
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
+ require("@nomicfoundation/hardhat-foundry");
+ require("@nomicfoundation/hardhat-chai-matchers");
+ require("@nomiclabs/hardhat-ethers");
  require("@nomiclabs/hardhat-waffle");
  require("hardhat-deploy");
 
@@ -36,7 +39,9 @@
    paths: {
      deploy: "./tests/hh/deploy",
      deployments: "./tests/hh/deployments",
-     sources: "./chaintrap",
+     // using hardhat-foundry to get hh to work with foundry & get the benefit
+     // of source remappings. this means using sources here is redundant.
+     // sources: "chaintrap",
      tests: "./tests/hh/tests",
      cache: "./build/hh/cache",
      artifacts: "build/hh/artifacts"

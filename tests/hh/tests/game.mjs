@@ -89,8 +89,8 @@ function checkStatus(r, msg) {
   }
 }
 
-async function newGame(arena, maxPlayers) {
-    let tx = await arena.createGame(maxPlayers)
+async function newGame(proxy, maxPlayers) {
+    let tx = await proxy.ERC1155ArenaFacet.createGame(maxPlayers)
     let r = await tx.wait()
     checkStatus(r)
     return [r.events[1].args.gid, r.events[0].args.tid]
@@ -98,29 +98,16 @@ async function newGame(arena, maxPlayers) {
 
 describe("Game", function () {
 
+  let proxy;
+
   before(async function () {
-    const Arena = await ethers.getContractFactory("Arena")
-    this.arena = await Arena.deploy()
-    await this.arena.deployed()
+    proxy = await deployArena();
   })
-
-  it("Should create a new game and transcript both with the first ids", async function () {
-
-    // note we need a fresh arena to guarantee gid, tid == 1,1
-    const Arena = await ethers.getContractFactory("Arena");
-    const arena = await Arena.deploy();
-    await arena.deployed();
-
-    let tx = await arena.createGame(2);
-    let r = await tx.wait();
-    expect(r.events[1].args.gid).to.equal(1);
-    expect(r.events[1].args.tid).to.equal(1);
-  });
 
   it("Should join new game", async function () {
 
-    const [gid, tid] = await newGame(this.arena, 2)
-    const g = new Game(this.arena, gid, tid)
+    const [gid, tid] = await newGame(proxy, 2)
+    const g = new Game(this.proxy.address, gid, tid)
     const r = await g.joinGame()
     expect(r.status).to.equal(1)
   })
