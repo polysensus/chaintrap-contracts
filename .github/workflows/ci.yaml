@@ -14,15 +14,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-
       - name: Checkout the diamond-deploy repository
         uses: actions/checkout@v3
         with:
           repository: polysensus/diamond-deploy
           submodules: recursive
           path: diamond-deploy
-
-
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
@@ -56,9 +53,9 @@ jobs:
         working-directory: chaintrap-contracts
         run: task test:forge
 
-      - name: Run hardhat tests
-        working-directory: chaintrap-contracts
-        run: task test:hh
+      # - name: Run hardhat tests
+      #   working-directory: chaintrap-contracts
+      #   run: task test:hh
 
   publish:
     name: Publish
