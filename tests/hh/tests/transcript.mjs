@@ -7,12 +7,12 @@ const keccak256 = ethers.utils.keccak256;
 import { deployArena } from "./deploy.js";
 import { createArenaProxy } from './arenaproxy.mjs'
 
-import { Game, Location, Exit, Link, NORTH, WEST, SOUTH, EAST } from "../../../chaintrap/chaintrap.mjs";
-
-async function locationSides() {
-  const chaintrap = await _chaintrap;
-  return chaintrap.locationSides();
-}
+import {
+  Game,
+  Location, Exit, Link,
+  NORTH, WEST, SOUTH, EAST,
+  TranscriptLocation,
+  locationSides } from "../../../chaintrap/chaintrap.mjs";
 
 /* The following layout is the default full map for theses tests
 
@@ -108,18 +108,16 @@ function checkStatus(r, msg) {
   }
 }
 
-async function newGame(arena, maxPlayers) {
-    let tx = await arena.createGame(maxPlayers, "")
-    let r = await tx.wait()
-    checkStatus(r)
-    return [r.events[1].args.gid, r.events[1].args.tid]
-}
-
-async function receipt(method, ...args) {
+async function _receipt(method, ...args) {
   const tx = await method(...args);
   return tx.wait();
 }
 
+async function receipt(method, ...args) {
+  const r = await _receipt(method, ...args);
+  expect(r.status).to.equal(1);
+  return r
+}
 
 describe("Transcript", function () {
 
@@ -144,40 +142,30 @@ describe("Transcript", function () {
     const gid = r.events[1].args.gid;
 
     r = await receipt(arena.startGame, gid);
-    expect(r.status).to.equal(1);
 
     r = await receipt(arena.completeGame, gid);
-    expect(r.status).to.equal(1);
 
     const locations = [
       Location.fromHex("0x01", "", "", "", "0x0001").native()
     ];
 
-    r = await receipt(arena.loadLocations, gid, locations);
-
-    expect(r.status).to.equal(1);
+    await receipt(arena.loadLocations, gid, locations);
   });
 
   it("Should load default map", async function () {
 
     let r = await receipt(arena.createGame, 2, "");
-    expect(r.status).to.equal(1);
     const gid = r.events[1].args.gid;
     const tid = r.events[1].args.tid;
 
-    r = await receipt(arena.startGame, gid);
-    expect(r.status).to.equal(1);
-
-    r = await receipt(arena.completeGame, gid);
-    expect(r.status).to.equal(1);
-
+    await receipt(arena.startGame, gid);
+    await receipt(arena.completeGame, gid);
     await loadDefaultMap(arena, gid, tid);
   });
 
   it ("Should visit all rooms on the default map", async function() {
 
     let r = await receipt(arena.createGame, 2, "");
-    expect(r.status).to.equal(1);
     const gid = r.events[1].args.gid;
     const tid = r.events[1].args.tid;
 
@@ -281,155 +269,99 @@ describe("Transcript", function () {
   });
 
   it ("Should play single move game", async function () {
-    const chaintrap = await _chaintrap;
-    const sides = await locationSides();
-    const [arena, gid, tid] = await createGame(2, "");
+    const sides = locationSides();
 
-    const [master, player] = await ethers.getSigners();
-    const am = arena.connect(master)
-    const ap = arena.connect(player)
+    let r = await receipt(master.createGame, 2, "");
+    const [gid, tid] = [r.events[1].args.gid, r.events[1].args.tid];
 
-    tx = await ap.joinGame(gid, "0x");
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
+    const am = new Game(master, gid, tid);
+    const ap = new Game(player, gid, tid);
+
+    await ap.joinGame("0x");
 
     let blocknumber = 1;
     const startLoc = 1;
-    const startToken = chaintrap.TranscriptLocation.tokenize(blocknumber, startLoc);
+    const startToken = TranscriptLocation.tokenize(blocknumber, startLoc);
 
-    tx = await am.setStartLocation(gid, player.address, startToken, []);
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
+    await am.setStartLocation(playerSigner.address, startToken, []);
 
-    tx = await am.startGame(gid);
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
+    await am.startGame();
 
-    let commit = {side:sides.EAST, egressIndex: 0};
-    tx = await ap.commitExitUse(gid, commit);
-    r = await tx.wait();
-    let eid = r.events[0].args.eid;
+    let eid = await ap.commitExitUse(sides.EAST, 0);
 
     blocknumber += 1;
     const loc = 2;
-    const token = chaintrap.TranscriptLocation.tokenize(blocknumber, loc);
+    const token = TranscriptLocation.tokenize(blocknumber, loc);
 
-    let outcome = {location: token, sceneblob: [], side:sides.WEST, ingressIndex: 1, halt: false};
-    tx = await am.allowExitUse(gid, eid, outcome);
-    r = await tx.wait();
+    // let outcome = {location: token, sceneblob: [], side:sides.WEST, ingressIndex: 1, halt: false};
+    await am.allowExitUse(eid, token, [], sides.WEST, 1, false);
 
-    tx = await am.completeGame(gid);
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
-
+    await am.completeGame();
 
     // Now that we have the play session transcript, reveal the map
     await loadDefaultMap(arena, gid);
 
     // provide the contract 
     const locations = [
-      new chaintrap.TranscriptLocation(startToken, 1, startLoc),
-      new chaintrap.TranscriptLocation(token, 2, loc)
+      new TranscriptLocation(startToken, 1, startLoc),
+      new TranscriptLocation(token, 2, loc)
     ];
 
-    tx = await arena.loadTranscriptLocations(gid, locations);
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
+    await receipt(master.loadTranscriptLocations, gid, locations);
 
-    tx = await arena.playTranscript(gid, 0, 0);
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
+    await receipt(arena.playTranscript, gid, 0, 0);
   });
 
   it("Should commit a single ExitUse", async function () {
 
-    const sides = await locationSides();
+    let r = await receipt(master.createGame, 2, "");
+    const [gid, tid] = [r.events[1].args.gid, r.events[1].args.tid];
 
-    const Arena = await ethers.getContractFactory("Arena");
-    const arena = await Arena.deploy();
-    await arena.deployed();
+    const am = new Game(master, gid, tid);
+    const ap = new Game(player, gid, tid);
 
-    let tx = await arena.createGame(2, "");
-    let r = await tx.wait();
-    let gid = r.events[0].args.gid;
-    let tid = r.events[0].args.tid;
-    expect(gid).to.equal(1);
-    expect(tid).to.equal(1);
+    await ap.joinGame("0x");
 
-    const [master, player] = await ethers.getSigners();
-    const am = arena.connect(master)
-    const ap = arena.connect(player)
+    await am.setStartLocation(playerSigner.address, keccak256("0x01"), []);
 
-    tx = await ap.joinGame(gid, "0x");
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
+    await am.startGame();
 
-    tx = await am.setStartLocation(gid, player.address, keccak256("0x01"), []);
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
+    r = await receipt(ap.arena.commitExitUse, gid, {side: EAST, egressIndex: 0});
 
-    tx = await am.startGame(gid);
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
-
-    let commit = {side:sides.EAST, egressIndex: 0};
-    tx = await ap.commitExitUse(gid, commit);
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
     expect(r.events[0].event).to.equal("UseExit");
     expect(r.events[0].args.eid).to.equal(1);
-    expect(r.events[0].args.gid).to.equal(1);
-    expect(r.events[0].args.player).to.equal(player.address);
-    expect(r.events[0].args[3].side).to.equal(sides.EAST);
+    expect(r.events[0].args.gid).to.equal(gid);
+    expect(r.events[0].args.player).to.equal(playerSigner.address);
+    expect(r.events[0].args[3].side).to.equal(EAST);
     expect(r.events[0].args[3].egressIndex).to.equal(0);
   });
+
   it("Should commit and allow a single ExitUse", async function () {
 
-    const sides = await locationSides();
+    let r = await receipt(master.createGame, 2, "");
+    const [gid, tid] = [r.events[1].args.gid, r.events[1].args.tid];
 
-    const Arena = await ethers.getContractFactory("Arena");
-    const arena = await Arena.deploy();
-    await arena.deployed();
+    const am = new Game(master, gid, tid);
+    const ap = new Game(player, gid, tid);
 
-    const [master, player] = await ethers.getSigners();
-    const am = arena.connect(master)
-    const ap = arena.connect(player)
+    await ap.joinGame("0x");
 
-    let tx = await am.createGame(2, "");
-    let r = await tx.wait();
-    let gid = r.events[0].args.gid;
-    let tid = r.events[0].args.tid;
-    expect(gid).to.equal(1);
-    expect(tid).to.equal(1);
+    await am.setStartLocation(playerSigner.address, keccak256("0x01"), []);
 
-    tx = await ap.joinGame(gid, "0x");
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
+    await am.startGame();
 
-    tx = await am.startGame(gid);
-    r = await tx.wait();
-    expect(r.status).to.equal(1);
-
-    let commit = {side:sides.EAST, egressIndex: 0};
-    tx = await ap.commitExitUse(gid, commit);
-    r = await tx.wait();
+    r = await receipt(ap.arena.commitExitUse, gid, {side: EAST, egressIndex: 0});
     let eid = r.events[0].args.eid;
     expect(eid).to.equal(1);
 
     let loctok = ethers.utils.hexlify(ethers.utils.randomBytes(32));
 
-    let outcome = {location: loctok, sceneblob: [], side:sides.WEST, ingressIndex: 1, halt: false};
-    tx = await am.allowExitUse(gid, eid, outcome).then((result)=>{
-        return result;
-    }, (error)=>{
-        console.log('Error', error);
-    });
-    r = await tx.wait();
+    r = await am.allowExitUse(eid, loctok, [], WEST, 1, false);
 
     expect(r.events[0].event).to.equal("ExitUsed");
     expect(r.events[0].args.eid).to.equal(1);
-    expect(r.events[0].args.player).to.equal(player.address);
-    expect(r.events[0].args[3].side).to.equal(sides.WEST);
+    expect(r.events[0].args.player).to.equal(playerSigner.address);
+    expect(r.events[0].args[3].side).to.equal(WEST);
     expect(r.events[0].args[3].ingressIndex).to.equal(1);
   });
 

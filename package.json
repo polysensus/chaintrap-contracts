@@ -76,6 +76,7 @@
     "eslint-plugin-mocha": "^10.0.4",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.0.0",
+    "esm": "^3.2.25",
     "ethereum-waffle": "^3.4.4",
     "hardhat": "^2.9.6",
     "hardhat-deploy": "^0.11.9",
@@ -87,7 +88,8 @@
     "rollup": "^2.72.0",
     "solhint": "^3.3.7",
     "solidity-coverage": "^0.7.21",
-    "solidity-docgen": "^0.6.0-beta.10"
+    "solidity-docgen": "^0.6.0-beta.10",
+    "vitest": "^0.28.5"
   },
   "dependencies": {
     "ethers": "^5.6.4"
