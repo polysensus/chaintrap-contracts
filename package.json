@@ -20,7 +20,7 @@
     "prepare": "forge build && npm run copy-facet-abis && npm run copy-arena-iface-abis && rollup -c",
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "test": "forge test -vvv && npx hardhat test",
+    "test": "forge test --ffi -vvv && npx hardhat test",
     "hh-test": "npx hardhat test",
     "gas-report": "env ENABLE_GAS_REPORT=true npm run hh-test",
     "compile": "npx hardhat compile",
