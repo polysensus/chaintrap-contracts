@@ -25,6 +25,11 @@ function locationKinds() {
 
 export { locationKinds };
 
+export const NORTH = Locations.SideKind.North;
+export const WEST = Locations.SideKind.West;
+export const EAST = Locations.SideKind.East;
+export const SOUTH = Locations.SideKind.South;
+
 function locationSides() {
   return {
     NORTH: Locations.SideKind.North,

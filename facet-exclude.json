@@ -1,0 +1,9 @@
+[
+  {
+    "selector": "0x01ffc9a7",
+    "signature": "supportsInterface(bytes4)",
+    "name": "ERC1155ArenaFacet",
+    "commonName": "ERC1155ArenaFacet.sol/ERC1155ArenaFacet.json",
+    "fileName": "/home/robin/polysensus/chaintrap-contracts/build/forge/out/ERC1155ArenaFacet.sol/ERC1155ArenaFacet.json"
+  }
+]

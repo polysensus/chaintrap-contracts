@@ -3,9 +3,17 @@ pragma solidity =0.8.9;
 
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
-import "chaintrap/arena.sol";
+
+import {ArenaTestStorage, LibArenaDiamondDeploy } from "tests/LibArenaDiamondDeploy.sol";
+import "lib/interfaces/IERC1155Arena.sol";
+import "lib/interfaces/IArena.sol";
+import "lib/interfaces/IArenaCalls.sol";
+import "lib/interfaces/IArenaTranscripts.sol";
+
 import "tests/hexlocations.sol";
 import "tests/hexexitlinks.sol";
+import "lib/gameid.sol";
+import "lib/transcript.sol";
 
 contract ArenaTest is DSTest {
     using stdStorage for StdStorage;
@@ -16,24 +24,37 @@ contract ArenaTest is DSTest {
     Vm private vm = Vm(HEVM_ADDRESS);
     StdStorage private stdstore;
 
+    address operator = address(1);
     address master = address(1000);
     address master2 = address(2000);
     address player1 = address(1001);
     address player2 = address(1002);
 
-    Arena private arena;
-    Location[] private locs;
-    uint16 nextExitID;
-    uint256 saltForLocationTokens;
-
-    GameID g1;
-
     function setUp() public {
-        // Deploy Map contract
-        arena = new Arena();
-        vm.prank(master, master);
-        g1 = arena.createGame(2, "");
+
+        LibArenaDiamondDeploy.defaultSetup(operator, master);
     }
+
+    function ts() internal pure returns (ArenaTestStorage.Layout storage) {
+        return ArenaTestStorage.layout();
+    }
+
+    function arenacalls() internal view returns (IArenaCalls) {
+        return IArenaCalls(address(ts().arena));
+    }
+
+    function arena() internal view returns (IArena) {
+        return IArena(address(ts().arena));
+    }
+
+    function erc1155arena() internal view returns (IERC1155Arena) {
+        return IERC1155Arena(address(ts().arena));
+    }
+
+    function transcripts() internal view returns (IArenaTranscripts) {
+        return IArenaTranscripts(address(ts().arena));
+    }
+
 
     // proxy methods
     function load(RawLocation[] memory raw) public {
@@ -41,7 +62,7 @@ contract ArenaTest is DSTest {
         for (uint i = 0; i < raw.length; i++) {
             l[i].load(raw[i]);
         }
-        arena.loadLocations(g1, l);
+        transcripts().loadLocations(ts().g1, l);
     }
 
     function load(RawExit[] memory raw) public {
@@ -49,7 +70,7 @@ contract ArenaTest is DSTest {
         for (uint i = 0; i < raw.length; i++) {
             exits[i].load(raw[i]);
         }
-        arena.loadExits(g1, exits);
+        transcripts().loadExits(ts().g1, exits);
     }
 
     // loadLink because link with this type is an overload clash
@@ -58,45 +79,45 @@ contract ArenaTest is DSTest {
         for (uint i = 0; i < raw.length; i++) {
             links[i].load(raw[i]);
         }
-        arena.loadLinks(g1, links);
+        transcripts().loadLinks(ts().g1, links);
     }
 
     function load(TranscriptLocation[]memory locations) public {
-        arena.loadTranscriptLocations(g1, locations);
+        transcripts().loadTranscriptLocations(ts().g1, locations);
     }
 
     function startGame(GameID gid) public {
-        arena.startGame(gid);
+        arena().startGame(gid);
     }
 
     function completeGame(GameID gid) public {
-        arena.completeGame(gid);
+        arena().completeGame(gid);
     }
 
 
     function joinGame(address p, bytes calldata profile) public {
-        arena._joinGame(g1, p, profile);
+        arena()._joinGame(ts().g1, p, profile);
     }
 
     function playerCount(GameID gid) public view returns (uint8) {
-        return arena.playerCount(gid);
+        return arenacalls().playerCount(gid);
     }
 
     function player(GameID gid, uint8 _iplayer) public view returns (Player memory) {
-        return arena.player(gid, _iplayer);
+        return arenacalls().player(gid, _iplayer);
     }
  
     function setStartLocation(address p, bytes32 startLocation, bytes memory sceneblob) public {
-        arena.setStartLocation(g1, p, startLocation, sceneblob);
+        arena().setStartLocation(ts().g1, p, startLocation, sceneblob);
     }
 
     function playerRegistered(address p) public view returns (bool) {
-        return arena.playerRegistered(g1, p);
+        return arenacalls().playerRegistered(ts().g1, p);
     }
 
     function commitExitUse(GameID gid, address _player, ExitUse memory committed) public returns (TEID) {
         vm.prank(_player, _player);
-        return arena.commitExitUse(gid, committed);
+        return arena().commitExitUse(gid, committed);
     }
 
     /* The following layout is the default map for theses tests
@@ -209,13 +230,13 @@ contract ArenaTest is DSTest {
     }
 
     function testLastGame() public {
-        GameID lastId = arena.lastGame();
-        assertEq(GameID.unwrap(lastId), GameID.unwrap(g1));
+        GameID lastId = arenacalls().lastGame();
+        assertEq(GameID.unwrap(lastId), GameID.unwrap(ts().g1));
     }
 
     function testCreateGame() public {
         vm.prank(master, master);
-        arena.createGame(2, "");
+        erc1155arena().createGame(2, "");
     }
 
     function testRegisterPlayerArena() public {
@@ -227,54 +248,54 @@ contract ArenaTest is DSTest {
         locations[0].id = loc; 
 
         vm.prank(player1, player1);
-        arena.joinGame(g1, bytes(""));
+        arena().joinGame(ts().g1, bytes(""));
 
         vm.startPrank(master, master);
-        arena.setStartLocation(g1, player1, tk, bytes(""));
+        arena().setStartLocation(ts().g1, player1, tk, bytes(""));
 
-        arena.startGame(g1);
-        arena.completeGame(g1);
+        arena().startGame(ts().g1);
+        arena().completeGame(ts().g1);
         vm.stopPrank();
 
         loadDefaultMap();
-        assertTrue(arena.playerRegistered(g1, player1));
+        assertTrue(arenacalls().playerRegistered(ts().g1, player1));
     }
 
     function testPlayerCount() public {
 
         vm.prank(player1, player1);
-        arena.joinGame(g1, bytes(""));
-        uint8 count = arena.playerCount(g1);
+        arena().joinGame(ts().g1, bytes(""));
+        uint8 count = arenacalls().playerCount(ts().g1);
         assertEq(count, 1);
     }
 
     function testPlayerCount2() public {
 
         vm.prank(player1, player1);
-        arena.joinGame(g1, bytes(""));
+        arena().joinGame(ts().g1, bytes(""));
         vm.prank(player2, player2);
-        arena.joinGame(g1, bytes(""));
-        uint8 count = arena.playerCount(g1);
+        arena().joinGame(ts().g1, bytes(""));
+        uint8 count = arenacalls().playerCount(ts().g1);
         assertEq(count, 2);
     }
 
     function testGetUnregisteredPlayersByIndex() public {
 
         vm.prank(player1, player1);
-        arena.joinGame(g1, bytes(""));
+        arena().joinGame(ts().g1, bytes(""));
         vm.prank(player2, player2);
-        arena.joinGame(g1, bytes(""));
-        uint8 count = arena.playerCount(g1);
+        arena().joinGame(ts().g1, bytes(""));
+        uint8 count = arenacalls().playerCount(ts().g1);
         for (uint i=0; i<count; i++) {
-            Player memory p = arena.player(g1, uint8(i));
+            Player memory p = arenacalls().player(ts().g1, uint8(i));
             assertEq(p.addr, address(uint160(1000+i+1)));
         }
     }
 
     function testDefaultMapLoads() public {
         vm.startPrank(master, master);
-        arena.startGame(g1);
-        arena.completeGame(g1);
+        arena().startGame(ts().g1);
+        arena().completeGame(ts().g1);
         vm.stopPrank();
         loadDefaultMap();
     }
@@ -283,7 +304,7 @@ contract ArenaTest is DSTest {
 
         ExitUse memory u = ExitUse(Locations.SideKind.North, 1);
         vm.prank(player1, player1);
-        arena.joinGame(g1, bytes(""));
+        arena().joinGame(ts().g1, bytes(""));
         vm.prank(master, master);
         startGame(GameID.wrap(1));
         TEID eid = commitExitUse(GameID.wrap(1), player1, u);

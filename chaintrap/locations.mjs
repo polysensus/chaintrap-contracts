@@ -1,5 +1,4 @@
 import {ethers} from 'ethers';
-import { locationSides } from './chaintrap.mjs';
 const bytes = ethers.utils.arrayify;
 
 export class Kind {
