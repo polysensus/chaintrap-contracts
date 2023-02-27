@@ -28,7 +28,7 @@ tasks:
     desc: build the contracts and prepare the abi and exclusions file
     cmds:
       - forge build --sizes
-      - task: build:facet-exclude
+      - task: build:facets-exclude
       - task: build:diamond-deploy
       - task: facet:check
       - |
