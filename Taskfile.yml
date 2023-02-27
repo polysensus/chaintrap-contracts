@@ -27,12 +27,12 @@ tasks:
   build:contracts:
     desc: build the contracts and prepare the abi and exclusions file
     cmds:
+      - mkdir -p abi
       - forge build --sizes
       - task: build:facets-exclude
       - task: build:diamond-deploy
       - task: facet:check
       - |
-        mkdir -p abi
         echo "copying abi files from build"
         cp build/forge/out/Diamond.sol/Diamond.json abi/
         cp build/forge/out/DiamondNew.sol/DiamondNew.json abi/
