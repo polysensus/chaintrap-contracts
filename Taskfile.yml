@@ -28,6 +28,7 @@ tasks:
     desc: build the contracts and prepare the abi and exclusions file
     cmds:
       - mkdir -p abi
+      - mkdir -p .local/dev
       - forge build --sizes
       - task: build:facets-exclude
       - task: build:diamond-deploy
