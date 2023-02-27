@@ -10,24 +10,28 @@ import { ethers } from "ethers"
 export class ERC2535DiamondFacetProxyHandler {
 
   constructor (diamondAddress, facetABIs, signerOrProvider) {
-    this.diamondAddress = diamondAddress;
-    this.interfaces = createFacetInterfaces(facetABIs);
-    this.facets = {};
-    for (const [name, abi] of Object.entries(this.interfaces)) {
-      this.facets[name] = new ethers.Contract(diamondAddress, abi, signerOrProvider)
+    this._handler_diamondAddress = diamondAddress;
+    this._handler_interfaces = createFacetInterfaces(facetABIs);
+    const facets = {};
+    for (const [name, abi] of Object.entries(this._handler_interfaces)) {
+      facets[name] = new ethers.Contract(diamondAddress, abi, signerOrProvider)
     }
+    this._handler_facets = facets;
 
-    this.targetCache = new Map();
+    this._handler_targetCache = new Map();
   }
 
   /**
    * A Reflect.get implementation proxying to the facet methods. This will
    * return properties on the diamond contract in preference to those on the
-   * underlying facets. With the effect that facet specific methods and events
-   * are proxied to the appropriate instance but generic contract interaction
-   * happens with the diamond contract instance.
+   * underlying facets. If neither the diamond nor the facets have the prop we
+   * fall back to looking in the handler itself. With the effect that facet
+   * specific methods and events are proxied to the appropriate instance but
+   * generic contract interaction happens with the diamond contract instance.
+   * And there is an escape hatch for implementing helpers on this hanlder
+   * class.
    * @param {*} target assumed to be the contract instance for the Diamon itself
-   * @param {*} prop 
+   * @param {*} prop to get from diamond or its facets or finally this handler
    * @param {*} receiver 
    * @returns 
    */
@@ -39,26 +43,31 @@ export class ERC2535DiamondFacetProxyHandler {
     if (prop in target)
       return Reflect.get(target, prop, receiver)
 
-    if (this.targetCache.has(prop)) {
-      const cachedTarget = this.targetCache.get(prop);
+    if (this._handler_targetCache.has(prop)) {
+      const cachedTarget = this._handler_targetCache.get(prop);
       return Reflect.get(cachedTarget, prop, receiver);
     }
 
-    for (const candidateTarget of Object.values(this.facets)) {
+    for (const candidateTarget of Object.values(this._handler_facets)) {
       if (!(prop in candidateTarget)) continue
 
-      this.targetCache.set(prop, candidateTarget);
+      this._handler_targetCache.set(prop, candidateTarget);
 
       return Reflect.get(candidateTarget, prop, receiver)
+    }
+
+    if (prop in this) {
+      this._handler_targetCache.set(prop, this) // garbage collector cycles ...
+      return Reflect.get(this, prop, receiver);
     }
   }
 
   getFacet(name) {
-    return this.facets[name];
+    return this._handler_facets[name];
   }
 
   getFacetInterface(name) {
-    return this.interfaces[name];
+    return this._handler_interfaces[name];
   }
 }
 

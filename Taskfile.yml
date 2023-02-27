@@ -2,9 +2,14 @@
 version: '3'
 silent: true
 env:
-  ENV: .local/dev
+  ENV: '{{.ENV | default ".local/dev" }}'
   PROFILE: '{{.PROFILE | default ""}}'
 dotenv: [".env", '{{.ENV}}/.env', '{{.HOME}}/.env']
+
+vars:
+  # The input file for diamond-deploy --exclu
+  FACETS_EXCLUDE: abi/facets-exclude.json
+  DIAMOND_DEPLOY: '{{.ENV}}/diamond-deploy.json'
 
 
 # tasks are primarily for actions local to this repository. task is for things
@@ -23,7 +28,9 @@ tasks:
     desc: build the contracts and prepare the abi and exclusions file
     cmds:
       - forge build --sizes
-      - task: facet:exclusions
+      - task: build:facet-exclude
+      - task: build:diamond-deploy
+      - task: facet:check
       - |
         mkdir -p abi
         echo "copying abi files from build"
@@ -33,16 +40,30 @@ tasks:
         cp build/forge/out/IERC1155Arena.sol/IERC1155Arena.json abi
         for d in $(ls -d build/forge/out/IArena*.sol); do cp $d/IArena*.json abi/; done
 
-  facet:exclusions:
-    desc: show the json formatted list of diamond facet collisions
+  build:facets-exclude:
+    desc: |
+      re generate the current diamond deploy exclusions
+
+      note: this command needs to be maintained to account for any new
+      collisions introduces in future changes. facet:collisions can help with
+      that.
     cmds:
       - |
         npx diamond-deploy list \
           -I facet -i build/forge/out \
           --collisions-only --format json \
           | jq -r '[ .[] | select(.name=="ERC1155ArenaFacet") ]' \
-          | tee abi/facets-exclude.json \
           || true
+
+  build:diamond-deploy:
+    desc: generate the deployable list of facets
+    cmds:
+      - |
+        npx diamond-deploy list \
+          -I facet -i build/forge/out \
+          -n Diamond DiamondNew \
+          --exclude {{.FACETS_EXCLUDE}} \
+          --format json | tee {{.DIAMOND_DEPLOY}}
 
   test:
     desc: run the forge and hardhat tests
@@ -99,16 +120,17 @@ tasks:
       - |
         npx diamond-deploy list \
           -I facet -i build/forge/out \
+          -n Diamond DiamondNew \
           --collisions-only --format json || true
 
   facet:check:
     desc: show the json formatted list of diamond facet collisions
     cmds:
       - |
-        [ ! -f facet-exclude.json ] && echo "run 'task facet:collisions | tee facet-exclude.json' to generate the expected exclusions file" && exit 1
         npx diamond-deploy list \
           -I facet -i build/forge/out \
-          --exclude facet-exclude.json \
+          -n Diamond DiamondNew \
+          --exclude {{.FACETS_EXCLUDE}} \
           --collisions-only
         # note exit status will be 1 if the exclude file doesn't reconcile all the collisions
         echo "ok"
@@ -117,18 +139,18 @@ tasks:
     desc: generate the deployable list of facets
     cmds:
       - |
-        [ ! -f facet-exclude.json ] && echo "run 'task facet:collisions | tee facet-exclude.json' to generate the expected exclusions file" && exit 1
         npx diamond-deploy list \
           -I facet -i build/forge/out \
-          --exclude facet-exclude.json \
+          -n Diamond DiamondNew \
+          --exclude {{.FACETS_EXCLUDE}} \
           --format json
 
   facet:list-names:
     desc: generate the deployable list of facets
     cmds:
       - |
-        [ ! -f facet-exclude.json ] && echo "run 'task facet:collisions | tee facet-exclude.json' to generate the expected exclusions file" && exit 1
         npx diamond-deploy list \
           -I facet -i build/forge/out \
-          --exclude facet-exclude.json \
+          -n Diamond DiamondNew \
+          --exclude {{.FACETS_EXCLUDE}} \
           --format json | jq -r .[].name | tr -s '\n' ' '

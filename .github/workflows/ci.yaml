@@ -53,9 +53,9 @@ jobs:
         working-directory: chaintrap-contracts
         run: task test:forge
 
-      # - name: Run hardhat tests
-      #   working-directory: chaintrap-contracts
-      #   run: task test:hh
+      - name: Run hardhat tests
+        working-directory: chaintrap-contracts
+        run: task test:hh
 
   publish:
     name: Publish

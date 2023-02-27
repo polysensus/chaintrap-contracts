@@ -2,14 +2,18 @@
 // const { ethers } = require("hardhat")
 import chai from 'chai'
 const { expect } = chai
-import hardhat from 'hardhat'
-const { ethers } = hardhat
-import { deployArena } from "./deploy.js";
+import hre from 'hardhat'
+const { ethers } = hre
+import deploypkg from "./deploy.js";
+const { deployArenaFixture } = deploypkg;
+
 import { MockProfileClock } from './mocks/profileclock.mjs'
 import { createArenaProxy } from './arenaproxy.mjs'
 
 import { Game } from '../../../chaintrap/game.mjs'
 import { TXProfiler } from '../../../chaintrap/txprofile.mjs'
+
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 
 /* The following layout is the default map for theses tests
@@ -99,19 +103,16 @@ async function newGame(arena, maxPlayers) {
     return [r.events[1].args.gid, r.events[1].args.tid]
 }
 
+
 describe("Game", function () {
-
   let proxy;
-  let arena;
+  let owner;
 
-  before(async function () {
-    proxy = await deployArena();
-    const signers = await ethers.getSigners();
-    arena = createArenaProxy(proxy.address, signers[0]);
-  })
 
   it("Should join new game", async function () {
 
+    [proxy, owner] = await loadFixture(deployArenaFixture);
+    const arena = createArenaProxy(proxy, owner);
     const [gid, tid] = await newGame(arena, 2)
     const g = new Game(arena, gid, tid)
     const r = await g.joinGame()
@@ -119,6 +120,9 @@ describe("Game", function () {
   })
 
   it("Should profile join new game", async function () {
+
+    [proxy, owner] = await loadFixture(deployArenaFixture);
+    const arena = createArenaProxy(proxy, owner);
 
     const tp = new TXProfiler(3)
     tp.now = new MockProfileClock().now

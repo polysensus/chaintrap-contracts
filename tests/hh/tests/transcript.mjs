@@ -1,11 +1,14 @@
-import chai from 'chai'
-const { expect } = chai
-import hardhat from 'hardhat'
-const { ethers } = hardhat
+import chai from 'chai';
+const { expect } = chai;
+import hre from 'hardhat';
+const { ethers } = hre;
 const bytes = ethers.utils.arrayify;
 const keccak256 = ethers.utils.keccak256;
-import { deployArena } from "./deploy.js";
+import deploypkg from "./deploy.js";
+const { deployArenaFixture } = deploypkg;
+
 import { createArenaProxy } from './arenaproxy.mjs'
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 import {
   Game,
@@ -119,53 +122,56 @@ async function receipt(method, ...args) {
   return r
 }
 
+async function masterAndPlayer(proxy) {
+    const signers = await hre.ethers.getSigners();
+    const master = createArenaProxy(proxy, signers[0]);
+    const player = createArenaProxy(proxy, signers[1]);
+    return [master, player, signers[0], signers[1]];
+}
+
 describe("Transcript", function () {
 
-  let proxy;
-  let arena;
-  let masterSigner;
-  let playerSigner;
+  let proxy, owner;
   let master, player;
-
-  before(async function () {
-    proxy = await deployArena();
-    const signers = await ethers.getSigners();
-    [masterSigner, playerSigner] = signers;
-    arena = createArenaProxy(proxy.address, masterSigner);
-    master = arena;
-    player = createArenaProxy(proxy.address, playerSigner);
-  });
+  let masterSigner, playerSigner;
 
   it("Should load single location without reverting", async function () {
 
-    let r = await receipt(arena.createGame, 2, "");
+    [proxy, owner] = await loadFixture(deployArenaFixture);
+    [master, player] = await masterAndPlayer(proxy);
+
+    let r = await receipt(master.createGame, 2, "");
     const gid = r.events[1].args.gid;
 
-    r = await receipt(arena.startGame, gid);
+    r = await receipt(master.startGame, gid);
 
-    r = await receipt(arena.completeGame, gid);
+    r = await receipt(master.completeGame, gid);
 
     const locations = [
       Location.fromHex("0x01", "", "", "", "0x0001").native()
     ];
 
-    await receipt(arena.loadLocations, gid, locations);
+    await receipt(master.loadLocations, gid, locations);
   });
 
   it("Should load default map", async function () {
+    [proxy, owner] = await loadFixture(deployArenaFixture);
+    [master] = await masterAndPlayer(proxy);
 
-    let r = await receipt(arena.createGame, 2, "");
+    let r = await receipt(master.createGame, 2, "");
     const gid = r.events[1].args.gid;
     const tid = r.events[1].args.tid;
 
-    await receipt(arena.startGame, gid);
-    await receipt(arena.completeGame, gid);
-    await loadDefaultMap(arena, gid, tid);
+    await receipt(master.startGame, gid);
+    await receipt(master.completeGame, gid);
+    await loadDefaultMap(master, gid, tid);
   });
 
   it ("Should visit all rooms on the default map", async function() {
+    [proxy, owner] = await loadFixture(deployArenaFixture);
+    [master, player, masterSigner, playerSigner] = await masterAndPlayer(proxy);
 
-    let r = await receipt(arena.createGame, 2, "");
+    let r = await receipt(master.createGame, 2, "");
     const gid = r.events[1].args.gid;
     const tid = r.events[1].args.tid;
 
@@ -269,6 +275,10 @@ describe("Transcript", function () {
   });
 
   it ("Should play single move game", async function () {
+
+    [proxy, owner] = await loadFixture(deployArenaFixture);
+    [master, player, masterSigner, playerSigner] = await masterAndPlayer(proxy);
+
     const sides = locationSides();
 
     let r = await receipt(master.createGame, 2, "");
@@ -299,7 +309,7 @@ describe("Transcript", function () {
     await am.completeGame();
 
     // Now that we have the play session transcript, reveal the map
-    await loadDefaultMap(arena, gid);
+    await loadDefaultMap(master, gid);
 
     // provide the contract 
     const locations = [
@@ -309,10 +319,13 @@ describe("Transcript", function () {
 
     await receipt(master.loadTranscriptLocations, gid, locations);
 
-    await receipt(arena.playTranscript, gid, 0, 0);
+    await receipt(master.playTranscript, gid, 0, 0);
   });
 
   it("Should commit a single ExitUse", async function () {
+
+    [proxy, owner] = await loadFixture(deployArenaFixture);
+    [master, player, masterSigner, playerSigner] = await masterAndPlayer(proxy);
 
     let r = await receipt(master.createGame, 2, "");
     const [gid, tid] = [r.events[1].args.gid, r.events[1].args.tid];
@@ -337,6 +350,9 @@ describe("Transcript", function () {
   });
 
   it("Should commit and allow a single ExitUse", async function () {
+
+    [proxy, owner] = await loadFixture(deployArenaFixture);
+    [master, player, masterSigner, playerSigner] = await masterAndPlayer(proxy);
 
     let r = await receipt(master.createGame, 2, "");
     const [gid, tid] = [r.events[1].args.gid, r.events[1].args.tid];

@@ -1,19 +1,20 @@
-
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
-const { deployArena } = require("./deploy.js");
+import hre from "hardhat";
+import { expect } from "chai";
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+// import deploypkg from "./deploy.mjs";
+// const { deployArena } = deploypkg;
+import { deployArenaFixture } from "./deploy.js";
+import { createArenaProxy } from "./arenaproxy.mjs";
 
 describe("Arena", async function () {
   let proxy;
-
-  before(async function () {
-    proxy = await deployArena();
-  })
+  let owner;
 
   it("Should create a new game and transcript both with the first ids", async function () {
     // Need a fresh proxy to get the gids we expect
-    const proxy = await deployArena();
-    const arena = proxy.ERC1155ArenaFacet;
+    [proxy, owner] = await loadFixture(deployArenaFixture);
+
+    const arena = createArenaProxy(proxy, owner);
 
     let tx = await arena.createGame(2, "");
     let r = await tx.wait();
@@ -23,9 +24,8 @@ describe("Arena", async function () {
   });
   it("Should create two games", async function () {
 
-    // Need a fresh proxy to get the gids we expect
-    const proxy = await deployArena();
-    const arena = proxy.ERC1155ArenaFacet;
+    [proxy, owner] = await loadFixture(deployArenaFixture);
+    const arena = createArenaProxy(proxy, owner);
 
     let tx = await arena.createGame(2, "");
     let r = await tx.wait();
@@ -39,13 +39,15 @@ describe("Arena", async function () {
   });
 
   it("Should keep game and transcript ids after resetting map", async function () {
-    let arena = proxy.ERC1155ArenaFacet;
+
+    [proxy, owner] = await loadFixture(deployArenaFixture);
+    let arena = createArenaProxy(proxy, owner);
 
     let tx = await arena.createGame(2, "");
     let r = await tx.wait();
     expect(r.status, 1);
     const gid = r.events[1].args.gid;
-    arena = proxy.ArenaTranscriptsFacet;
+    arena = arena.getFacet('ArenaTranscriptsFacet');
     tx = await arena.reset(gid);
     r = await tx.wait();
     expect(r.status, 1);

@@ -1,23 +1,24 @@
 import { expect } from "chai";
 import hre from "hardhat";
 const {ethers} = hre;
-import { deployArena } from "./deploy.js";
+import deploypkg from "./deploy.js";
+const { deployArenaFixture } = deploypkg;
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+
 // import arenaCallsFacetABI from "@polysensus/chaintrap-contracts/abi/ArenaCallsFacet.json" assert { type: "json" };
 import diamondSol from "../../../abi/Diamond.json" assert { type: "json" };
 import arenaCallsFacetSol from "../../../abi/ArenaCallsFacet.json" assert { type: "json" };
 import { createERC2535Proxy } from "../../../chaintrap/erc2535proxy.mjs"
 
 describe("ERC2535Proxy", async function (){
-  let proxy;
 
-  before(async function () {
-    proxy = await deployArena();
-  })
+  let proxy;
 
   it("Should access lastGame", async function() {
 
+    [proxy] = await loadFixture(deployArenaFixture);
     const arena = createERC2535Proxy(
-      proxy.address, diamondSol.abi, {
+      proxy, diamondSol.abi, {
         ArenaCallsFacet: arenaCallsFacetSol.abi
       },
       ethers.getSigners()[0]);
