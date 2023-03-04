@@ -12,6 +12,11 @@ export class ERC2535DiamondFacetProxyHandler {
   constructor (diamondAddress, facetABIs, signerOrProvider) {
     this._handler_diamondAddress = diamondAddress;
     this._handler_interfaces = createFacetInterfaces(facetABIs);
+    this._handler_filterCache = new Map();
+
+    // topic[0] -> interface.event entry
+    this._handler_eventInterface = new Map();
+
     const facets = {};
     for (const [name, abi] of Object.entries(this._handler_interfaces)) {
       facets[name] = new ethers.Contract(diamondAddress, abi, signerOrProvider)
@@ -68,6 +73,43 @@ export class ERC2535DiamondFacetProxyHandler {
 
   getFacetInterface(name) {
     return this._handler_interfaces[name];
+  }
+
+  getFilter(signature, ...args) {
+
+    const cache = this._handler_filterCache;
+    if (cache.has(signature))
+      return cache.get(signature)(args);
+
+    for (const f of Object.values(this._handler_facets)) {
+      if (signature in f.filters) {
+        const filter = f.filters[signature];
+        cache.set(signature, filter);
+        return filter;
+      }
+    }
+    return undefined;
+  }
+
+  getEventInterface(event) {
+    const cache = this._handler_eventInterface;
+
+    const topic = event?.topics?.[0]
+    if (cache.has(topic))
+      return cache.get(topic);
+
+    let err;
+    for (const iface of Object.values(this._handler_interfaces)) {
+      try {
+        iface.getEvent(topic) // throws if it doesn't exist
+        cache[topic] = iface
+        return iface
+      } catch (err) {}
+    }
+
+    // throw the last actual err we got from ethers or a generic one for the
+    // case we have interfaces to search.
+    throw err || new Error(`event topic ${topic} not found`);
   }
 }
 

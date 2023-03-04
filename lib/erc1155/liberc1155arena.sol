@@ -2,6 +2,7 @@
 pragma solidity =0.8.9;
 import "lib/erc1155/storage.sol";
 import "lib/tokenid.sol";
+import "lib/gameid.sol";
 
 error TokenNotBoundBy(uint256, uint256);
 
@@ -18,6 +19,12 @@ library LibERC1155Arena {
 
     /// 
     /// @dev minting methods
+
+    /// ---------------------------
+    /// @dev tokens from game identifiers
+    function idfrom(GameID gid) internal pure returns (uint256) {
+        return TokenID.GAME_TYPE | GameID.unwrap(gid);
+    }
 
     /// ---------------------------
     /// @dev token binding methods

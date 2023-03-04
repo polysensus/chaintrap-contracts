@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
+import { ERC1155MetadataStorage } from "@solidstate/contracts/token/ERC1155/metadata/ERC1155Metadata.sol";
 import { LibERC1155Arena } from "lib/erc1155/liberc1155arena.sol";
 import "lib/game.sol";
 import "lib/furnishings.sol";
@@ -24,10 +25,12 @@ contract ArenaCallsFacet is IArenaCalls {
         return ArenaAccessors.game(gid).playerRegistered(p);
     }
 
-    function gameStatus(GameID id) public view returns (GameStatus memory) {
-        Game storage g = ArenaAccessors.game(id);
+    function gameStatus(GameID gid) public view returns (GameStatus memory) {
+        Game storage g = ArenaAccessors.game(gid);
         GameStatus memory gs = g.status();
-        // XXX gs.uri = uri(g.id);
+
+        uint256 id = LibERC1155Arena.idfrom(gid);
+        gs.uri = ERC1155MetadataStorage.layout().tokenURIs[id];
         return gs;
     }
 
