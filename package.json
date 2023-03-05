@@ -15,8 +15,8 @@
     "abi": "abi"
   },
   "scripts": {
-    "prepare": "task build:contracts",
-    "build": "rollup -c",
+    "prepare": "true",
+    "build": "task build:contracts && rollup -c",
     "dev": "rollup -c -w",
     "test": "task test",
     "hh-test": "task test:hh",
