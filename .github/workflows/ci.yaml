@@ -86,12 +86,11 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > ~/.npmrc
-        FORCE=""
 
         # github has scale issues when there are a large (> 20 ) npm packages in
         # a repo, so force for fixes seems like the right thing for now.
-        if !startsWith(github.event.head_commit.message, 'release:v'); then
-          echo "*force* publishing"
+        FORCE=""
+        if [[ ! $(git log -1 --pretty=%B) =~ '^release:v' ]]; then
           export FORCE=--force
         fi
         npm publish $FORCE
