@@ -18,6 +18,13 @@ vars:
 
 tasks:
 
+  release:fix:
+    desc: create patch release fixing a problem
+    cmds:
+      - |
+        tusk -q -f tusk.yml version-update {{.CLI_ARGS}}
+
+
   build:
     desc: build the npm package
     cmds:
