@@ -10,7 +10,8 @@ vars:
   # The input file for diamond-deploy --exclu
   FACETS_EXCLUDE: abi/facets-exclude.json
   DIAMOND_DEPLOY: '{{.ENV}}/diamond-deploy.json'
-
+  CICD_DEV_CURL: "curl -s -H 'Accept: application/vnd.github.v3.raw' -L https://api.github.com/repos/polysensus/cicd-dev-infra/contents"
+  TUSKS: ".local/dev"
 
 # tasks are primarily for actions local to this repository. task is for things
 # that usually don't need options (or can be configured once via a .env) use it
@@ -18,12 +19,20 @@ vars:
 
 tasks:
 
+  bootstrap:
+    desc: fetch the shared cicd development infra we use here
+    cmds:
+      - |
+        mkdir -p {{.TUSKS}}
+        cd {{.TUSKS}}
+        {{.CICD_DEV_CURL}}/js/tusk-jspkg.yml?ref=v0.0.1 -O
+
+
   release:fix:
     desc: create patch release fixing a problem
     cmds:
       - |
-        tusk -q -f tusk.yml version-update {{.CLI_ARGS}}
-
+        tusk -q -f {{.TUSKS}}/tusk-jspkg.yml version-update {{.CLI_ARGS}}
 
   build:
     desc: build the npm package
