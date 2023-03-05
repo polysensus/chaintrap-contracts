@@ -57,33 +57,12 @@ jobs:
         working-directory: chaintrap-contracts
         run: task test:hh
 
-  publish:
-    name: Publish
-    needs: test
-    runs-on: ubuntu-latest
-    if: ${{ startsWith(github.event.head_commit.message, 'release:v') ||
-              startsWith(github.event.head_commit.message, 're-release:') ||
-              startsWith(github.event.head_commit.message, 'fix:') }}
-
-    #if: |
-    #  github.event_name == 'push'
-    #  && ( github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' )
-    #  && contains(github.event.head_commit.message, 'release: v')
-    steps:
-    - uses: actions/checkout@v2
-    - name: Cache node_modules
-      id: cache-modules
-      uses: actions/cache@v1
-      with:
-        path: node_modules
-        key: 16.x-${{ runner.OS }}-build-${{ hashFiles('package.json') }}
-    - name: Build npm package
-      if: steps.cache-modules.outputs.cache-hit != 'true'
-      run: npm install
-
     - name: publish npm package
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      if: ${{ startsWith(github.event.head_commit.message, 'release:v') ||
+                startsWith(github.event.head_commit.message, 're-release:') ||
+                startsWith(github.event.head_commit.message, 'fix:') }}
       run: |
         echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > ~/.npmrc
 
