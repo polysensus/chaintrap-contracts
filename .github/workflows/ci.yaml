@@ -87,6 +87,8 @@ jobs:
       run: |
         echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > ~/.npmrc
 
+        tree dist abi
+
         # github has scale issues when there are a large (> 20 ) npm packages in
         # a repo, so force for fixes seems like the right thing for now.
         FORCE=""
