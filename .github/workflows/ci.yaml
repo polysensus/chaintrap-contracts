@@ -58,6 +58,7 @@ jobs:
         run: task test:hh
 
       - name: publish npm package
+        working-directory: chaintrap-contracts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: ${{ startsWith(github.event.head_commit.message, 'release:v') ||
