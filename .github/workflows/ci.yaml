@@ -61,7 +61,7 @@ jobs:
     name: Publish
     needs: test
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.event.head_commit.message.split('\n')[0], 'release:v') }}
+    if: ${{ startsWith(github.event.head_commit.message, 'release:v') }}
 
     #if: ${{ startsWith(github.event.head_commit.message.split('\n')[0], 'release:v') ||
     #          startsWith(github.event.head_commit.message.split('\n')[0], 're-release:') ||
