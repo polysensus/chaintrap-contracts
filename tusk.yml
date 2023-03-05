@@ -81,8 +81,8 @@ tasks:
 
             ${nocommit} && exit 0
 
-            git commit -m "release - v$VERSION  ${message}"
-            git tag -a v$VERSION -m "release - v$VERSION  ${message}"
+            git commit -m "release:v$VERSION  ${message}"
+            git tag -a v$VERSION -m "release:v$VERSION  ${message}"
             ! ${nopush} && git push --tags
   stop-node:
     usage: |

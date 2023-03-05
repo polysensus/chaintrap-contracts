@@ -61,7 +61,10 @@ jobs:
     name: Publish
     needs: test
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, 'release - v')
+    if: ${{ startsWith(github.event.head_commit.message.split('\n')[0], 'release:v') ||
+              startsWith(github.event.head_commit.message.split('\n')[0], 're-release:' ||
+              startsWith(github.event.head_commit.message.split('\n')[0], 'fix:'
+              )
     #if: |
     #  github.event_name == 'push'
     #  && ( github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' )
@@ -83,5 +86,12 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > ~/.npmrc
-        npm publish
+        FORCE=""
 
+        # github has scale issues when there are a large (> 20 ) npm packages in
+        # a repo, so force for fixes seems like the right thing for now.
+        if !startsWith(github.event.head_commit.message.split('\n')[0], 'release:v'); then
+          echo "*force* publishing"
+          export FORCE=--force
+        fi
+        npm publish $FORCE
