@@ -61,9 +61,11 @@ jobs:
     name: Publish
     needs: test
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.event.head_commit.message.split('\n')[0], 'release:v') ||
-              startsWith(github.event.head_commit.message.split('\n')[0], 're-release:') ||
-              startsWith(github.event.head_commit.message.split('\n')[0], 'fix:') }}
+    if: ${{ startsWith(github.event.head_commit.message.split('\n')[0], 'release:v') }}
+
+    #if: ${{ startsWith(github.event.head_commit.message.split('\n')[0], 'release:v') ||
+    #          startsWith(github.event.head_commit.message.split('\n')[0], 're-release:') ||
+    #          startsWith(github.event.head_commit.message.split('\n')[0], 'fix:') }}
     #if: |
     #  github.event_name == 'push'
     #  && ( github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' )
