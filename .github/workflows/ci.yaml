@@ -57,26 +57,14 @@ jobs:
         working-directory: chaintrap-contracts
         run: task test:hh
 
-      - name: package cleanup
-        # note this hasn't been tested yet
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: actions/delete-package-versions@v4
-        if: ${{ startsWith(github.event.head_commit.message, 'release:v') ||
-                  startsWith(github.event.head_commit.message, 're-release:') ||
-                  startsWith(github.event.head_commit.message, 'fix:') }}
-        with:
-          package-name: "chaintrap-contracts"
-          package-type: "npm"
-          min-versions-to-keep: 5
-
       - name: publish npm package
         working-directory: chaintrap-contracts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: ${{ startsWith(github.event.head_commit.message, 'release:v') ||
-                  startsWith(github.event.head_commit.message, 're-release:') ||
-                  startsWith(github.event.head_commit.message, 'fix:') }}
+        if: contains(github.ref, 'refs/tags/') && github.event_name == 'push'
+        #if: ${{ startsWith(github.event.head_commit.message, 'release:v') ||
+        #          startsWith(github.event.head_commit.message, 're-release:') ||
+        #          startsWith(github.event.head_commit.message, 'fix:') }}
         run: |
           echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > ~/.npmrc
 
@@ -89,3 +77,18 @@ jobs:
             export FORCE=--force
           fi
           npm publish $FORCE
+
+      - name: package cleanup
+        # note this hasn't been tested yet
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/delete-package-versions@v4
+        if: contains(github.ref, 'refs/tags/') && github.event_name == 'push'
+        # if: ${{ startsWith(github.event.head_commit.message, 'release:v') ||
+        #           startsWith(github.event.head_commit.message, 're-release:') ||
+        #           startsWith(github.event.head_commit.message, 'fix:') }}
+        with:
+          package-name: "chaintrap-contracts"
+          package-type: "npm"
+          min-versions-to-keep: 5
+
