@@ -28,8 +28,8 @@ tasks:
         {{.CICD_DEV_CURL}}/js/tusk-jspkg.yml?ref=v0.0.2 -O
 
 
-  release:fix:
-    desc: create patch release fixing a problem
+  release:patch:
+    desc: create patch release
     cmds:
       - |
         tusk -q -f {{.TUSKS}}/tusk-jspkg.yml version-update {{.CLI_ARGS}}
