@@ -79,13 +79,13 @@ export class ERC2535DiamondFacetProxyHandler {
 
     const cache = this._handler_filterCache;
     if (cache.has(signature))
-      return cache.get(signature)(args);
+      return cache.get(signature)(...args);
 
     for (const f of Object.values(this._handler_facets)) {
       if (signature in f.filters) {
         const filter = f.filters[signature];
         cache.set(signature, filter);
-        return filter;
+        return filter(...args);
       }
     }
     return undefined;

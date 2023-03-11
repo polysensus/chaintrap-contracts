@@ -1,14 +1,33 @@
 import hre from "hardhat";
+const ethers = hre.ethers;
 import { expect } from "chai";
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 // import deploypkg from "./deploy.mjs";
 // const { deployArena } = deploypkg;
 import { deployArenaFixture } from "./deploy.js";
-import { createArenaProxy } from "./arenaproxy.mjs";
+import { createArenaProxy, facetABIs } from "./arenaproxy.mjs";
 
 describe("Arena", async function () {
   let proxy;
   let owner;
+
+  it("Should get the correct event filter from proxy", async function (){
+    [proxy, owner] = await loadFixture(deployArenaFixture);
+    const arena = createArenaProxy(proxy, owner);
+
+    const filterFromArena = arena.getFilter('GameCreated');
+
+    // check the filter fetched from the cache too
+    const filterFromArena2 = arena.getFilter('GameCreated');
+
+    const iface = new ethers.utils.Interface(facetABIs.ArenaFacet);
+    const facet = new ethers.Contract(proxy, iface, owner);
+
+    const filterFromFacet = facet.filters['GameCreated']();
+
+    expect(filterFromArena).to.deep.equal(filterFromFacet);
+    expect(filterFromArena2).to.deep.equal(filterFromFacet);
+  });
 
   it("Should create a new game and transcript both with the first ids", async function () {
     // Need a fresh proxy to get the gids we expect

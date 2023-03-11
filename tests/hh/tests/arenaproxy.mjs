@@ -11,17 +11,17 @@ import erc1155ArenaFacetSol from "../../../abi/ERC1155ArenaFacet.json" assert { 
 
 import { createERC2535Proxy } from "../../../chaintrap/erc2535proxy.mjs"
 
+export const facetABIs = {
+  DiamondCutFacet: diamondCutFacetSol.abi,
+  DiamondLoupeFacet: diamondLoupeFacetSol.abi,
+  OwnershipFacet: ownershipFacetSol.abi,
+  ArenaCallsFacet: arenaCallsFacetSol.abi,
+  ArenaFacet: arenaFacetSol.abi,
+  ArenaTranscriptsFacet: arenaTranscriptsFacetSol.abi,
+  ERC1155ArenaFacetSol: erc1155ArenaFacetSol.abi
+}
+
 export function createArenaProxy(diamondAddress, providerOrSigner) {
-  const arena = createERC2535Proxy(
-    diamondAddress, diamondSol.abi, {
-      DiamondCutFacet: diamondCutFacetSol.abi,
-      DiamondLoupeFacet: diamondLoupeFacetSol.abi,
-      OwnershipFacet: ownershipFacetSol.abi,
-      ArenaCallsFacet: arenaCallsFacetSol.abi,
-      ArenaFacet: arenaFacetSol.abi,
-      ArenaTranscriptsFacet: arenaTranscriptsFacetSol.abi,
-      ERC1155ArenaFacetSol: erc1155ArenaFacetSol.abi
-    },
-    providerOrSigner);
+  const arena = createERC2535Proxy(diamondAddress, diamondSol.abi, facetABIs, providerOrSigner);
   return arena;
 }
