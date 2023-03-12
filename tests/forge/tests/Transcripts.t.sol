@@ -26,21 +26,25 @@ contract Factory {
     Game[] games;
     Furniture[] furniture;
 
-    constructor () {
+    constructor () { }
+
+    function _init(GameInitArgs calldata game1InitArgs) public {
         trans.push();
         trans[0]._init(GameID.wrap(0));
         games.push();
 
         // This creates an invalid tokenId for the undefined games[0] entry
-        games[0]._init(2, address(this), TokenID.GAME_TYPE | (games.length - 1));
+
+        games[0]._init(
+            TokenID.GAME_TYPE | (games.length - 1), game1InitArgs, address(this));
 
         furniture.push();
     }
 
-    function reset() public {
+    function reset(GameInitArgs calldata game1InitArgs) public {
         delete trans;
-        trans.push();
-        trans[trans.length - 1]._init(GameID.wrap(0));
+        delete games;
+        delete furniture;
     }
 
     function head() internal view returns (Transcript storage) {
@@ -55,13 +59,13 @@ contract Factory {
         return headGame().status();
     }
 
-    function push() public {
+    function push(GameInitArgs calldata initArgs) public {
         trans.push();
         trans[trans.length - 1]._init(GameID.wrap(games.length));
 
         uint256 tokenId = TokenID.GAME_TYPE | games.length;
         games.push();
-        games[games.length - 1]._init(2, address(this), tokenId);
+        games[games.length - 1]._init(tokenId, initArgs, address(this));
     }
 
     function nextFurnitureInstance() public view returns (uint256) {
@@ -321,6 +325,7 @@ contract TranscriptTest is DSTest {
         nextExitID = 1;
         locs.push(); // id zero should be invalid always
         f = new Factory();
+        f._init(GameInitArgs({ tokenURI: "", mapVRFBeta: "", maxPlayers: 2 }));
         saltForLocationTokens = 12345;
     }
 
@@ -536,7 +541,7 @@ contract TranscriptTest is DSTest {
     }
 
     function testPlayerRegistrationStartLocationValid() public {
-        f.push();
+        f.push(GameInitArgs({maxPlayers: 2, tokenURI: "", mapVRFBeta: ""}));
 
         // Only the games master can know the start tokens for the players
         LocationID loc = LocationID.wrap(1);
@@ -563,7 +568,7 @@ contract TranscriptTest is DSTest {
         // its the simplest viable game
 
         // push a clean game state and transcript
-        f.push();
+        f.push(GameInitArgs({maxPlayers: 2, tokenURI: "", mapVRFBeta: ""}));
 
         // Only the games master can know the start tokens for the players
         LocationID startLocation = LocationID.wrap(1);
@@ -750,7 +755,7 @@ contract TranscriptTest is DSTest {
     function testEnumerateSimplestViableGame() public {
 
         // push a clean game state and transcript
-        f.push();
+        f.push(GameInitArgs({maxPlayers: 2, tokenURI: "", mapVRFBeta: ""}));
 
         // Only the games master can know the start tokens for the players
         LocationID startLocation = LocationID.wrap(1);
@@ -782,7 +787,7 @@ contract TranscriptTest is DSTest {
     function testPlaceFurnitureAfterStartReverts() public {
 
         // push a clean game state and transcript
-        f.push();
+        f.push(GameInitArgs({maxPlayers: 2, tokenURI: "", mapVRFBeta: ""}));
 
         uint256 fTokenId = f.pushFurniture(Furnishings.Kind.Finish, Furnishings.Effect.Victory);
 
@@ -806,7 +811,7 @@ contract TranscriptTest is DSTest {
     function testPlaceFurnitureAfterCompleteReverts() public {
 
         // push a clean game state and transcript
-        f.push();
+        f.push(GameInitArgs({maxPlayers: 2, tokenURI: "", mapVRFBeta: ""}));
 
         uint256 fTokenId = f.pushFurniture(Furnishings.Kind.Finish, Furnishings.Effect.Victory);
 
@@ -833,7 +838,7 @@ contract TranscriptTest is DSTest {
     function testEnumerateSimplestViableGameWithVictory() public {
 
         // push a clean game state and transcript
-        f.push();
+        f.push(GameInitArgs({maxPlayers: 2, tokenURI: "", mapVRFBeta: ""}));
 
         uint256 fTokenId = f.pushFurniture(Furnishings.Kind.Finish, Furnishings.Effect.Victory);
 
@@ -914,7 +919,7 @@ contract TranscriptTest is DSTest {
     function testEnumerateSimplestViableGameWithDeath() public {
 
         // push a clean game state and transcript
-        f.push();
+        f.push(GameInitArgs({maxPlayers: 2, tokenURI: "", mapVRFBeta: ""}));
 
         uint256 fTokenId = f.pushFurniture(Furnishings.Kind.Trap, Furnishings.Effect.Death);
 
@@ -993,7 +998,7 @@ contract TranscriptTest is DSTest {
     function testEnumerateSimplestViableGameWithFreeLife() public {
 
         // push a clean game state and transcript
-        f.push();
+        f.push(GameInitArgs({maxPlayers: 2, tokenURI: "", mapVRFBeta: ""}));
 
         uint256 fTokenId = f.pushFurniture(Furnishings.Kind.Boon, Furnishings.Effect.FreeLife);
 
@@ -1075,7 +1080,7 @@ contract TranscriptTest is DSTest {
 
     function testEnumerateSimplestViableGameWithFreeLifeAndVictory() public {
 
-        f.push();
+        f.push(GameInitArgs({maxPlayers: 2, tokenURI: "", mapVRFBeta: ""}));
         uint256 fBoonToken = f.pushFurniture(Furnishings.Kind.Boon, Furnishings.Effect.FreeLife);
         uint256 fTrapToken = f.pushFurniture(Furnishings.Kind.Trap, Furnishings.Effect.Death);
         uint256 fFinishToken = f.pushFurniture(Furnishings.Kind.Finish, Furnishings.Effect.Victory);

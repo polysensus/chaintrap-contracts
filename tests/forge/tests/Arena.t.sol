@@ -236,7 +236,7 @@ contract ArenaTest is DSTest {
 
     function testCreateGame() public {
         vm.prank(master, master);
-        erc1155arena().createGame(2, "");
+        erc1155arena().createGame(GameInitArgs({tokenURI: "", mapVRFBeta: "", maxPlayers: 2 }));
     }
 
     function testRegisterPlayerArena() public {

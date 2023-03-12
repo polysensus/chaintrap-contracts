@@ -33,7 +33,7 @@ contract ERC1155ArenaFacet is IArenaEvents, IERC1155Arena,
     /// @notice creates a new game context.
     /// @return returns the id for the game
     function createGame(
-        uint maxPlayers, string calldata tokenURI
+        GameInitArgs calldata initArgs
     ) public whenNotPaused returns (GameID) {
 
         ArenaStorage.Layout storage s = ArenaStorage.layout();
@@ -43,7 +43,7 @@ contract ERC1155ArenaFacet is IArenaEvents, IERC1155Arena,
 
         s.games.push();
         Game storage g = s.games[GameID.unwrap(gid)];
-        g._init(maxPlayers, _msgSender(), gTokenId);
+        g._init(gTokenId, initArgs, _msgSender());
 
         TID tid = TID.wrap(s.transcripts.length);
         s.transcripts.push();
@@ -65,8 +65,8 @@ contract ERC1155ArenaFacet is IArenaEvents, IERC1155Arena,
 
         // game first, mint to sender
         _mint(_msgSender(), gTokenId, 1, "GAME_TYPE");
-        if (bytes(tokenURI).length > 0) {
-            _setTokenURI(gTokenId, tokenURI);
+        if (bytes(initArgs.tokenURI).length > 0) {
+            _setTokenURI(gTokenId, initArgs.tokenURI);
         }
 
         // furniture created as a reward/part of new game - mint to contract owner and hand out depending on victory ?

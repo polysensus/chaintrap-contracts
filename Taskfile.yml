@@ -97,7 +97,7 @@ tasks:
   test:hh:
     desc: run the hardhat tests
     cmds:
-      - npx mocha --require esm --timeout 20000  'tests/**/*.{mjs,js}'
+      - npx mocha --require esm --timeout 20000  'tests/**/*.{mjs,js}'  {{.CLI_ARGS}}
 
   deploy:
     cmds:

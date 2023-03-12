@@ -9,6 +9,6 @@ interface IERC1155Arena {
     /// ---------------------------------------------------
 
     function createGame(
-        uint maxPlayers, string calldata tokenURI
+        GameInitArgs calldata initArgs
     ) external returns (GameID);
 }

@@ -35,7 +35,7 @@ describe("Arena", async function () {
 
     const arena = createArenaProxy(proxy, owner);
 
-    let tx = await arena.createGame(2, "");
+    let tx = await arena.createGame({maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
     let r = await tx.wait();
     expect(r.status, 1);
     expect(r.events[1].args.gid).to.equal(1);
@@ -46,12 +46,12 @@ describe("Arena", async function () {
     [proxy, owner] = await loadFixture(deployArenaFixture);
     const arena = createArenaProxy(proxy, owner);
 
-    let tx = await arena.createGame(2, "");
+    let tx = await arena.createGame({maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
     let r = await tx.wait();
     expect(r.status, 1);
     expect(r.events[1].args.gid).to.equal(1);
     expect(r.events[1].args.tid).to.equal(1);
-    tx = await arena.createGame(2, "");
+    tx = await arena.createGame({maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
     r = await tx.wait();
     expect(r.events[1].args.gid).to.equal(2);
     expect(r.events[1].args.tid).to.equal(2);
@@ -62,7 +62,7 @@ describe("Arena", async function () {
     [proxy, owner] = await loadFixture(deployArenaFixture);
     let arena = createArenaProxy(proxy, owner);
 
-    let tx = await arena.createGame(2, "");
+    let tx = await arena.createGame({maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
     let r = await tx.wait();
     expect(r.status, 1);
     const gid = r.events[1].args.gid;

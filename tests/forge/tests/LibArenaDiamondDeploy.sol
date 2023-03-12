@@ -123,7 +123,8 @@ library LibArenaDiamondDeploy {
 
 
         s.vm.prank(master, master);
-        s.g1 = IERC1155Arena(address(s.arena)).createGame(2, "");
+        s.g1 = IERC1155Arena(address(s.arena)).createGame(
+            GameInitArgs({tokenURI: "", mapVRFBeta: "", maxPlayers: 2 }));
     }
 
     /* for another time

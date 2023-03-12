@@ -140,7 +140,7 @@ describe("Transcript", function () {
     [proxy, owner] = await loadFixture(deployArenaFixture);
     [master, player] = await masterAndPlayer(proxy);
 
-    let r = await receipt(master.createGame, 2, "");
+    let r = await receipt(master.createGame, {maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
     const gid = r.events[1].args.gid;
 
     r = await receipt(master.startGame, gid);
@@ -158,7 +158,7 @@ describe("Transcript", function () {
     [proxy, owner] = await loadFixture(deployArenaFixture);
     [master] = await masterAndPlayer(proxy);
 
-    let r = await receipt(master.createGame, 2, "");
+    let r = await receipt(master.createGame, {maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
     const gid = r.events[1].args.gid;
     const tid = r.events[1].args.tid;
 
@@ -171,7 +171,7 @@ describe("Transcript", function () {
     [proxy, owner] = await loadFixture(deployArenaFixture);
     [master, player, masterSigner, playerSigner] = await masterAndPlayer(proxy);
 
-    let r = await receipt(master.createGame, 2, "");
+    let r = await receipt(master.createGame, {maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
     const gid = r.events[1].args.gid;
     const tid = r.events[1].args.tid;
 
@@ -281,7 +281,7 @@ describe("Transcript", function () {
 
     const sides = locationSides();
 
-    let r = await receipt(master.createGame, 2, "");
+    let r = await receipt(master.createGame, {maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
     const [gid, tid] = [r.events[1].args.gid, r.events[1].args.tid];
 
     const am = new Game(master, gid, tid);
@@ -327,7 +327,7 @@ describe("Transcript", function () {
     [proxy, owner] = await loadFixture(deployArenaFixture);
     [master, player, masterSigner, playerSigner] = await masterAndPlayer(proxy);
 
-    let r = await receipt(master.createGame, 2, "");
+    let r = await receipt(master.createGame, {maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
     const [gid, tid] = [r.events[1].args.gid, r.events[1].args.tid];
 
     const am = new Game(master, gid, tid);
@@ -354,7 +354,7 @@ describe("Transcript", function () {
     [proxy, owner] = await loadFixture(deployArenaFixture);
     [master, player, masterSigner, playerSigner] = await masterAndPlayer(proxy);
 
-    let r = await receipt(master.createGame, 2, "");
+    let r = await receipt(master.createGame, {maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
     const [gid, tid] = [r.events[1].args.gid, r.events[1].args.tid];
 
     const am = new Game(master, gid, tid);

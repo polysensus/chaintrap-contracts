@@ -97,7 +97,7 @@ function checkStatus(r, msg) {
 }
 
 async function newGame(arena, maxPlayers) {
-    let tx = await arena.createGame(maxPlayers, "")
+    let tx = await arena.createGame({maxPlayers, tokenURI:"", mapVRFBeta: "0x"})
     let r = await tx.wait()
     checkStatus(r)
     return [r.events[1].args.gid, r.events[1].args.tid]

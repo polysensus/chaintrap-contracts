@@ -2,7 +2,7 @@
 pragma solidity =0.8.9;
 import "./tokenid.sol";
 import "./transcript.sol";
-import "./mapstructure.sol";
+import { Map, LocationMaps } from "./mapstructure.sol";
 import "./furnishings.sol";
 import "./gameid.sol";
 
@@ -53,6 +53,12 @@ struct Player {
     uint8 lives; // The count of deaths the player can survive, 0 is the default
 }
 
+struct GameInitArgs {
+    string tokenURI;
+    bytes mapVRFBeta;
+    uint256 maxPlayers;
+}
+
 struct Game {
 
     /// @dev The following state supports ERC 1155 tokenization and general ownership and authority
@@ -98,6 +104,13 @@ struct Game {
     // validate the transcript
     mapping (bytes32 => bytes32) placementSalts;
 
+    // @note mapVRFBeta commits the game to specific map without revealing
+    // anything about that map.  The game map is generated using the alpha input
+    // to a VRF as its random seed
+    bytes mapVRFBeta; 
+
+    // TODO: commitment for item placements
+
     // The following state is recorded on the game after it is completed in
     // order to reconcile the state and apply outcomes to participant accounts.
     // participants include both the registered player accounts and the game
@@ -108,14 +121,18 @@ struct Game {
 
 struct GameStatus {
     uint256 id;
-    /// The creator of the game gets a payout provide the game is completed by
-    /// at least one player.
+    /// @dev The creator of the game gets a payout provide the game is completed
+    /// by at least one player.
     address creator;
 
-    /// The 'dungeon' master (often the creator) reveals the result of each player move.
+    /// @dev The 'dungeon' master (often the creator) reveals the result of each
+    /// player move.
     address master;
 
     string uri;
+
+    bytes mapVRFBeta;
+
     /// maximum number of players
     uint maxPlayers;
     uint numRegistered;
@@ -187,17 +204,19 @@ library Games {
     /// ---------------------------
     /// @dev state changing methods
 
-    function _init(Game storage self, uint maxPlayers, address _msgSender, uint256 id) internal {
+    function _init(
+        Game storage self, uint256 id, GameInitArgs calldata initArgs, address _msgSender) internal {
 
         if (self.players.length != 0 || self.locationTokens.length != 0 || self.placedTokens.length != 0) {
             revert IsInitialised();
         }
 
-        if (maxPlayers == 0) {
+        if (initArgs.maxPlayers == 0) {
             revert ZeroMaxPlayers();
         }
         self.id = id;
-        self.maxPlayers = maxPlayers;
+        self.mapVRFBeta = initArgs.mapVRFBeta;
+        self.maxPlayers = initArgs.maxPlayers;
         self.creator = _msgSender;
         self.master = _msgSender;
 
@@ -217,6 +236,7 @@ library Games {
     function status(Game storage self) internal view returns (GameStatus memory) {
         GameStatus memory gs;
         gs.id = self.id;
+        gs.mapVRFBeta = self.mapVRFBeta;
         gs.creator = self.creator;
         gs.master = self.master;
 
