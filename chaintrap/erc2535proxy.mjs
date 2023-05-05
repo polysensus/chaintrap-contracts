@@ -3,7 +3,7 @@ import { ethers } from "ethers"
 /**
  * This handler is only safe when accessing specific facet methods. When
  * accessing contract properties you will get the first found and the order is
- * arbitrary. Use getFacet to retrieve the specific contrac instance for the
+ * arbitrary. Use getFacet to retrieve the specific contract instance for the
  * facet you are interested in if you need to interact with the facets contract
  * in a general way.
  */
@@ -33,17 +33,17 @@ export class ERC2535DiamondFacetProxyHandler {
    * fall back to looking in the handler itself. With the effect that facet
    * specific methods and events are proxied to the appropriate instance but
    * generic contract interaction happens with the diamond contract instance.
-   * And there is an escape hatch for implementing helpers on this hanlder
+   * And there is an escape hatch for implementing helpers on this handler
    * class.
-   * @param {*} target assumed to be the contract instance for the Diamon itself
+   * @param {*} target assumed to be the contract instance for the Diamond itself
    * @param {*} prop to get from diamond or its facets or finally this handler
    * @param {*} receiver 
    * @returns 
    */
   get(target, prop, receiver) {
-    // target is the instance being proxie. it should be a contract instance
+    // target is the instance being proxy. it should be a contract instance
     // bound on the diamond with the interface of the ERC 2535 itself. This will
-    // mean that any generic abi calls etc will go to the diamon abi.
+    // mean that any generic abi calls etc will go to the diamond abi.
 
     if (prop in target)
       return Reflect.get(target, prop, receiver)

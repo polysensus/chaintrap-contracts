@@ -40,7 +40,6 @@ async function deployArena(signer, owner, options={}) {
   if (!result.address)
     throw new Error("no adddress on result for proxy deployment");
 
-
   return result.address;
 }
 

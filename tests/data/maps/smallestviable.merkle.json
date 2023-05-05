@@ -1,0 +1,27 @@
+{
+  "format": "standard-v1",
+  "tree": [
+    "0x5913d102e8749b800ea6233eec0d2b5acca2a8f731be8edf0acbe53936860a21"
+  ],
+  "values": [
+    {
+      "value": [
+        [
+          0,
+          3,
+          0
+        ],
+        [
+          1,
+          1,
+          0
+        ]
+      ],
+      "treeIndex": 0
+    }
+  ],
+  "leafEncoding": [
+    "tuple(uint16 location, uint16 side, uint16 access) a",
+    "tuple(uint16 location, uint16 side, uint16 access) b"
+  ]
+}

@@ -6,7 +6,11 @@
   "module": "dist/chaintrap.esm.js",
   "browser": "dist/chaintrap.umd.js",
   "files": [
-    "dist",
+    "dist/index.js",
+    "dist/types/*.d.ts",
+    "dist/types/contracts/**/*.d.ts",
+    "dist/types/factories/contracts/**/*.d.ts",
+    "dist/types/factories/index.d.ts",
     "abi"
   ],
   "directories": {
