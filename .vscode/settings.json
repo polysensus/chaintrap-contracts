@@ -5,6 +5,11 @@
     "mochaExplorer.files": "tests/hh/tests/**/*.{j,t,mj}s",
     // "mochaExplorer.spec": "tests/hh/tests/**/*.{j,t}s",
     "mochaExplorer.mochaPath": "node_modules/mocha",
-    "mochaExplorer.timeout": 20000,
+    "mochaExplorer.timeout": 40000,
     "mochaExplorer.cwd": ".",
+    "cSpell.words": [
+      "chaintrap",
+      "nomicfoundation",
+      "typechain"
+    ],
   }

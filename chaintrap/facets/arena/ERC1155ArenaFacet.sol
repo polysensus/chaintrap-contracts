@@ -11,14 +11,22 @@ import "lib/erc1155/storage.sol";
 
 import {IArenaEvents} from "lib/interfaces/IArenaEvents.sol";
 import {LibERC1155Arena} from "lib/erc1155/liberc1155arena.sol";
+
 import {ArenaStorage} from "lib/arena/storage.sol";
 import "lib/game.sol";
+
+
+import {IERC1155Arena2} from "lib/interfaces/IERC1155Arena2.sol";
+import {LibArena2Storage} from "lib/arena2/storage.sol";
+import {LibGame, Game2, Game2InitArgs} from "lib/game2.sol";
+
 
 import "lib/interfaces/IERC1155Arena.sol";
 
 contract ERC1155ArenaFacet is
     IArenaEvents,
     IERC1155Arena,
+    IERC1155Arena2,
     SolidStateERC1155,
     ModOwnable,
     ModPausable,
@@ -28,10 +36,34 @@ contract ERC1155ArenaFacet is
     /// facet.
     using Transcripts for Transcript;
     using Games for Game;
+    using LibGame for Game2;
 
     /// ---------------------------------------------------
     /// @dev game setup creation & player signup
     /// ---------------------------------------------------
+
+    /// @notice mint a new game 
+    function createGame2(
+        Game2InitArgs calldata initArgs
+    ) external whenNotPaused returns (uint256) {
+        LibArena2Storage.Layout storage s = LibArena2Storage.layout();
+
+        uint256 id = TokenID.GAME2_TYPE | uint256(s.games.length);
+
+        _mint(_msgSender(), id, 1, "GAME_TYPE");
+        if (bytes(initArgs.tokenURI).length > 0) {
+            _setTokenURI(id, initArgs.tokenURI);
+        }
+
+        // allocate the game if the token creation is allowed
+
+        s.games.push();
+        s.games[s.games.length - 1]._init(id, initArgs);
+
+        return id;
+    }
+
+
     /// @notice creates a new game context.
     /// @return returns the id for the game
     function createGame(

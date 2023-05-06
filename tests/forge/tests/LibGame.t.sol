@@ -28,8 +28,8 @@ contract Game2Factory {
 
     //--- LibGame public forwarders
     // These are required to make calldata work
-    function _init(Game2InitArgs calldata args) public {
-        LibGame._init(currentGame(), args);
+    function _init(uint256 id, Game2InitArgs calldata args) public {
+        LibGame._init(currentGame(), id, args);
     }
     function checkRoot(bytes32[] calldata proof, bytes32 label, bytes32 node) public view returns (bool) {
         return LibGame.checkRoot(currentGame(), proof, label, node);
@@ -59,7 +59,7 @@ contract Game2Test is DSTest {
 
     function minimalyValidInitArgs() internal pure returns (Game2InitArgs memory) {
         return Game2InitArgs({
-            gid: 1,
+            tokenURI: "tokenURI",
             rootLabels:new bytes32[](1),
             roots:new bytes32[](1)}
             );
@@ -67,18 +67,18 @@ contract Game2Test is DSTest {
 
     function test__init_RevertInitialiseTwice() public {
         f.pushGame();
-        f._init(minimalyValidInitArgs());
+        f._init(1, minimalyValidInitArgs());
 
         vm.expectRevert(GameIsInitialised.selector);
-        f._init(minimalyValidInitArgs());
+        f._init(1, minimalyValidInitArgs());
     }
 
     function test__init_RevertMoreRootsThanLabels() public {
         f.pushGame();
 
         vm.expectRevert(stdError.indexOOBError); // array out of bounds
-        f._init(Game2InitArgs({
-            gid: 1,
+        f._init(1, Game2InitArgs({
+            tokenURI: "tokenURI",
             rootLabels:new bytes32[](1),
             roots:new bytes32[](2)}
             ));
@@ -87,8 +87,8 @@ contract Game2Test is DSTest {
     function test__init_NoRevertFewerRootsThanLabels() public {
         f.pushGame();
 
-        f._init(Game2InitArgs({
-            gid: 1,
+        f._init(1, Game2InitArgs({
+            tokenURI: "tokenURI",
             rootLabels:new bytes32[](2),
             roots:new bytes32[](1)}
             ));
@@ -103,8 +103,8 @@ contract Game2Test is DSTest {
         emit LibGame.SetMerkleRoot(1, "", "");
         emit LibGame.SetMerkleRoot(1, "", "");
 
-        f._init(Game2InitArgs({
-            gid: 1,
+        f._init(1, Game2InitArgs({
+            tokenURI: "tokenURI",
             rootLabels:new bytes32[](2),
             roots:new bytes32[](2)}
             ));
@@ -140,8 +140,8 @@ contract Game2Test is DSTest {
         bytes32[] memory roots = new bytes32[](1);
         rootLabels[0]=hex"aaaa";
         roots[0] = root;
-        f._init(Game2InitArgs({
-            gid: 1,
+        f._init(1, Game2InitArgs({
+            tokenURI: "tokenURI",
             rootLabels:rootLabels,
             roots:roots}
             ));
@@ -184,8 +184,8 @@ contract Game2Test is DSTest {
         bytes32[] memory roots = new bytes32[](1);
         rootLabels[0]=hex"aaaa";
         roots[0] = root;
-        f._init(Game2InitArgs({
-            gid: 1,
+        f._init(1, Game2InitArgs({
+            tokenURI: "tokenURI",
             rootLabels:rootLabels,
             roots:roots}
             ));

@@ -14,6 +14,7 @@ import {IERC165} from "diamond/interfaces/IERC165.sol";
 // of your diamond. Add parameters to the init funciton if you need to.
 
 import {ArenaStorage} from "lib/arena/storage.sol";
+import {LibArena2Storage} from "lib/arena2/storage.sol";
 import {ArenaERC1155Storage} from "lib/erc1155/storage.sol";
 import {LibERC1155Arena} from "lib/erc1155/liberc1155arena.sol";
 
@@ -36,5 +37,6 @@ contract DiamondNew {
 
         ArenaStorage._idempotentInit();
         ArenaERC1155Storage._idempotentInit(args.typeURIs);
+        LibArena2Storage._idempotentInit();
     }
 }

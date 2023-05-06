@@ -4,10 +4,11 @@ pragma solidity =0.8.9;
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 error GameIsInitialised();
+error GameIsInvalid();
 error InvalidProof();
 
 struct Game2 {
-    uint256 gid;
+    uint256 id;
     LibGame.GameState state;
     /// @dev roots is a mapping from labels to roots. labels can be
     /// keccak(string|bytes) or any value that packs into bytes32. We don't use
@@ -20,8 +21,8 @@ struct Game2 {
 }
 
 struct Game2InitArgs {
-    /// @dev game id
-    uint256 gid;
+    /// @dev nft uri for the game token
+    string tokenURI;
     /// @dev a rootLabel identifies a root. it can be a string (eg a name), a
     /// token id, an address whatever, it must be keccak hashed if it is a
     /// dynamic type (string or bytes). Note: we don't do bytes or string
@@ -34,6 +35,7 @@ struct Game2InitArgs {
 library LibGame {
     enum GameState {
         Unknown,
+        Invalid,
         Initialised,
         Started,
         Complete
@@ -47,15 +49,20 @@ library LibGame {
     );
 
     /// @dev initialise game storage
-    function _init(Game2 storage self, Game2InitArgs calldata args) internal {
+    function _init(
+        Game2 storage self,
+        uint256 id,
+        Game2InitArgs calldata args
+    ) internal {
+        // Note the zero'th game is marked Invalid to ensure it can't be initialised
         if (self.state > GameState.Unknown) revert GameIsInitialised();
-        self.gid = args.gid;
+        self.id = id;
         self.state = GameState.Initialised;
 
         for (uint i = 0; i < args.roots.length; i++) {
             // Note: solidity reverts for array out of bounds so we don't check for array length equivelence.
             self.roots[args.rootLabels[i]] = args.roots[i];
-            emit SetMerkleRoot(self.gid, args.rootLabels[i], args.roots[i]);
+            emit SetMerkleRoot(self.id, args.rootLabels[i], args.roots[i]);
         }
     }
 
