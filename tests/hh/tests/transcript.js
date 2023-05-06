@@ -6,7 +6,7 @@ const bytes = ethers.utils.arrayify;
 const keccak256 = ethers.utils.keccak256;
 import { deployArenaFixture } from "./deploy.js";
 
-import { createArenaProxy } from "./arenaproxy.mjs";
+import { createArenaProxy } from "./arenaproxy.js";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
@@ -20,7 +20,7 @@ import {
   EAST,
   TranscriptLocation,
   locationSides,
-} from "../../../chaintrap/chaintrap.mjs";
+} from "../../../chaintrap/chaintrap.js";
 
 /* The following layout is the default full map for theses tests
 

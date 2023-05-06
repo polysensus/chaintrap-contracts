@@ -9,7 +9,7 @@ import arenaFacetSol from "../../../abi/ArenaFacet.json" assert { type: "json" }
 import arenaTranscriptsFacetSol from "../../../abi/ArenaTranscriptsFacet.json" assert { type: "json" };
 import erc1155ArenaFacetSol from "../../../abi/ERC1155ArenaFacet.json" assert { type: "json" };
 
-import { createERC2535Proxy } from "../../../chaintrap/erc2535proxy.mjs";
+import { createERC2535Proxy } from "../../../chaintrap/erc2535proxy.js";
 
 export const facetABIs = {
   DiamondCutFacet: diamondCutFacetSol.abi,

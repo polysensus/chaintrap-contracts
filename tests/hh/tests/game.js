@@ -7,10 +7,10 @@ const { ethers } = hre;
 import { deployArenaFixture } from "./deploy.js";
 
 import { MockProfileClock } from "./mocks/profileclock.mjs";
-import { createArenaProxy } from "./arenaproxy.mjs";
+import { createArenaProxy } from "./arenaproxy.js";
 
-import { Game } from "../../../chaintrap/game.mjs";
-import { TXProfiler } from "../../../chaintrap/txprofile.mjs";
+import { Game } from "../../../chaintrap/game.js";
+import { TXProfiler } from "../../../chaintrap/txprofile.js";
 
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 

@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { TranscriptLocation } from "./transcript.mjs";
+import { TranscriptLocation } from "./transcript.js";
 const arrayify = ethers.utils.arrayify;
 
 export class Game {

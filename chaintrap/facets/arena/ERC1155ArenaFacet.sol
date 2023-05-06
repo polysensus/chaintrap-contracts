@@ -148,9 +148,8 @@ contract ERC1155ArenaFacet is
         address account,
         uint256 id,
         uint256 amount,
-        bytes memory data
-    ) public // whenNotPaused
-    // onlyOwner
+        bytes memory data // whenNotPaused
+    ) public // onlyOwner
     {
         _mint(account, id, amount, data);
     }
@@ -159,9 +158,8 @@ contract ERC1155ArenaFacet is
         address to,
         uint256[] memory ids,
         uint256[] memory amounts,
-        bytes memory data
-    ) public // whenNotPaused
-    // onlyOwner
+        bytes memory data // whenNotPaused
+    ) public // onlyOwner
     {
         _mintBatch(to, ids, amounts, data);
     }
@@ -172,9 +170,8 @@ contract ERC1155ArenaFacet is
         address to,
         uint256[] memory ids,
         uint256[] memory amounts,
-        bytes memory data
-    ) internal override // whenNotPaused
-    {
+        bytes memory data // whenNotPaused
+    ) internal override {
         // XXX: TODO: don't allow transfer of any tokens which are currently bound to open game sessions
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }

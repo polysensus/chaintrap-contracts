@@ -1,5 +1,5 @@
 import { BigNumber } from "ethers";
-import { pushFIFO } from "./fifo.mjs";
+import { pushFIFO } from "./fifo.js";
 
 export class TXProfiler {
   constructor(movingAverageWindow = 10, optional) {

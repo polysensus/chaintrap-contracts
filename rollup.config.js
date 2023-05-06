@@ -5,7 +5,7 @@ import pkg from './package.json' assert {type: 'json'};
 export default [
 	// browser-friendly UMD build
 	{
-		input: 'chaintrap/chaintrap.mjs',
+		input: 'chaintrap/chaintrap.js',
 		output: {
 			name: 'chaintrap',
 			file: pkg.browser,
@@ -24,7 +24,7 @@ export default [
 	// an array for the `output` option, where we can specify
 	// `file` and `format` for each target)
 	{
-		input: 'chaintrap/chaintrap.mjs',
+		input: 'chaintrap/chaintrap.js',
 		external: ['ms'],
 		output: [
 			{ file: pkg.main, format: 'cjs' },

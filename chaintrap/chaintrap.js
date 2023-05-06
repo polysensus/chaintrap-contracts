@@ -1,18 +1,18 @@
-import { Locations } from "./locations.mjs";
+import { Locations } from "./locations.js";
 export { Locations };
-import { Location } from "./locations.mjs";
+import { Location } from "./locations.js";
 export { Location };
 
-import { Link, Exit } from "./exitlinks.mjs";
+import { Link, Exit } from "./exitlinks.js";
 export { Link, Exit };
 
-import { TranscriptLocation } from "./transcript.mjs";
+import { TranscriptLocation } from "./transcript.js";
 export { TranscriptLocation };
 
-import { Game } from "./game.mjs";
+import { Game } from "./game.js";
 export { Game };
 
-import { TXProfiler } from "./txprofile.mjs";
+import { TXProfiler } from "./txprofile.js";
 export { TXProfiler };
 
 function locationKinds() {
