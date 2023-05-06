@@ -6,7 +6,7 @@ import hre from "hardhat";
 const { ethers } = hre;
 import { deployArenaFixture } from "./deploy.js";
 
-import { MockProfileClock } from "./mocks/profileclock.mjs";
+import { MockProfileClock } from "./mocks/profileclock.js";
 import { createArenaProxy } from "./arenaproxy.js";
 
 import { Game } from "../../../chaintrap/game.js";

@@ -1,6 +1,6 @@
 import chai from "chai";
 const { expect } = chai;
-import { pushFIFO } from "../../../chaintrap/fifo.mjs";
+import { pushFIFO } from "../../../chaintrap/fifo.js";
 
 describe("pushFIFO", function () {
   it("Should add one to empty fifo", async function () {

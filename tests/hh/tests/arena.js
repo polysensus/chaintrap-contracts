@@ -2,10 +2,8 @@ import hre from "hardhat";
 const ethers = hre.ethers;
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-// import deploypkg from "./deploy.mjs";
-// const { deployArena } = deploypkg;
 import { deployArenaFixture } from "./deploy.js";
-import { createArenaProxy, facetABIs } from "./arenaproxy.mjs";
+import { createArenaProxy, facetABIs } from "./arenaproxy.js";
 
 describe("Arena", async function () {
   let proxy;

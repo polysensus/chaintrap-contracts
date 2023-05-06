@@ -20,7 +20,7 @@
     "abi": "abi"
   },
   "scripts": {
-    "prepare": "true",
+    "prepare": "true && husky install",
     "build": "task build:contracts && rollup -c",
     "dev": "rollup -c -w",
     "test": "task test",
@@ -85,6 +85,7 @@
     "prettier": "^2.6.2",
     "prettier-plugin-solidity": "^1.1.3",
     "rollup": "^3.20.2",
-    "vitest": "^0.29.8"
+    "vitest": "^0.29.8",
+    "husky": "^8.0.0"
   }
 }

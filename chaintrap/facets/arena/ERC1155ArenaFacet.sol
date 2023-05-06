@@ -148,9 +148,8 @@ contract ERC1155ArenaFacet is
         address account,
         uint256 id,
         uint256 amount,
-        bytes memory data // whenNotPaused
-    ) public // onlyOwner
-    {
+        bytes memory data // whenNotPaused // onlyOwner
+    ) public {
         _mint(account, id, amount, data);
     }
 
@@ -158,9 +157,8 @@ contract ERC1155ArenaFacet is
         address to,
         uint256[] memory ids,
         uint256[] memory amounts,
-        bytes memory data // whenNotPaused
-    ) public // onlyOwner
-    {
+        bytes memory data // whenNotPaused // onlyOwner
+    ) public {
         _mintBatch(to, ids, amounts, data);
     }
 

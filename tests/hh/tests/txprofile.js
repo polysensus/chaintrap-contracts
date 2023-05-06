@@ -1,9 +1,9 @@
 import chai from "chai";
 const { expect } = chai;
-import { TXProfiler } from "../../../chaintrap/txprofile.mjs";
+import { TXProfiler } from "../../../chaintrap/txprofile.js";
 
-import { MockProfileMethod } from "./mocks/profilemethod.mjs";
-import { MockProfileClock } from "./mocks/profileclock.mjs";
+import { MockProfileMethod } from "./mocks/profilemethod.js";
+import { MockProfileClock } from "./mocks/profileclock.js";
 
 describe("TXProfile", function () {
   it("Should average 1 second", async function () {
