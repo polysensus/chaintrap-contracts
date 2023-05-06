@@ -3,6 +3,21 @@ import commonjs from '@rollup/plugin-commonjs';
 import pkg from './package.json' assert {type: 'json'};
 
 export default [
+
+	{
+		input: {
+			"index.d": '.local/out-tsc',
+			"index": 'chaintrap/erc2535proxy.js'
+		},
+		output: {
+			dir: 'dist'
+		},
+		plugins: [
+			resolve({preferBuiltins:true}), // so Rollup can find `ms`
+			commonjs() // so Rollup can convert `ms` to an ES module
+		]
+	},
+
 	// browser-friendly UMD build
 	{
 		input: 'chaintrap/chaintrap.js',
@@ -12,7 +27,7 @@ export default [
 			format: 'umd'
 		},
 		plugins: [
-			resolve(), // so Rollup can find `ms`
+			resolve({preferBuiltins:true}), // so Rollup can find `ms`
 			commonjs() // so Rollup can convert `ms` to an ES module
 		]
 	},
@@ -29,6 +44,10 @@ export default [
 		output: [
 			{ file: pkg.main, format: 'cjs' },
 			{ file: pkg.module, format: 'es' }
+		],
+		plugins: [
+			resolve({preferBuiltins:true}), // so Rollup can find `ms`
+			commonjs() // so Rollup can convert `ms` to an ES module
 		]
 	}
 ];

@@ -14,6 +14,20 @@
     "dist/types/factories/index.d.ts",
     "abi"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./abi/*.json": "./abi/*.json"
+  },
+  "typesVersions": {
+    ">4.0": {
+      ".": [
+        "./dist/types/*.d.ts"
+      ]
+    }
+  },
   "directories": {
     "lib": "lib",
     "chaintrap": "chaintrap",
@@ -68,6 +82,8 @@
     "@solidstate/contracts": "^0.0.52",
     "@solidstate/library": "^0.0.52",
     "@solidstate/spec": "^0.0.52",
+    "@typechain/ethers-v5": "^10.2.0",
+    "@typechain/hardhat": "^6.1.5",
     "chai": "^4.3.6",
     "chai-ethers": "^0.0.1",
     "dotenv": "^16.0.3",
@@ -81,11 +97,14 @@
     "ethers": "5.7",
     "hardhat": "^2.14.0",
     "hardhat-deploy": "^0.11.28",
+    "husky": "^8.0.0",
     "mocha": "^9.2.2",
     "prettier": "^2.6.2",
     "prettier-plugin-solidity": "^1.1.3",
     "rollup": "^3.20.2",
-    "vitest": "^0.29.8",
-    "husky": "^8.0.0"
+    "ts-node": "^10.9.1",
+    "typechain": "^8.1.1",
+    "typescript": "^5.0.4",
+    "vitest": "^0.29.8"
   }
 }

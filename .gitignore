@@ -1,6 +1,7 @@
 .npmrc
 tmp
 .local
+types
 broadcast
 tests/hh/deployments
 tests/hh-localstorage.txt

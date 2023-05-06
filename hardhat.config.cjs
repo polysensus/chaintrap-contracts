@@ -1,10 +1,11 @@
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
- require("@nomicfoundation/hardhat-foundry");
- require("@nomicfoundation/hardhat-chai-matchers");
- require("@nomicfoundation/hardhat-toolbox");
- require("hardhat-deploy");
+require("@typechain/hardhat");
+require("@nomicfoundation/hardhat-foundry");
+require("@nomicfoundation/hardhat-chai-matchers");
+require("@nomicfoundation/hardhat-toolbox");
+require("hardhat-deploy");
 
 MUMBAI_URL = process.env["MUMBAI_URL"]
 

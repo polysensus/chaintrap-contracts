@@ -49,6 +49,7 @@ tasks:
     cmds:
       - task: format
       - task: build:contracts
+      - task: build:types
       - npm run build
 
   build:contracts:
@@ -67,6 +68,15 @@ tasks:
         for d in $(ls -d build/forge/out/*Facet.sol); do cp $d/*Facet.json abi/; done
         cp build/forge/out/IERC1155Arena.sol/IERC1155Arena.json abi
         for d in $(ls -d build/forge/out/IArena*.sol); do cp $d/IArena*.json abi/; done
+      
+  build:types:
+    desc: "generate typescript types using typechain"
+    cmds:
+      - |
+        npx typechain \
+        --glob "abi/**/*.json" \
+        --target=ethers-v5 \
+        --out-dir=types
 
   build:facets-exclude:
     desc: |
