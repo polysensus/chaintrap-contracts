@@ -1,8 +1,7 @@
 import { expect } from "chai";
 import hre from "hardhat";
 const {ethers} = hre;
-import deploypkg from "./deploy.js";
-const { deployArenaFixture } = deploypkg;
+import { deployArenaFixture } from "./deploy.js";
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 // import arenaCallsFacetABI from "@polysensus/chaintrap-contracts/abi/ArenaCallsFacet.json" assert { type: "json" };

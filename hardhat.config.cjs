@@ -3,8 +3,7 @@
  */
  require("@nomicfoundation/hardhat-foundry");
  require("@nomicfoundation/hardhat-chai-matchers");
- require("@nomiclabs/hardhat-ethers");
- require("@nomiclabs/hardhat-waffle");
+ require("@nomicfoundation/hardhat-toolbox");
  require("hardhat-deploy");
 
  module.exports = {

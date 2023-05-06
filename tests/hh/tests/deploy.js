@@ -1,22 +1,25 @@
-const hre = require("hardhat");
-const fs = require("fs");
-const dd = require("@polysensus/diamond-deploy");
-const { DiamondDeployer, FacetCutOpts, FileReader, Reporter } = dd;
-// import hre from "hardhat";
-// import { DiamondDeployer, FacetCutOpts, FileReader } from "@polysensus/diamond-deploy";
+import hre from "hardhat";
+import fs from "fs";
+import {
+  DiamondDeployer,
+  FacetCutOpts,
+  FileReader,
+  Reporter,
+} from "@polysensus/diamond-deploy";
 
 function readJson(filename) {
   return JSON.parse(fs.readFileSync(filename, "utf-8"));
 }
 
-async function deployArenaFixture() {
+export async function deployArenaFixture() {
   const [deployer, owner] = await hre.ethers.getSigners();
   const proxy = await deployArena(deployer, owner, {});
   return [proxy, owner];
 }
 
-async function deployArena(signer, owner, options={}) {
+export async function deployArena(signer, owner, options={}) {
 
+  options.commit = true;
   options.diamondOwner = owner;
   options.diamondLoupeName = "DiamondLoupeFacet";
   options.diamondCutName = "DiamondCutFacet";
@@ -42,7 +45,3 @@ async function deployArena(signer, owner, options={}) {
 
   return result.address;
 }
-
-exports.readJson = readJson;
-exports.deployArena = deployArena;
-exports.deployArenaFixture = deployArenaFixture;

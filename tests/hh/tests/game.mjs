@@ -4,8 +4,7 @@ import chai from 'chai'
 const { expect } = chai
 import hre from 'hardhat'
 const { ethers } = hre
-import deploypkg from "./deploy.js";
-const { deployArenaFixture } = deploypkg;
+import { deployArenaFixture } from "./deploy.js";
 
 import { MockProfileClock } from './mocks/profileclock.mjs'
 import { createArenaProxy } from './arenaproxy.mjs'

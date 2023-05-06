@@ -4,8 +4,7 @@ import hre from 'hardhat';
 const { ethers } = hre;
 const bytes = ethers.utils.arrayify;
 const keccak256 = ethers.utils.keccak256;
-import deploypkg from "./deploy.js";
-const { deployArenaFixture } = deploypkg;
+import { deployArenaFixture } from "./deploy.js";
 
 import { createArenaProxy } from './arenaproxy.mjs'
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
