@@ -1,0 +1,1 @@
+The .merkle.json's are made using chaintrap-arenastate/cli.js

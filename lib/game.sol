@@ -2,7 +2,7 @@
 pragma solidity =0.8.9;
 import "./tokenid.sol";
 import "./transcript.sol";
-import { Map, LocationMaps } from "./mapstructure.sol";
+import {Map, LocationMaps} from "./mapstructure.sol";
 import "./furnishings.sol";
 import "./gameid.sol";
 
@@ -13,17 +13,44 @@ error InvalidLocationToken(bytes32 token);
 error InvalidTranscriptLocation(bytes32 token, uint16 location);
 
 error TranscriptExitLocationInvalid(TEID id);
-error TranscriptExitLocationIncorrect(TEID id, LocationID expect, LocationID got);
+error TranscriptExitLocationIncorrect(
+    TEID id,
+    LocationID expect,
+    LocationID got
+);
 error TranscriptPlacementInvalid(bytes32 have, bytes32 stateDerived);
 error TranscriptPlacementNotFound(TEID id, bytes32 placement);
 error TranscriptPlacementSaltNotFound(TEID id, bytes32 placement);
-error TranscriptFurnitureOutcomeKindInvalid(TEID id, uint256 furniture, Furnishings.Kind kind);
-error TranscriptFurnitureOutcomeEffectInvalid(TEID id, uint256 furniture, Furnishings.Effect effect);
+error TranscriptFurnitureOutcomeKindInvalid(
+    TEID id,
+    uint256 furniture,
+    Furnishings.Kind kind
+);
+error TranscriptFurnitureOutcomeEffectInvalid(
+    TEID id,
+    uint256 furniture,
+    Furnishings.Effect effect
+);
 error TranscriptFurnitureOutcomePlayerShouldHaveHalted(TEID id);
 error TranscriptFurnitureOutcomePlayerShouldNotHaveHalted(TEID id);
-error TranscriptFurnitureShouldHaveHalted(TEID id, uint256 furniture, Furnishings.Kind kind, Furnishings.Effect effect);
-error TranscriptFurnitureShouldNotHaveHalted(TEID id, uint256 furniture, Furnishings.Kind kind, Furnishings.Effect effect);
-error TranscriptFurnitureUnknownEffect(TEID id, uint256 furniture, Furnishings.Kind kind, Furnishings.Effect effect);
+error TranscriptFurnitureShouldHaveHalted(
+    TEID id,
+    uint256 furniture,
+    Furnishings.Kind kind,
+    Furnishings.Effect effect
+);
+error TranscriptFurnitureShouldNotHaveHalted(
+    TEID id,
+    uint256 furniture,
+    Furnishings.Kind kind,
+    Furnishings.Effect effect
+);
+error TranscriptFurnitureUnknownEffect(
+    TEID id,
+    uint256 furniture,
+    Furnishings.Kind kind,
+    Furnishings.Effect effect
+);
 
 error PlayerAlreadyRegistered(address player);
 error PlayerNotRegistered(address player);
@@ -39,7 +66,6 @@ error SenderMustBeMaster();
 error FurnitureTokenRequired(uint256 actualID);
 
 error AssociatedArraysLenghtMismatch(uint256 have, uint256 expect);
-
 
 struct Player {
     address addr;
@@ -60,32 +86,25 @@ struct GameInitArgs {
 }
 
 struct Game {
-
     /// @dev The following state supports ERC 1155 tokenization and general ownership and authority
     uint256 id;
-
     /// The creator of the game gets a payout provide the game is completed by
     /// at least one player.
     address creator;
-
     /// The 'dungeon' master (often the creator) reveals the result of each player move.
     address master;
-
     /// @dev the following state controls the overal status of the game
 
     /// maximum number of players
     uint maxPlayers;
     bool started;
     bool completed;
-
     Player[] players;
     mapping(address => uint8) iplayers;
-
     // The game transcript locations are tokens. The preimages for which are
     // required to check the transcript
     bytes32[] locationTokens;
-    mapping (bytes32 => uint16) tokenLocations;
-
+    mapping(bytes32 => uint16) tokenLocations;
     // placedTokens include:
     // * furniture - tokens that can only be placed by the game minter (dungeon
     // owner), in a specific room in a specific game. placedTokens will
@@ -98,17 +117,14 @@ struct Game {
     // * encounters - npc encounters, monsters. H(npcID, locationID, salt)
     // * collectibles - tokens that may be dropped by players or monsters or placed in furniture by the game minter
     bytes32[] placedTokens;
-    mapping (bytes32 => uint256) placements;
-
+    mapping(bytes32 => uint256) placements;
     // These must be loaded after the game completes in order to successfully
     // validate the transcript
-    mapping (bytes32 => bytes32) placementSalts;
-
+    mapping(bytes32 => bytes32) placementSalts;
     // @note mapVRFBeta commits the game to specific map without revealing
     // anything about that map.  The game map is generated using the alpha input
     // to a VRF as its random seed
-    bytes mapVRFBeta; 
-
+    bytes mapVRFBeta;
     // TODO: commitment for item placements
 
     // The following state is recorded on the game after it is completed in
@@ -124,15 +140,11 @@ struct GameStatus {
     /// @dev The creator of the game gets a payout provide the game is completed
     /// by at least one player.
     address creator;
-
     /// @dev The 'dungeon' master (often the creator) reveals the result of each
     /// player move.
     address master;
-
     string uri;
-
     bytes mapVRFBeta;
-
     /// maximum number of players
     uint maxPlayers;
     uint numRegistered;
@@ -141,7 +153,6 @@ struct GameStatus {
 }
 
 library Games {
-
     using Games for Game;
     using Locations for Location;
     using LocationMaps for Map;
@@ -151,32 +162,63 @@ library Games {
 
     /// @dev these are duplicated in the arena contract due to limitations of solidity
     event TranscriptPlayerEnteredLocation(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed entered, ExitID enteredVia, LocationID left, ExitID leftVia
-        );
+        uint256 indexed gameId,
+        TEID eid,
+        address indexed player,
+        LocationID indexed entered,
+        ExitID enteredVia,
+        LocationID left,
+        ExitID leftVia
+    );
 
     event TranscriptPlayerKilledByTrap(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture
+        uint256 indexed gameId,
+        TEID eid,
+        address indexed player,
+        LocationID indexed location,
+        uint256 furniture
     );
 
     event TranscriptPlayerDied(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture
+        uint256 indexed gameId,
+        TEID eid,
+        address indexed player,
+        LocationID indexed location,
+        uint256 furniture
     );
 
     event TranscriptPlayerGainedLife(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture
+        uint256 indexed gameId,
+        TEID eid,
+        address indexed player,
+        LocationID indexed location,
+        uint256 furniture
     );
 
     // only when player.lives > 0
     event TranscriptPlayerLostLife(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture
+        uint256 indexed gameId,
+        TEID eid,
+        address indexed player,
+        LocationID indexed location,
+        uint256 furniture
     );
 
     event TranscriptPlayerVictory(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture
+        uint256 indexed gameId,
+        TEID eid,
+        address indexed player,
+        LocationID indexed location,
+        uint256 furniture
     );
     event TranscriptPlayerUsedFurniture(
-        uint256 indexed gameId, TEID eid, address indexed player, LocationID indexed location, uint256 furniture,
-        Furnishings.Kind kind, Furnishings.Effect effect
+        uint256 indexed gameId,
+        TEID eid,
+        address indexed player,
+        LocationID indexed location,
+        uint256 furniture,
+        Furnishings.Kind kind,
+        Furnishings.Effect effect
     );
 
     /// ---------------------------
@@ -200,14 +242,20 @@ library Games {
         _;
     }
 
-
     /// ---------------------------
     /// @dev state changing methods
 
     function _init(
-        Game storage self, uint256 id, GameInitArgs calldata initArgs, address _msgSender) internal {
-
-        if (self.players.length != 0 || self.locationTokens.length != 0 || self.placedTokens.length != 0) {
+        Game storage self,
+        uint256 id,
+        GameInitArgs calldata initArgs,
+        address _msgSender
+    ) internal {
+        if (
+            self.players.length != 0 ||
+            self.locationTokens.length != 0 ||
+            self.placedTokens.length != 0
+        ) {
             revert IsInitialised();
         }
 
@@ -233,7 +281,9 @@ library Games {
         return true;
     }
 
-    function status(Game storage self) internal view returns (GameStatus memory) {
+    function status(
+        Game storage self
+    ) internal view returns (GameStatus memory) {
         GameStatus memory gs;
         gs.id = self.id;
         gs.mapVRFBeta = self.mapVRFBeta;
@@ -253,7 +303,6 @@ library Games {
     /// we need a way to reset the map the locations, furnishings etc, whilst
     /// keeping the state the transcript relies on intact.
     function reset(Game storage self) internal {
-
         for (uint16 i = 0; i < self.locationTokens.length; i++) {
             delete self.tokenLocations[self.locationTokens[i]];
         }
@@ -274,12 +323,17 @@ library Games {
         self.started = true;
     }
 
-    function complete(Game storage self) internal hasStarted(self) hasNotCompleted(self) {
+    function complete(
+        Game storage self
+    ) internal hasStarted(self) hasNotCompleted(self) {
         self.completed = true;
     }
 
-    function joinGame(Game storage self, address playerAddress, bytes calldata profile) internal hasNotCompleted(self) hasNotStarted(self) {
-
+    function joinGame(
+        Game storage self,
+        address playerAddress,
+        bytes calldata profile
+    ) internal hasNotCompleted(self) hasNotStarted(self) {
         uint8 i = self.iplayers[playerAddress];
 
         if (i != 0) {
@@ -305,9 +359,11 @@ library Games {
     }
 
     function setStartLocation(
-        Game storage self, address pa, bytes32 startLocation, bytes calldata sceneblob
-        ) hasNotCompleted(self) hasNotStarted(self) internal {
-
+        Game storage self,
+        address pa,
+        bytes32 startLocation,
+        bytes calldata sceneblob
+    ) internal hasNotCompleted(self) hasNotStarted(self) {
         uint8 i = self.iplayers[pa];
 
         if (i == 0) {
@@ -337,19 +393,26 @@ library Games {
     ///                  field in the hash is 32 bytes always
     /// @param furnitureId furniture nft id, sender must be the owner, must be FURNITURE_TYPE
     function placeFurniture(
-        Game storage self, bytes32 placement, uint256 furnitureId
-    ) hasNotCompleted(self) hasNotStarted(self) internal {
+        Game storage self,
+        bytes32 placement,
+        uint256 furnitureId
+    ) internal hasNotCompleted(self) hasNotStarted(self) {
         requireType(furnitureId, TokenID.FURNITURE_TYPE);
         self.placedTokens.push(placement);
         self.placements[placement] = furnitureId;
     }
 
     function placeFurnitureBatch(
-        Game storage self, bytes32[] calldata placement, uint256[] calldata furnitureId
+        Game storage self,
+        bytes32[] calldata placement,
+        uint256[] calldata furnitureId
     ) public {
         if (placement.length != furnitureId.length)
-            revert AssociatedArraysLenghtMismatch(placement.length, furnitureId.length);
-        for (uint i = 0; i < placement.length; i ++) {
+            revert AssociatedArraysLenghtMismatch(
+                placement.length,
+                furnitureId.length
+            );
+        for (uint i = 0; i < placement.length; i++) {
             placeFurniture(self, placement[i], furnitureId[i]);
         }
     }
@@ -365,17 +428,32 @@ library Games {
     /// @param self the game instance
     /// @param placement the tokenised furniture placement
     /// @param salt the salt component of the placement pre-image
-    function placementReveal(Game storage self, bytes32 placement, bytes32 salt) internal hasCompleted(self) {
+    function placementReveal(
+        Game storage self,
+        bytes32 placement,
+        bytes32 salt
+    ) internal hasCompleted(self) {
         self.placementSalts[placement] = salt;
     }
 
-    function load(Game storage self, Location[]calldata locations) internal hasCompleted(self) {
+    function load(
+        Game storage self,
+        Location[] calldata locations
+    ) internal hasCompleted(self) {
         self.map.load(locations);
     }
-    function load(Game storage self, Exit[]calldata exits) internal hasCompleted(self) {
+
+    function load(
+        Game storage self,
+        Exit[] calldata exits
+    ) internal hasCompleted(self) {
         self.map.load(exits);
     }
-    function load(Game storage self, Link[]calldata links) internal hasCompleted(self) {
+
+    function load(
+        Game storage self,
+        Link[] calldata links
+    ) internal hasCompleted(self) {
         self.map.load(links);
     }
 
@@ -384,9 +462,11 @@ library Games {
     /// corresponding to when the game transcript entry was created. So it will
     /// be many -> 1. Two players getting the same location token for a single
     /// location will mean they entered the location on the same block number.
-    function load(Game storage self, TranscriptLocation[]calldata locations) internal hasCompleted(self) {
-        for (uint16 i=0; i < locations.length; i++) {
-
+    function load(
+        Game storage self,
+        TranscriptLocation[] calldata locations
+    ) internal hasCompleted(self) {
+        for (uint16 i = 0; i < locations.length; i++) {
             TranscriptLocation calldata loc = locations[i];
 
             uint16 iloc = LocationID.unwrap(loc.id);
@@ -400,7 +480,7 @@ library Games {
 
         // resolve the player start locations so that the transcripts will work
 
-        for (uint8 i=1; i < self.players.length; i++){
+        for (uint8 i = 1; i < self.players.length; i++) {
             self.players[i].loc = self.location(self.players[i].startLocation);
         }
     }
@@ -414,15 +494,23 @@ library Games {
     /// @param cur the current possition
     /// @param trans the game transcript to evaluate
     function playTranscript(
-        Game storage self, Transcript storage trans, Furniture[] storage furniture, TEID cur, TEID _end
-        ) internal returns (TEID) {
-
+        Game storage self,
+        Transcript storage trans,
+        Furniture[] storage furniture,
+        TEID cur,
+        TEID _end
+    ) internal returns (TEID) {
         bool cursorComplete = false;
         bool halted = false;
         Commitment storage co = trans.entries[0]; // undefined entry
 
-        for(;!cursorComplete && (TEID.unwrap(_end) == 0 || TEID.unwrap(cur) != TEID.unwrap(_end));) {
+        for (
+            ;
+            !cursorComplete &&
+                (TEID.unwrap(_end) == 0 ||
+                    TEID.unwrap(cur) != TEID.unwrap(_end));
 
+        ) {
             (cur, co, halted, cursorComplete) = trans.next(cur);
 
             Player storage p = player(self, co.player);
@@ -431,14 +519,19 @@ library Games {
             }
 
             if (co.kind == Transcripts.MoveKind.ExitUse) {
-
                 self.useExit(cur, trans, player(self, co.player));
                 p.halted = halted;
                 continue;
             }
 
             if (co.kind == Transcripts.MoveKind.FurnitureUse) {
-                self.useFurniture(cur, trans, player(self, co.player), halted, furniture);
+                self.useFurniture(
+                    cur,
+                    trans,
+                    player(self, co.player),
+                    halted,
+                    furniture
+                );
                 p.halted = halted;
                 continue;
             }
@@ -447,17 +540,21 @@ library Games {
     }
 
     function playTranscript(
-        Game storage self, Transcript storage trans, Furniture[] storage furniture
-        ) internal returns (TEID) {
+        Game storage self,
+        Transcript storage trans,
+        Furniture[] storage furniture
+    ) internal returns (TEID) {
         return self.playTranscript(trans, furniture, cursorStart, TEID.wrap(0));
     }
 
     /// @notice Attempt to move through an exit link. If successful, the player
     /// location is updated to the location on the other side of the link.
     function useExit(
-        Game storage self, TEID cur, Transcript storage trans,  Player storage p
-        ) internal hasCompleted(self) {
-
+        Game storage self,
+        TEID cur,
+        Transcript storage trans,
+        Player storage p
+    ) internal hasCompleted(self) {
         ExitUse storage u = trans.exitUse(cur);
         ExitUseOutcome storage o = trans.exitUseOutcome(cur);
 
@@ -479,14 +576,25 @@ library Games {
             revert TranscriptExitLocationIncorrect(cur, expected, p.loc);
         }
 
-        emit TranscriptPlayerEnteredLocation(self.id, cur, p.addr, p.loc, egressVia, from, ingressVia);
+        emit TranscriptPlayerEnteredLocation(
+            self.id,
+            cur,
+            p.addr,
+            p.loc,
+            egressVia,
+            from,
+            ingressVia
+        );
     }
 
     function useFurniture(
-        Game storage self, TEID cur, Transcript storage trans, Player storage p,
-        bool halted, Furniture[] storage furniture
+        Game storage self,
+        TEID cur,
+        Transcript storage trans,
+        Player storage p,
+        bool halted,
+        Furniture[] storage furniture
     ) internal hasCompleted(self) {
-
         FurnitureUse storage u = trans.furnitureUse(cur);
         FurnitureUseOutcome storage o = trans.furnitureUseOutcome(cur);
 
@@ -510,7 +618,8 @@ library Games {
 
         Furniture storage f = furniture[nftInstance(id)];
 
-        if (f.kind != o.kind) revert TranscriptFurnitureOutcomeKindInvalid(cur, id, o.kind);
+        if (f.kind != o.kind)
+            revert TranscriptFurnitureOutcomeKindInvalid(cur, id, o.kind);
 
         // Check the outcome against the actual furniture
         bool effectOk = false;
@@ -520,26 +629,58 @@ library Games {
                 break;
             }
         }
-        if (!effectOk) revert TranscriptFurnitureOutcomeEffectInvalid(cur, id, o.effect);
+        if (!effectOk)
+            revert TranscriptFurnitureOutcomeEffectInvalid(cur, id, o.effect);
 
-        emit TranscriptPlayerUsedFurniture(self.id, cur, p.addr, p.loc, id, o.kind, o.effect);
+        emit TranscriptPlayerUsedFurniture(
+            self.id,
+            cur,
+            p.addr,
+            p.loc,
+            id,
+            o.kind,
+            o.effect
+        );
 
-        if(o.effect == Furnishings.Effect.Victory) {
-            if (!halted) revert TranscriptFurnitureShouldHaveHalted(cur, id, o.kind, o.effect);
+        if (o.effect == Furnishings.Effect.Victory) {
+            if (!halted)
+                revert TranscriptFurnitureShouldHaveHalted(
+                    cur,
+                    id,
+                    o.kind,
+                    o.effect
+                );
             emit TranscriptPlayerVictory(self.id, cur, p.addr, p.loc, id);
             return;
         }
-        if(o.effect == Furnishings.Effect.Death) {
+        if (o.effect == Furnishings.Effect.Death) {
             if (p.lives > 0) {
                 p.lives -= 1;
-                if (halted) revert TranscriptFurnitureShouldNotHaveHalted(cur, id, o.kind, o.effect);
+                if (halted)
+                    revert TranscriptFurnitureShouldNotHaveHalted(
+                        cur,
+                        id,
+                        o.kind,
+                        o.effect
+                    );
                 emit TranscriptPlayerLostLife(self.id, cur, p.addr, p.loc, id);
             } else {
-                if (!halted) revert TranscriptFurnitureShouldHaveHalted(cur, id, o.kind, o.effect);
-                if(o.kind == Furnishings.Kind.Trap)
-                    emit TranscriptPlayerKilledByTrap(self.id, cur, p.addr, p.loc, id);
-                else
-                    emit TranscriptPlayerDied(self.id, cur, p.addr, p.loc, id);
+                if (!halted)
+                    revert TranscriptFurnitureShouldHaveHalted(
+                        cur,
+                        id,
+                        o.kind,
+                        o.effect
+                    );
+                if (o.kind == Furnishings.Kind.Trap)
+                    emit TranscriptPlayerKilledByTrap(
+                        self.id,
+                        cur,
+                        p.addr,
+                        p.loc,
+                        id
+                    );
+                else emit TranscriptPlayerDied(self.id, cur, p.addr, p.loc, id);
             }
             return;
         }
@@ -555,8 +696,10 @@ library Games {
     /// ---------------------------
     /// @dev state reading methods
 
-    function playerRegistered(Game storage self, address p) internal view returns (bool) {
-
+    function playerRegistered(
+        Game storage self,
+        address p
+    ) internal view returns (bool) {
         uint8 i = self.iplayers[p];
         if (i == 0) {
             return false;
@@ -569,8 +712,14 @@ library Games {
         return true;
     }
 
-    function player(Game storage self, address _player) internal view returns (Player storage) {
-        if (self.iplayers[_player] == 0 || self.iplayers[_player] >= self.players.length) {
+    function player(
+        Game storage self,
+        address _player
+    ) internal view returns (Player storage) {
+        if (
+            self.iplayers[_player] == 0 ||
+            self.iplayers[_player] >= self.players.length
+        ) {
             revert InvalidPlayer(_player);
         }
         return self.players[self.iplayers[_player]];
@@ -588,14 +737,20 @@ library Games {
     /// @param self game storage ref
     /// @param _iplayer index of player from the half open range [0 - playerCount())
     /// @return player storage reference
-    function player(Game storage self, uint8 _iplayer) internal view returns (Player storage) {
+    function player(
+        Game storage self,
+        uint8 _iplayer
+    ) internal view returns (Player storage) {
         if (_iplayer >= self.players.length - 1) {
             revert InvalidPlayerIndex(_iplayer);
         }
         return self.players[_iplayer + 1];
     }
 
-    function location(Game storage self, bytes32 tok) internal view returns (LocationID) {
+    function location(
+        Game storage self,
+        bytes32 tok
+    ) internal view returns (LocationID) {
         uint16 i = self.tokenLocations[tok];
         if (i == 0 || i >= self.map.locations.length) {
             revert InvalidLocationToken(tok);
@@ -603,15 +758,24 @@ library Games {
         return LocationID.wrap(i);
     }
 
-    function location(Game storage self, LocationID id) internal view returns (Location storage) {
+    function location(
+        Game storage self,
+        LocationID id
+    ) internal view returns (Location storage) {
         return self.map.location(id);
     }
 
-    function exit(Game storage self, ExitID id) internal view returns (Exit storage) {
+    function exit(
+        Game storage self,
+        ExitID id
+    ) internal view returns (Exit storage) {
         return self.map.exit(id);
     }
 
-    function link(Game storage self, LinkID id) internal view returns (Link storage) {
+    function link(
+        Game storage self,
+        LinkID id
+    ) internal view returns (Link storage) {
         return self.map.link(id);
     }
 }

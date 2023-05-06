@@ -1,21 +1,26 @@
-import chai from 'chai';
+import chai from "chai";
 const { expect } = chai;
-import hre from 'hardhat';
+import hre from "hardhat";
 const { ethers } = hre;
 const bytes = ethers.utils.arrayify;
 const keccak256 = ethers.utils.keccak256;
-import deploypkg from "./deploy.js";
-const { deployArenaFixture } = deploypkg;
+import { deployArenaFixture } from "./deploy.js";
 
-import { createArenaProxy } from './arenaproxy.mjs'
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { createArenaProxy } from "./arenaproxy.js";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
   Game,
-  Location, Exit, Link,
-  NORTH, WEST, SOUTH, EAST,
+  Location,
+  Exit,
+  Link,
+  NORTH,
+  WEST,
+  SOUTH,
+  EAST,
   TranscriptLocation,
-  locationSides } from "../../../chaintrap/chaintrap.mjs";
+  locationSides,
+} from "../../../chaintrap/chaintrap.js";
 
 /* The following layout is the default full map for theses tests
 
@@ -51,14 +56,19 @@ import {
 */
 
 async function loadDefaultMap(arena, gid) {
-
   const locations = [
-    Location.fromHex("0x01", "",           "",           "",               "0x0001").native(),
-    Location.fromHex("0x01", "",           "0x00020005", "0x000600070008", "0x0003").native(),
-    Location.fromHex("0x01", "",           "0x0004",     "",               "").native(),
-    Location.fromHex("0x01", "",           "",           "",               "0x0009").native(),
-    Location.fromHex("0x01", "0x000a",     "",           "",               "0x000b").native(),
-    Location.fromHex("0x01", "0x000d000e", "0x000c",     "",               "").native(),
+    Location.fromHex("0x01", "", "", "", "0x0001").native(),
+    Location.fromHex(
+      "0x01",
+      "",
+      "0x00020005",
+      "0x000600070008",
+      "0x0003"
+    ).native(),
+    Location.fromHex("0x01", "", "0x0004", "", "").native(),
+    Location.fromHex("0x01", "", "", "", "0x0009").native(),
+    Location.fromHex("0x01", "0x000a", "", "", "0x000b").native(),
+    Location.fromHex("0x01", "0x000d000e", "0x000c", "", "").native(),
   ];
 
   let r = await receipt(arena.loadLocations, gid, locations);
@@ -98,7 +108,7 @@ async function loadDefaultMap(arena, gid) {
     Link.fromHex("0x010006000a").native(), // (6)-(10) ln4
     Link.fromHex("0x010007000d").native(), // (7)-(13) ln5
     Link.fromHex("0x010008000e").native(), // (8)-(14) ln6
-    Link.fromHex("0x01000b000c").native() // (11)-(12) ln7
+    Link.fromHex("0x01000b000c").native(), // (11)-(12) ln7
   ];
 
   r = await receipt(arena.loadLinks, gid, links);
@@ -107,7 +117,7 @@ async function loadDefaultMap(arena, gid) {
 
 function checkStatus(r, msg) {
   if (r.status != 1) {
-    throw Error(msg || "transaction not successful")
+    throw Error(msg || "transaction not successful");
   }
 }
 
@@ -119,37 +129,37 @@ async function _receipt(method, ...args) {
 async function receipt(method, ...args) {
   const r = await _receipt(method, ...args);
   expect(r.status).to.equal(1);
-  return r
+  return r;
 }
 
 async function masterAndPlayer(proxy) {
-    const signers = await hre.ethers.getSigners();
-    const master = createArenaProxy(proxy, signers[0]);
-    const player = createArenaProxy(proxy, signers[1]);
-    return [master, player, signers[0], signers[1]];
+  const signers = await hre.ethers.getSigners();
+  const master = createArenaProxy(proxy, signers[0]);
+  const player = createArenaProxy(proxy, signers[1]);
+  return [master, player, signers[0], signers[1]];
 }
 
 describe("Transcript", function () {
-
   let proxy, owner;
   let master, player;
   let masterSigner, playerSigner;
 
   it("Should load single location without reverting", async function () {
-
     [proxy, owner] = await loadFixture(deployArenaFixture);
     [master, player] = await masterAndPlayer(proxy);
 
-    let r = await receipt(master.createGame, {maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
+    let r = await receipt(master.createGame, {
+      maxPlayers: 2,
+      tokenURI: "",
+      mapVRFBeta: "0x",
+    });
     const gid = r.events[1].args.gid;
 
     r = await receipt(master.startGame, gid);
 
     r = await receipt(master.completeGame, gid);
 
-    const locations = [
-      Location.fromHex("0x01", "", "", "", "0x0001").native()
-    ];
+    const locations = [Location.fromHex("0x01", "", "", "", "0x0001").native()];
 
     await receipt(master.loadLocations, gid, locations);
   });
@@ -158,7 +168,11 @@ describe("Transcript", function () {
     [proxy, owner] = await loadFixture(deployArenaFixture);
     [master] = await masterAndPlayer(proxy);
 
-    let r = await receipt(master.createGame, {maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
+    let r = await receipt(master.createGame, {
+      maxPlayers: 2,
+      tokenURI: "",
+      mapVRFBeta: "0x",
+    });
     const gid = r.events[1].args.gid;
     const tid = r.events[1].args.tid;
 
@@ -167,11 +181,15 @@ describe("Transcript", function () {
     await loadDefaultMap(master, gid, tid);
   });
 
-  it ("Should visit all rooms on the default map", async function() {
+  it("Should visit all rooms on the default map", async function () {
     [proxy, owner] = await loadFixture(deployArenaFixture);
     [master, player, masterSigner, playerSigner] = await masterAndPlayer(proxy);
 
-    let r = await receipt(master.createGame, {maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
+    let r = await receipt(master.createGame, {
+      maxPlayers: 2,
+      tokenURI: "",
+      mapVRFBeta: "0x",
+    });
     const gid = r.events[1].args.gid;
     const tid = r.events[1].args.tid;
 
@@ -203,23 +221,29 @@ describe("Transcript", function () {
       const te = gp.transcriptionLocation(blocknumber, loc);
       blocknumber += 1;
       return te;
-    }
+    };
 
-    const commitAndAllowExitUse = async (egress, egressExit, ingress, ingressExit, locationToken) => {
+    const commitAndAllowExitUse = async (
+      egress,
+      egressExit,
+      ingress,
+      ingressExit,
+      locationToken
+    ) => {
       // player commits
       const eid = await gp.commitExitUse(egress, egressExit);
 
       // gm allows
-      await gm.allowExitUse(eid, locationToken, [],ingress, ingressExit);
+      await gm.allowExitUse(eid, locationToken, [], ingress, ingressExit);
       return eid;
-    }
+    };
 
     const locations = [];
     const ids = [];
 
     const currentLocationToken = () => {
-      return locations[locations.length-1].token;
-    }
+      return locations[locations.length - 1].token;
+    };
 
     // start position
     locations.push(locationTE(1));
@@ -231,41 +255,59 @@ describe("Transcript", function () {
     // In commitAndAllowExit use the player commit to an exit use that takes
     // them to 'currentLocationToken'. The gm allows that.
 
-    // (1)(2)  exitUse(East, 0)  ln1 -> (West, 0) loc2  
+    // (1)(2)  exitUse(East, 0)  ln1 -> (West, 0) loc2
     locations.push(locationTE(2));
-    ids.push(await commitAndAllowExitUse(EAST, 0, WEST, 0, currentLocationToken()));
+    ids.push(
+      await commitAndAllowExitUse(EAST, 0, WEST, 0, currentLocationToken())
+    );
 
     // (5)(9)  exitUse(West, 1)  ln3 -> (East, 0) loc4
     locations.push(locationTE(4));
-    ids.push(await commitAndAllowExitUse(WEST, 1, EAST, 0, currentLocationToken()));
+    ids.push(
+      await commitAndAllowExitUse(WEST, 1, EAST, 0, currentLocationToken())
+    );
 
     // (5)(9)  exitUse(East, 0)  ln3 -> (West, 1) loc2
     locations.push(locationTE(2));
-    ids.push(await commitAndAllowExitUse(EAST, 0, WEST, 1, currentLocationToken()));
+    ids.push(
+      await commitAndAllowExitUse(EAST, 0, WEST, 1, currentLocationToken())
+    );
 
     // (6,10)  exitUse(SOUTH, 0) ln4 -> (NORTH,0) loc5
     locations.push(locationTE(5));
-    ids.push(await commitAndAllowExitUse(SOUTH, 0, NORTH, 1, currentLocationToken()));
+    ids.push(
+      await commitAndAllowExitUse(SOUTH, 0, NORTH, 1, currentLocationToken())
+    );
 
     // (11,12) exitUse(EAST, 0)  ln7 -> (West, 0) loc6
     locations.push(locationTE(6));
-    ids.push(await commitAndAllowExitUse(EAST, 0, WEST, 0, currentLocationToken()));
+    ids.push(
+      await commitAndAllowExitUse(EAST, 0, WEST, 0, currentLocationToken())
+    );
 
     // (7,13)  exitUse(NORTH, 0) ln5 -> (SOUTH,2) loc2
     locations.push(locationTE(2));
-    ids.push(await commitAndAllowExitUse(NORTH, 0, SOUTH, 2, currentLocationToken()));
+    ids.push(
+      await commitAndAllowExitUse(NORTH, 0, SOUTH, 2, currentLocationToken())
+    );
 
     // (8,14)  exitUse(SOUTH, 2) ln6 -> (NORTH,1) loc6
     locations.push(locationTE(6));
-    ids.push(await commitAndAllowExitUse(SOUTH, 2, NORTH, 1, currentLocationToken()));
+    ids.push(
+      await commitAndAllowExitUse(SOUTH, 2, NORTH, 1, currentLocationToken())
+    );
 
     // (8,14)  exitUse(NORTH, 1) ln2 -> (SOUTH,2) loc2
     locations.push(locationTE(2));
-    ids.push(await commitAndAllowExitUse(NORTH, 1, SOUTH, 2, currentLocationToken()));
+    ids.push(
+      await commitAndAllowExitUse(NORTH, 1, SOUTH, 2, currentLocationToken())
+    );
 
     // (3,4)   exitUse(EAST, 0)  ln2 -> (West, 0) loc3
     locations.push(locationTE(3));
-    ids.push(await commitAndAllowExitUse(EAST, 0, WEST, 0, currentLocationToken()));
+    ids.push(
+      await commitAndAllowExitUse(EAST, 0, WEST, 0, currentLocationToken())
+    );
 
     await gm.completeGame();
 
@@ -274,14 +316,17 @@ describe("Transcript", function () {
     await gm.playTranscript();
   });
 
-  it ("Should play single move game", async function () {
-
+  it("Should play single move game", async function () {
     [proxy, owner] = await loadFixture(deployArenaFixture);
     [master, player, masterSigner, playerSigner] = await masterAndPlayer(proxy);
 
     const sides = locationSides();
 
-    let r = await receipt(master.createGame, {maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
+    let r = await receipt(master.createGame, {
+      maxPlayers: 2,
+      tokenURI: "",
+      mapVRFBeta: "0x",
+    });
     const [gid, tid] = [r.events[1].args.gid, r.events[1].args.tid];
 
     const am = new Game(master, gid, tid);
@@ -311,10 +356,10 @@ describe("Transcript", function () {
     // Now that we have the play session transcript, reveal the map
     await loadDefaultMap(master, gid);
 
-    // provide the contract 
+    // provide the contract
     const locations = [
       new TranscriptLocation(startToken, 1, startLoc),
-      new TranscriptLocation(token, 2, loc)
+      new TranscriptLocation(token, 2, loc),
     ];
 
     await receipt(master.loadTranscriptLocations, gid, locations);
@@ -323,11 +368,14 @@ describe("Transcript", function () {
   });
 
   it("Should commit a single ExitUse", async function () {
-
     [proxy, owner] = await loadFixture(deployArenaFixture);
     [master, player, masterSigner, playerSigner] = await masterAndPlayer(proxy);
 
-    let r = await receipt(master.createGame, {maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
+    let r = await receipt(master.createGame, {
+      maxPlayers: 2,
+      tokenURI: "",
+      mapVRFBeta: "0x",
+    });
     const [gid, tid] = [r.events[1].args.gid, r.events[1].args.tid];
 
     const am = new Game(master, gid, tid);
@@ -339,7 +387,10 @@ describe("Transcript", function () {
 
     await am.startGame();
 
-    r = await receipt(ap.arena.commitExitUse, gid, {side: EAST, egressIndex: 0});
+    r = await receipt(ap.arena.commitExitUse, gid, {
+      side: EAST,
+      egressIndex: 0,
+    });
 
     expect(r.events[0].event).to.equal("UseExit");
     expect(r.events[0].args.eid).to.equal(1);
@@ -350,11 +401,14 @@ describe("Transcript", function () {
   });
 
   it("Should commit and allow a single ExitUse", async function () {
-
     [proxy, owner] = await loadFixture(deployArenaFixture);
     [master, player, masterSigner, playerSigner] = await masterAndPlayer(proxy);
 
-    let r = await receipt(master.createGame, {maxPlayers: 2, tokenURI:"", mapVRFBeta: "0x"});
+    let r = await receipt(master.createGame, {
+      maxPlayers: 2,
+      tokenURI: "",
+      mapVRFBeta: "0x",
+    });
     const [gid, tid] = [r.events[1].args.gid, r.events[1].args.tid];
 
     const am = new Game(master, gid, tid);
@@ -366,7 +420,10 @@ describe("Transcript", function () {
 
     await am.startGame();
 
-    r = await receipt(ap.arena.commitExitUse, gid, {side: EAST, egressIndex: 0});
+    r = await receipt(ap.arena.commitExitUse, gid, {
+      side: EAST,
+      egressIndex: 0,
+    });
     let eid = r.events[0].args.eid;
     expect(eid).to.equal(1);
 
@@ -380,8 +437,4 @@ describe("Transcript", function () {
     expect(r.events[0].args[3].side).to.equal(WEST);
     expect(r.events[0].args[3].ingressIndex).to.equal(1);
   });
-
 });
-
-
-

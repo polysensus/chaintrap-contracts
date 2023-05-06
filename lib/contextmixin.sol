@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
+
 /**
  * https://github.com/maticnetwork/pos-portal/blob/master/contracts/common/ContextMixin.sol
  */
 abstract contract ContextMixin {
-    function msgSender()
-        internal
-        view
-        returns (address payable sender)
-    {
+    function msgSender() internal view returns (address payable sender) {
         if (msg.sender == address(this)) {
             bytes memory array = msg.data;
             uint256 index = msg.data.length;

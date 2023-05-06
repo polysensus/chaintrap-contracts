@@ -13,12 +13,7 @@ import "lib/arena/accessors.sol";
 
 /// Games are played in an arena. The arena remembers all games that have ever
 /// been played
-contract ArenaTranscriptsFacet is
-    OwnableInternal,
-    ModPausable,
-    ContextMixin
-    {
-
+contract ArenaTranscriptsFacet is OwnableInternal, ModPausable, ContextMixin {
     using Transcripts for Transcript;
     using Games for Game;
     using Games for GameStatus;
@@ -26,18 +21,14 @@ contract ArenaTranscriptsFacet is
 
     event GameReset(GameID indexed gid, TID tid);
 
-    constructor () { }
+    constructor() {}
 
     /// ---------------------------------------------------
     /**
      * @dev This is used instead of msg.sender as transactions won't be sent by the original token owner, but by OpenSea.
      * ref: https://docs.opensea.io/docs/polygon-basic-integration
      */
-    function _msgSender()
-        internal
-        view
-        returns (address sender)
-    {
+    function _msgSender() internal view returns (address sender) {
         return ContextMixin.msgSender();
     }
 
@@ -47,7 +38,10 @@ contract ArenaTranscriptsFacet is
     /// is complete(closed)
     /// ---------------------------------------------------
 
-    function loadLocations(GameID gid, Location[] calldata locations) public whenNotPaused {
+    function loadLocations(
+        GameID gid,
+        Location[] calldata locations
+    ) public whenNotPaused {
         ArenaAccessors.game(gid).load(locations);
     }
 
@@ -59,14 +53,16 @@ contract ArenaTranscriptsFacet is
         ArenaAccessors.game(gid).load(links);
     }
 
-    function loadTranscriptLocations(GameID gid, TranscriptLocation[]calldata locations) public whenNotPaused {
+    function loadTranscriptLocations(
+        GameID gid,
+        TranscriptLocation[] calldata locations
+    ) public whenNotPaused {
         ArenaAccessors.game(gid).load(locations);
     }
 
     /// @notice if a mistake is made loading the game map reset it using this
     /// method. The game and transcript ids are unchanged
     function reset(GameID gid) public whenNotPaused {
-
         ArenaAccessors.game(gid).reset();
         emit GameReset(gid, ArenaStorage.layout().gid2tid[gid]);
     }
@@ -75,8 +71,17 @@ contract ArenaTranscriptsFacet is
     /// @dev transcript playback
     /// ---------------------------------------------------
 
-    function playTranscript(GameID gid, TEID cur, TEID end) public whenNotPaused returns (TEID) {
-        return ArenaAccessors.game(gid).playTranscript(
-            ArenaAccessors._trans(gid, false), ArenaStorage.layout().furniture, cur, end);
+    function playTranscript(
+        GameID gid,
+        TEID cur,
+        TEID end
+    ) public whenNotPaused returns (TEID) {
+        return
+            ArenaAccessors.game(gid).playTranscript(
+                ArenaAccessors._trans(gid, false),
+                ArenaStorage.layout().furniture,
+                cur,
+                end
+            );
     }
 }

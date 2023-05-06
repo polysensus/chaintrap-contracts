@@ -1,20 +1,18 @@
 // const { expect } = require("chai")
 // const { ethers } = require("hardhat")
-import chai from 'chai'
-const { expect } = chai
-import hre from 'hardhat'
-const { ethers } = hre
-import deploypkg from "./deploy.js";
-const { deployArenaFixture } = deploypkg;
+import chai from "chai";
+const { expect } = chai;
+import hre from "hardhat";
+const { ethers } = hre;
+import { deployArenaFixture } from "./deploy.js";
 
-import { MockProfileClock } from './mocks/profileclock.mjs'
-import { createArenaProxy } from './arenaproxy.mjs'
+import { MockProfileClock } from "./mocks/profileclock.js";
+import { createArenaProxy } from "./arenaproxy.js";
 
-import { Game } from '../../../chaintrap/game.mjs'
-import { TXProfiler } from '../../../chaintrap/txprofile.mjs'
+import { Game } from "../../../chaintrap/game.js";
+import { TXProfiler } from "../../../chaintrap/txprofile.js";
 
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 /* The following layout is the default map for theses tests
 
@@ -92,54 +90,54 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 function checkStatus(r, msg) {
   if (r.status != 1) {
-    throw Error(msg || "transaction not successful")
+    throw Error(msg || "transaction not successful");
   }
 }
 
 async function newGame(arena, maxPlayers) {
-    let tx = await arena.createGame({maxPlayers, tokenURI:"", mapVRFBeta: "0x"})
-    let r = await tx.wait()
-    checkStatus(r)
-    return [r.events[1].args.gid, r.events[1].args.tid]
+  let tx = await arena.createGame({
+    maxPlayers,
+    tokenURI: "",
+    mapVRFBeta: "0x",
+  });
+  let r = await tx.wait();
+  checkStatus(r);
+  return [r.events[1].args.gid, r.events[1].args.tid];
 }
-
 
 describe("Game", function () {
   let proxy;
   let owner;
 
-
   it("Should join new game", async function () {
-
     [proxy, owner] = await loadFixture(deployArenaFixture);
     const arena = createArenaProxy(proxy, owner);
-    const [gid, tid] = await newGame(arena, 2)
-    const g = new Game(arena, gid, tid)
-    const r = await g.joinGame()
-    expect(r.status).to.equal(1)
-  })
+    const [gid, tid] = await newGame(arena, 2);
+    const g = new Game(arena, gid, tid);
+    const r = await g.joinGame();
+    expect(r.status).to.equal(1);
+  });
 
   it("Should profile join new game", async function () {
-
     [proxy, owner] = await loadFixture(deployArenaFixture);
     const arena = createArenaProxy(proxy, owner);
 
-    const tp = new TXProfiler(3)
-    tp.now = new MockProfileClock().now
+    const tp = new TXProfiler(3);
+    tp.now = new MockProfileClock().now;
 
-    const [gid, tid] = await newGame(arena, 2)
+    const [gid, tid] = await newGame(arena, 2);
     const g = new Game(arena, gid, tid, {
       txissue: (...args) => tp.txissue(...args),
-      txwait: (...args) => tp.txwait(...args)
-    })
-    const r = await g.joinGame()
-    expect(r.status).to.eq(1)
+      txwait: (...args) => tp.txwait(...args),
+    });
+    const r = await g.joinGame();
+    expect(r.status).to.eq(1);
 
-    expect(tp.latency()).to.eq(2)
-    const gas = tp.gas()
-    const price = tp.price()
-    console.log(gas, price)
+    expect(tp.latency()).to.eq(2);
+    const gas = tp.gas();
+    const price = tp.price();
+    console.log(gas, price);
     // expect(tp.gas()).to.eq(1)
     // expect(tp.price()).to.eq(1)
-  })
+  });
 });

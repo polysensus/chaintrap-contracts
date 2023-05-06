@@ -1,21 +1,40 @@
 {
   "name": "@polysensus/chaintrap-contracts",
+  "type": "module",
   "version": "0.2.13",
   "description": "smart contracts and supporting javascript for chaintrap",
   "main": "dist/chaintrap.cjs.js",
   "module": "dist/chaintrap.esm.js",
   "browser": "dist/chaintrap.umd.js",
   "files": [
-    "dist",
+    "dist/index.js",
+    "dist/types/*.d.ts",
+    "dist/types/contracts/**/*.d.ts",
+    "dist/types/factories/contracts/**/*.d.ts",
+    "dist/types/factories/index.d.ts",
     "abi"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./abi/*.json": "./abi/*.json"
+  },
+  "typesVersions": {
+    ">4.0": {
+      ".": [
+        "./dist/types/*.d.ts"
+      ]
+    }
+  },
   "directories": {
     "lib": "lib",
     "chaintrap": "chaintrap",
     "abi": "abi"
   },
   "scripts": {
-    "prepare": "true",
+    "prepare": "true && husky install",
     "build": "task build:contracts && rollup -c",
     "dev": "rollup -c -w",
     "test": "task test",
@@ -26,7 +45,7 @@
     "lint:fix": "npm run lint:js:fix && npm run lint:sol:fix",
     "lint:js": "eslint --ignore-path .gitignore .",
     "lint:js:fix": "eslint --ignore-path .gitignore . --fix",
-    "lint:sol": "solhint 'contracts/**/*.sol' && prettier -c 'contracts/**/*.sol'",
+    "lint:sol": "prettier -c 'contracts/**/*.sol'",
     "lint:sol:fix": "prettier --write \"contracts/**/*.sol\""
   },
   "repository": {
@@ -51,11 +70,9 @@
     "@ensdomains/buffer": "^0.1.0",
     "@ensdomains/ens-contracts": "^0.0.11",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
-    "@nomicfoundation/hardhat-foundry": "^1.0.0",
+    "@nomicfoundation/hardhat-foundry": "^1.0.1",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
-    "@nomiclabs/hardhat-ethers": "^2.0.5",
-    "@nomiclabs/hardhat-etherscan": "^3.0.3",
-    "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@openzeppelin/contracts": "^4.7.3",
     "@polysensus/diamond-deploy": "file:../diamond-deploy",
     "@rari-capital/solmate": "^6.2.0",
@@ -65,9 +82,11 @@
     "@solidstate/contracts": "^0.0.52",
     "@solidstate/library": "^0.0.52",
     "@solidstate/spec": "^0.0.52",
+    "@typechain/ethers-v5": "^10.2.0",
+    "@typechain/hardhat": "^6.1.5",
     "chai": "^4.3.6",
     "chai-ethers": "^0.0.1",
-    "dotenv": "^16.0.0",
+    "dotenv": "^16.0.3",
     "eslint": "^8.14.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-plugin-import": "^2.26.0",
@@ -75,21 +94,17 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.0.0",
     "esm": "^3.2.25",
-    "ethereum-waffle": "^3.4.4",
-    "hardhat": "^2.9.6",
-    "hardhat-deploy": "^0.11.9",
-    "hardhat-deploy-ethers": "^0.3.0-beta.13",
-    "hardhat-gas-reporter": "^1.0.8",
+    "ethers": "5.7",
+    "hardhat": "^2.14.0",
+    "hardhat-deploy": "^0.11.28",
+    "husky": "^8.0.0",
     "mocha": "^9.2.2",
     "prettier": "^2.6.2",
-    "prettier-plugin-solidity": "^1.0.0-beta.19",
+    "prettier-plugin-solidity": "^1.1.3",
     "rollup": "^3.20.2",
-    "solhint": "^3.3.7",
-    "solidity-coverage": "^0.7.21",
-    "solidity-docgen": "^0.6.0-beta.10",
+    "ts-node": "^10.9.1",
+    "typechain": "^8.1.1",
+    "typescript": "^5.0.4",
     "vitest": "^0.29.8"
-  },
-  "dependencies": {
-    "ethers": "^5.6.4"
   }
 }

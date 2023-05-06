@@ -1,26 +1,25 @@
 export function pushFIFO(fifo, capacity, ...items) {
-
   // easiest case, adding some items, not yet at capacity
   if (fifo.length + items.length < capacity) {
-    fifo.push(...items)
-    return fifo
+    fifo.push(...items);
+    return fifo;
   }
 
   // easy case. replacing all the elements in one go
   if (items.length >= capacity) {
-    fifo.length = 0
-    for (let i=items.length - capacity; i<items.length; i++) {
-      fifo.push(items[i])
+    fifo.length = 0;
+    for (let i = items.length - capacity; i < items.length; i++) {
+      fifo.push(items[i]);
     }
-    return fifo
+    return fifo;
   }
 
   // items.length is < capactiy, fifo.length + items.length is >
 
   // make room with shift
-  const remove = fifo.length + items.length - capacity
-  for (let i=0; i < remove; i++) fifo.shift()
-  fifo.push(...items)
+  const remove = fifo.length + items.length - capacity;
+  for (let i = 0; i < remove; i++) fifo.shift();
+  fifo.push(...items);
 
-  return fifo
+  return fifo;
 }
