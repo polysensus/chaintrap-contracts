@@ -1,7 +1,7 @@
 on:
   push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+  #  tags:
+  #    - 'v[0-9]+.[0-9]+.[0-9]+'
 
 name: ci
 
@@ -43,7 +43,10 @@ jobs:
 
       - name: Install contract dependencies and hh test deps
         working-directory: chaintrap-contracts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > ~/.npmrc
           npm uninstall --save "@polysensus/diamond-deploy"
           npm install ../diamond-deploy --save-dev
           npm install
