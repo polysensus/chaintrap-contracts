@@ -10,7 +10,7 @@ FurnitureID constant invalidFurnitureID = FurnitureID.wrap(0);
 
 struct Furniture {
     Furnishings.Kind kind;
-    Furnishings.Effect []effects;
+    Furnishings.Effect[] effects;
     // uint256 []values;
 }
 
@@ -21,11 +21,22 @@ if the game is transfered, the main exit token goes with it ?
 */
 
 library Furnishings {
-
     /// @notice The kind of furnishing. Note that 0 is undefined
-    enum Kind {Undefned, Finish, Trap, Boon, Invalid }
+    enum Kind {
+        Undefned,
+        Finish,
+        Trap,
+        Boon,
+        Invalid
+    }
     /// @notice if the furnishing is used the effect that will have
-    enum Effect {Undefined, Victory, Death, FreeLife, Invalid }
+    enum Effect {
+        Undefined,
+        Victory,
+        Death,
+        FreeLife,
+        Invalid
+    }
 
     /// --------------------------
     /// @dev state reading methods - location mods
@@ -38,9 +49,9 @@ library Furnishings {
         self.kind = subject.kind;
         if (subject.effects.length > 0) {
             self.effects = new Furnishings.Effect[](subject.effects.length);
-            for (uint i = 0; i < subject.effects.length; i ++)
+            for (uint i = 0; i < subject.effects.length; i++)
                 self.effects[i] = subject.effects[i];
-                // self.values[i] = subject.values[i];
+            // self.values[i] = subject.values[i];
         }
     }
 }

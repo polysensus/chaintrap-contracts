@@ -33,9 +33,21 @@ tasks:
       - |
         tusk -q -f {{.TUSKS}}/tusk-jspkg.yml version-update {{.CLI_ARGS}}
 
+  format:
+    desc: format all the sources (javascript and solidity using prettier)
+    cmds:
+      - |
+        npx prettier --write 'chaintrap/**/*.sol'
+        npx prettier --write 'lib/**/*.sol'
+        npx prettier --write  'scripts/**/*.sol'
+        npx prettier --write  'chaintrap/**/*.{js,mjs}'
+        npx prettier --write  'tests/hh/**/*.{js,mjs}'
+
+
   build:
     desc: build the npm package
     cmds:
+      - task: format
       - task: build:contracts
       - npm run build
 

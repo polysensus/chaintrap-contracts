@@ -2,13 +2,12 @@
 
 pragma solidity =0.8.9;
 
-import { IERC173 } from "@solidstate/contracts/interfaces/IERC173.sol";
-import { IOwnableInternal } from "@solidstate/contracts/access/ownable/IOwnableInternal.sol";
-import { OwnableStorage } from "@solidstate/contracts/access/ownable/OwnableStorage.sol";
-import { AddressUtils } from "@solidstate/contracts/utils/AddressUtils.sol";
+import {IERC173} from "@solidstate/contracts/interfaces/IERC173.sol";
+import {IOwnableInternal} from "@solidstate/contracts/access/ownable/IOwnableInternal.sol";
+import {OwnableStorage} from "@solidstate/contracts/access/ownable/OwnableStorage.sol";
+import {AddressUtils} from "@solidstate/contracts/utils/AddressUtils.sol";
 
 abstract contract ModOwnable is IOwnableInternal {
-
     using AddressUtils for address;
 
     modifier onlyOwner() {

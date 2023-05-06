@@ -6,9 +6,8 @@ import "./storage.sol";
 error InvalidGame(uint256 id);
 
 library ArenaAccessors {
-    /// @dev the only 
+    /// @dev the only
     function _index(GameID id) internal view returns (bool, uint256) {
-
         ArenaStorage.Layout storage s = ArenaStorage.layout();
 
         // The length of games & trans are only changed by createGame
@@ -27,12 +26,18 @@ library ArenaAccessors {
         return (true, i);
     }
 
-    function _trans(GameID gid, bool requireOpen) internal view returns (Transcript storage) {
+    function _trans(
+        GameID gid,
+        bool requireOpen
+    ) internal view returns (Transcript storage) {
         (, Transcript storage t) = _gametrans(gid, requireOpen);
         return t;
     }
 
-    function _gametrans(GameID gid, bool requireOpen) internal view returns (Game storage, Transcript storage) {
+    function _gametrans(
+        GameID gid,
+        bool requireOpen
+    ) internal view returns (Game storage, Transcript storage) {
         (bool ok, uint256 ig) = _index(gid);
         if (!ok) {
             revert InvalidGame(ig);
@@ -61,13 +66,10 @@ library ArenaAccessors {
     }
 
     function game(GameID id) internal view returns (Game storage) {
-
         (bool ok, uint256 i) = _index(id);
         if (!ok) {
             revert InvalidGame(i);
         }
         return ArenaStorage.layout().games[i];
     }
-
 }
-

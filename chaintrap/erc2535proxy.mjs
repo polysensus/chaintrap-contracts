@@ -1,4 +1,4 @@
-import { ethers } from "ethers"
+import { ethers } from "ethers";
 
 /**
  * This handler is only safe when accessing specific facet methods. When
@@ -8,8 +8,7 @@ import { ethers } from "ethers"
  * in a general way.
  */
 export class ERC2535DiamondFacetProxyHandler {
-
-  constructor (diamondAddress, facetABIs, signerOrProvider) {
+  constructor(diamondAddress, facetABIs, signerOrProvider) {
     this._handler_diamondAddress = diamondAddress;
     this._handler_interfaces = createFacetInterfaces(facetABIs);
     this._handler_filterCache = new Map();
@@ -19,7 +18,7 @@ export class ERC2535DiamondFacetProxyHandler {
 
     const facets = {};
     for (const [name, abi] of Object.entries(this._handler_interfaces)) {
-      facets[name] = new ethers.Contract(diamondAddress, abi, signerOrProvider)
+      facets[name] = new ethers.Contract(diamondAddress, abi, signerOrProvider);
     }
     this._handler_facets = facets;
 
@@ -37,16 +36,15 @@ export class ERC2535DiamondFacetProxyHandler {
    * class.
    * @param {*} target assumed to be the contract instance for the Diamond itself
    * @param {*} prop to get from diamond or its facets or finally this handler
-   * @param {*} receiver 
-   * @returns 
+   * @param {*} receiver
+   * @returns
    */
   get(target, prop, receiver) {
     // target is the instance being proxy. it should be a contract instance
     // bound on the diamond with the interface of the ERC 2535 itself. This will
     // mean that any generic abi calls etc will go to the diamond abi.
 
-    if (prop in target)
-      return Reflect.get(target, prop, receiver)
+    if (prop in target) return Reflect.get(target, prop, receiver);
 
     if (this._handler_targetCache.has(prop)) {
       const cachedTarget = this._handler_targetCache.get(prop);
@@ -54,15 +52,15 @@ export class ERC2535DiamondFacetProxyHandler {
     }
 
     for (const candidateTarget of Object.values(this._handler_facets)) {
-      if (!(prop in candidateTarget)) continue
+      if (!(prop in candidateTarget)) continue;
 
       this._handler_targetCache.set(prop, candidateTarget);
 
-      return Reflect.get(candidateTarget, prop, receiver)
+      return Reflect.get(candidateTarget, prop, receiver);
     }
 
     if (prop in this) {
-      this._handler_targetCache.set(prop, this) // garbage collector cycles ...
+      this._handler_targetCache.set(prop, this); // garbage collector cycles ...
       return Reflect.get(this, prop, receiver);
     }
   }
@@ -76,10 +74,8 @@ export class ERC2535DiamondFacetProxyHandler {
   }
 
   getFilter(signature, ...args) {
-
     const cache = this._handler_filterCache;
-    if (cache.has(signature))
-      return cache.get(signature)(...args);
+    if (cache.has(signature)) return cache.get(signature)(...args);
 
     for (const f of Object.values(this._handler_facets)) {
       if (signature in f.filters) {
@@ -94,16 +90,15 @@ export class ERC2535DiamondFacetProxyHandler {
   getEventInterface(event) {
     const cache = this._handler_eventInterface;
 
-    const topic = event?.topics?.[0]
-    if (cache.has(topic))
-      return cache.get(topic);
+    const topic = event?.topics?.[0];
+    if (cache.has(topic)) return cache.get(topic);
 
     let err;
     for (const iface of Object.values(this._handler_interfaces)) {
       try {
-        iface.getEvent(topic) // throws if it doesn't exist
-        cache[topic] = iface
-        return iface
+        iface.getEvent(topic); // throws if it doesn't exist
+        cache[topic] = iface;
+        return iface;
       } catch (err) {}
     }
 
@@ -113,37 +108,49 @@ export class ERC2535DiamondFacetProxyHandler {
   }
 }
 
-export function createERC2535Proxy(diamondAddress, diamondABI, facetABIs, signerOrProvider) {
-  const diamond = new ethers.Contract(diamondAddress, diamondABI, signerOrProvider);
-  const handler = new ERC2535DiamondFacetProxyHandler(diamondAddress, facetABIs, signerOrProvider);
+export function createERC2535Proxy(
+  diamondAddress,
+  diamondABI,
+  facetABIs,
+  signerOrProvider
+) {
+  const diamond = new ethers.Contract(
+    diamondAddress,
+    diamondABI,
+    signerOrProvider
+  );
+  const handler = new ERC2535DiamondFacetProxyHandler(
+    diamondAddress,
+    facetABIs,
+    signerOrProvider
+  );
   return new Proxy(diamond, handler);
 }
 
 /**
- * 
+ *
  * @param {object} facetABIs an object whose keys should be facet names and
  * whose values may be json abi descriptions or ethers.utils.Interface instances
  */
 export function createFacetInterfaces(facetABIs) {
-
-  const interfaces = {}
+  const interfaces = {};
 
   for (const [name, abi] of Object.entries(facetABIs)) {
-    interfaces[name] = new ethers.utils.Interface(abi)
+    interfaces[name] = new ethers.utils.Interface(abi);
   }
-  return interfaces
+  return interfaces;
 }
 
 /**
- * 
+ *
  * @param {string} diamond address of diamond ERC2535 proxy contract
  * @param {*} facetABIs an object whose keys should be facet names and
  * whose values may be json abi descriptions or ethers.utils.Interface instances
  */
 export function createFacets(diamond, facetABIs, signerOrProvider) {
-  const facets = {}
+  const facets = {};
   for (const [name, abi] of createFacetInterfaces(facetABIs)) {
-    facets[name] = new ethers.Contract(diamond, abi, signerOrProvider)
+    facets[name] = new ethers.Contract(diamond, abi, signerOrProvider);
   }
   return facets;
 }

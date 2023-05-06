@@ -21,26 +21,37 @@ error InvalidExitIndex(uint8 i);
 /// @dev Only locations can be reached via Links & exits
 struct Location {
     Locations.Kind kind;
-
     /// @dev corridors have no exits in any side.
-    ExitID[][4] sides; /* a static array of sides length 4 each with varaible exits */
+    ExitID[][4] sides /* a static array of sides length 4 each with varaible exits */;
 }
 
 library Locations {
-
     /// The kind of location. Note that 0 is undefined
-    enum Kind {Undefned, Room, Intersection, Corridor, Invalid}
-    enum SideKind {Undefined, North, West, South, East, Invalid}
+    enum Kind {
+        Undefned,
+        Room,
+        Intersection,
+        Corridor,
+        Invalid
+    }
+    enum SideKind {
+        Undefined,
+        North,
+        West,
+        South,
+        East,
+        Invalid
+    }
 
     /// ---------------------------
     /// @dev state changing methods - loading
     function load(Location storage self, Location calldata other) internal {
         self.kind = other.kind;
 
-        for (uint i=0; i<4; i++) {
+        for (uint i = 0; i < 4; i++) {
             if (other.sides[i].length == 0) continue;
             self.sides[i] = new ExitID[](other.sides[i].length);
-            for (uint j=0; j < other.sides[i].length; j ++) {
+            for (uint j = 0; j < other.sides[i].length; j++) {
                 self.sides[i][j] = other.sides[i][j];
             }
         }
@@ -55,9 +66,12 @@ library Locations {
         return true;
     }
 
-    function exitID(Location storage loc, SideKind side, uint8 exitIndex) internal view returns (ExitID) {
-
-        if (side ==  SideKind.Undefined) {
+    function exitID(
+        Location storage loc,
+        SideKind side,
+        uint8 exitIndex
+    ) internal view returns (ExitID) {
+        if (side == SideKind.Undefined) {
             revert InvalidSide();
         }
 

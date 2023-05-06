@@ -9,7 +9,6 @@ type LinkID is uint16;
 type ExitID is uint16;
 type KeyID is uint16;
 
-
 LocationID constant invalidLocationID = LocationID.wrap(0);
 LinkID constant invalidLinkID = LinkID.wrap(0);
 ExitID constant invalidExitID = ExitID.wrap(0);
@@ -26,20 +25,16 @@ LocationModID constant invalidLocationModID = LocationModID.wrap(0);
 /// set). A link that isn't a door is always open and not locked.
 struct Link {
     Links.Kind kind;
-
     /// exits identify the emergences into the adjacent locations
     ExitID[2] exits;
-
     // TODO: need to seperate the exits from the links so that the link state
     // can be on chain from the start but the exit linkages can be revealed
     // selectively by the game master.
 
     // Note: if key is invalidKeyID or 0 the link can not be unlocked once locked
     KeyID key;
-
     /// if autoclose, then the door closes behind after transiting
     bool autoclose;
-
     // state variables
     bool _locked;
     bool _open;
@@ -64,18 +59,24 @@ library Exits {
 }
 
 library Links {
-
     using Links for Link;
 
     /// The kind of the link.
-    enum Kind{Undefined, Door, Archway, Invalid}
+    enum Kind {
+        Undefined,
+        Door,
+        Archway,
+        Invalid
+    }
 
     /// ---------------------------
     /// @dev state changing methods
 
     /// @dev statefull traversing of a link, dealing with autoclose & locked states
-    function traverse(Link storage self, ExitID egressVia) internal returns (ExitID) {
-
+    function traverse(
+        Link storage self,
+        ExitID egressVia
+    ) internal returns (ExitID) {
         if (!self.open()) {
             revert ExitIsLocked();
         }
@@ -105,7 +106,6 @@ library Links {
     }
 
     function open(Link storage self) internal returns (bool) {
-
         if (!isClosable(self)) return true;
 
         if (self._locked) {
@@ -116,7 +116,6 @@ library Links {
     }
 
     function close(Link storage self) internal returns (bool) {
-
         if (!isClosable(self)) return true;
 
         // Note: we can close a locked door. And then it can't be opened with `open'
@@ -128,7 +127,10 @@ library Links {
     /// @dev state reading methods
 
     /// tryotherExit returns the id of the Exit on the otherside if the given *Exit* id
-    function tryotherExit(Link storage self, ExitID id) internal view returns (ExitID) {
+    function tryotherExit(
+        Link storage self,
+        ExitID id
+    ) internal view returns (ExitID) {
         if (ExitID.unwrap(id) == ExitID.unwrap(invalidExitID)) {
             return invalidExitID;
         }
@@ -142,7 +144,10 @@ library Links {
     }
 
     /// tryotherExit returns the id of the Exit on the otherside if the given Exit *index*
-    function tryotherExit(Link storage self, uint8 i) internal view returns (ExitID) {
+    function tryotherExit(
+        Link storage self,
+        uint8 i
+    ) internal view returns (ExitID) {
         if (i == 0) {
             return self.exits[1];
         }
@@ -152,7 +157,10 @@ library Links {
         return invalidExitID;
     }
 
-    function otherExit(Link storage self, ExitID id) internal view returns (ExitID) {
+    function otherExit(
+        Link storage self,
+        ExitID id
+    ) internal view returns (ExitID) {
         ExitID other = tryotherExit(self, id);
         if (ExitID.unwrap(invalidExitID) == ExitID.unwrap(other)) {
             revert InvalidLinkExit(ExitID.unwrap(id));
@@ -172,11 +180,9 @@ library Links {
         return self.kind == Kind.Door;
     }
 
-
     /// isEnterable returns true if the link is open for transiting. If the link
     /// is not closable it is always enterable.
     function isEnterable(Link storage self) internal view returns (bool) {
-
         if (!isClosable(self)) return true;
 
         /// Subtlety - a locked door may be locked and open. If so, the lock has
@@ -185,7 +191,6 @@ library Links {
     }
 
     function isOpen(Link storage self) internal view returns (bool) {
-
         if (!isClosable(self)) return true;
 
         return self._open;

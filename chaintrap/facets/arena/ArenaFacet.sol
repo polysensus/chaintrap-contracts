@@ -7,7 +7,7 @@ pragma solidity =0.8.9;
 import "lib/solidstate/security/ModPausable.sol";
 import "lib/solidstate/access/ownable/ModOwnable.sol";
 
-import { LibERC1155Arena } from "lib/erc1155/liberc1155arena.sol";
+import {LibERC1155Arena} from "lib/erc1155/liberc1155arena.sol";
 import "lib/interfaces/IArenaEvents.sol";
 import "lib/contextmixin.sol";
 import "lib/tokenid.sol";
@@ -24,31 +24,28 @@ error ArenaError(uint);
 
 /// Games are played in an arena. The arena remembers all games that have ever
 /// been played
-contract ArenaFacet is IArenaEvents, IArena,
+contract ArenaFacet is
+    IArenaEvents,
+    IArena,
     // ERC1155BaseInternal,
     // ERC1155MetadataInternal,
     ModOwnable,
     ModPausable,
     ContextMixin
-    {
-
+{
     using Transcripts for Transcript;
     using Games for Game;
     using Games for GameStatus;
     using Furnishings for Furniture;
 
-    constructor () { }
+    constructor() {}
 
     /// ---------------------------------------------------
     /**
      * @dev This is used instead of msg.sender as transactions won't be sent by the original token owner, but by OpenSea.
      * ref: https://docs.opensea.io/docs/polygon-basic-integration
      */
-    function _msgSender()
-        internal
-        view
-        returns (address sender)
-    {
+    function _msgSender() internal view returns (address sender) {
         return ContextMixin.msgSender();
     }
 
@@ -56,9 +53,7 @@ contract ArenaFacet is IArenaEvents, IArena,
     /// @dev game setup creation & player signup
     /// ---------------------------------------------------
 
-    function joinGame(
-        GameID gid, bytes calldata profile
-    ) public {
+    function joinGame(GameID gid, bytes calldata profile) public {
         // TODO: consider whether we should allow the master to play their own
         // game. It does alow for pre play testing, and possibly 'single player'
         // creation. Anyone can roll a new wallet and play against themselves,
@@ -68,14 +63,19 @@ contract ArenaFacet is IArenaEvents, IArena,
     }
 
     function _joinGame(
-        GameID gid, address p, bytes calldata profile
+        GameID gid,
+        address p,
+        bytes calldata profile
     ) public whenNotPaused {
         ArenaAccessors.game(gid).joinGame(p, profile);
         emit PlayerJoined(gid, p, profile);
     }
 
     function setStartLocation(
-        GameID gid, address p, bytes32 startLocation, bytes calldata sceneblob
+        GameID gid,
+        address p,
+        bytes32 startLocation,
+        bytes calldata sceneblob
     ) public whenNotPaused {
         (Game storage g, ) = ArenaAccessors._gametrans(gid, false);
         if (g.master != _msgSender()) {
@@ -87,13 +87,14 @@ contract ArenaFacet is IArenaEvents, IArena,
     }
 
     function placeFurniture(
-        GameID gid, bytes32 placement, uint256 id) public whenNotPaused {
-
+        GameID gid,
+        bytes32 placement,
+        uint256 id
+    ) public whenNotPaused {
         // check ownership & that it is not already placed.#
         // TODO: XXX if (balanceOf(_msgSender(), id) == 0) revert InsufficientBalance(_msgSender(), id, 0);
         ArenaAccessors.game(gid).placeFurniture(placement, id);
     }
-
 
     /// ---------------------------------------------------
     /// @dev game phase transitions
@@ -134,7 +135,10 @@ contract ArenaFacet is IArenaEvents, IArena,
     /// ---------------------------------------------------
 
     function reject(GameID gid, TEID id, bool halt) public whenNotPaused {
-        (Game storage g, Transcript storage t) = ArenaAccessors._gametrans(gid, true);
+        (Game storage g, Transcript storage t) = ArenaAccessors._gametrans(
+            gid,
+            true
+        );
         if (g.master != _msgSender()) {
             revert SenderMustBeMaster();
         }
@@ -142,7 +146,10 @@ contract ArenaFacet is IArenaEvents, IArena,
     }
 
     function allowAndHalt(GameID gid, TEID id) public whenNotPaused {
-        (Game storage g, Transcript storage t) = ArenaAccessors._gametrans(gid, true);
+        (Game storage g, Transcript storage t) = ArenaAccessors._gametrans(
+            gid,
+            true
+        );
         if (g.master != _msgSender()) {
             revert SenderMustBeMaster();
         }
@@ -153,8 +160,14 @@ contract ArenaFacet is IArenaEvents, IArena,
     // --- move specific commit/allow methods
 
     /// @dev commitExitUse is called by a registered player to commit to using a specific exit.
-    function commitExitUse(GameID gid, ExitUse calldata committed)  public whenNotPaused returns (TEID) {
-        (Game storage g, Transcript storage t) = ArenaAccessors._gametrans(gid, true);
+    function commitExitUse(
+        GameID gid,
+        ExitUse calldata committed
+    ) public whenNotPaused returns (TEID) {
+        (Game storage g, Transcript storage t) = ArenaAccessors._gametrans(
+            gid,
+            true
+        );
         if (!g.playerRegistered(_msgSender())) {
             revert PlayerNotRegistered(_msgSender());
         }
@@ -162,19 +175,31 @@ contract ArenaFacet is IArenaEvents, IArena,
     }
 
     /// @dev allowExitUse is called by the game master to declare the outcome of the players commited exit use.
-    function allowExitUse(GameID gid, TEID id, ExitUseOutcome calldata outcome) public whenNotPaused {
-        (Game storage g, Transcript storage t) = ArenaAccessors._gametrans(gid, true);
+    function allowExitUse(
+        GameID gid,
+        TEID id,
+        ExitUseOutcome calldata outcome
+    ) public whenNotPaused {
+        (Game storage g, Transcript storage t) = ArenaAccessors._gametrans(
+            gid,
+            true
+        );
         if (g.master != _msgSender()) {
             revert SenderMustBeMaster();
         }
         t.allowExitUse(id, outcome);
     }
 
-
     /// @dev commitFurnitureUse is called by any participant to bind a token to a game session.
     /// The effect of this on the game session is token specific
-    function commitFurnitureUse(GameID gid, FurnitureUse calldata committed)  public whenNotPaused returns (TEID) {
-        (Game storage g, Transcript storage t) = ArenaAccessors._gametrans(gid, true);
+    function commitFurnitureUse(
+        GameID gid,
+        FurnitureUse calldata committed
+    ) public whenNotPaused returns (TEID) {
+        (Game storage g, Transcript storage t) = ArenaAccessors._gametrans(
+            gid,
+            true
+        );
         if (g.master != _msgSender() && !g.playerRegistered(_msgSender())) {
             revert NotAParticipant(_msgSender());
         }
@@ -183,8 +208,15 @@ contract ArenaFacet is IArenaEvents, IArena,
 
     /// @dev allowFurnitureUse is called by the game master to declare the outcome of the participants commited token use.
     /// Note that for placement of map items before the game start, the host can 'self allow'
-    function allowFurnitureUse(GameID gid, TEID id, FurnitureUseOutcome calldata outcome) public whenNotPaused {
-        (Game storage g, Transcript storage t) = ArenaAccessors._gametrans(gid, true);
+    function allowFurnitureUse(
+        GameID gid,
+        TEID id,
+        FurnitureUseOutcome calldata outcome
+    ) public whenNotPaused {
+        (Game storage g, Transcript storage t) = ArenaAccessors._gametrans(
+            gid,
+            true
+        );
         if (g.master != _msgSender()) {
             revert SenderMustBeMaster();
         }

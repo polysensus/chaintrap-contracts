@@ -20,17 +20,14 @@ error TEIDNotAFurnitureUseOutcome(uint16 id);
 /// game master declared them halted.
 error Halted(address player);
 
-
 /// PendingOutcome is raised if the player attempts to commit a move before the
 /// previous move has been accepted by the host
 error PendingOutcome(address player);
 
 struct Commitment {
-
     // Player commitment, the values are commited by the participant
     address player;
     Transcripts.MoveKind kind;
-
     // Game owner commitment, the values are committed by the game master.
 
     /// @dev The outcome record is created by the player's initial move.
@@ -38,10 +35,8 @@ struct Commitment {
     /// sets the outcome.
 
     bool outcomeDeclared;
-
     /// @dev moveAccepted is false if the move was deemed invalid or ileagal
     bool moveAccepted;
-
     /// @dev when the player completes the dungeon, abandons the game, or dies halted
     /// is set true.  once all players have halted the transcripts can be checked
     /// and any prizes handed out.  Note that not much information leaks as a
@@ -57,13 +52,12 @@ struct TranscriptLocation {
 
 // ---------------------------
 // specific move and outcome types
-struct ExitUse{
+struct ExitUse {
     Locations.SideKind side;
     uint8 egressIndex;
 }
 
-struct ExitUseOutcome{
-
+struct ExitUseOutcome {
     // location (will eventually be) keccak(location number | blocknumber). So the
     // location tokens do not repeat when the player re-enters the same location
     // and they can only be resolved once the game completes - once the games
@@ -84,11 +78,11 @@ struct ExitUseOutcome{
     bytes sceneblob;
     Locations.SideKind side;
     uint8 ingressIndex;
-    bool halt; 
+    bool halt;
 }
 
 // FurnitureUse represents either a player or a game host playing a token 'card'
-// The 
+// The
 struct FurnitureUse {
     bytes32 token; // this is an opaque salted & blinded value, *not* an nft or fungible
 }
@@ -106,26 +100,21 @@ struct FurnitureUseOutcome {
 }
 
 struct Transcript {
-
     // Single transcript for all players so that there is an aggreed move ordering.
     // This is significant if the map state is shared between players.
 
-    Commitment[]entries;
-
+    Commitment[] entries;
     // map for every kind of transcript entry so we can have specific types for each
     mapping(TEID => ExitUse) exitUses;
     mapping(TEID => ExitUseOutcome) exitUseOutcomes;
     mapping(TEID => FurnitureUse) furnitureUses;
     mapping(TEID => FurnitureUseOutcome) furnitureUseOutcomes;
-
     mapping(address => TEID) halted;
     mapping(address => bool) pendingOutcome;
-
     GameID gid;
 }
 
 library Transcripts {
-
     using Transcripts for Transcript;
 
     enum MoveKind {
@@ -145,12 +134,37 @@ library Transcripts {
     }
 
     // NOTE: These are duplicated in contract Arena - this is the only way to expose the abi to ethers.js
-    event UseExit(GameID indexed gid, TEID eid, address indexed player, ExitUse exitUse); // player is the committer of the tx
-    event ExitUsed(GameID indexed gid, TEID eid, address indexed player, ExitUseOutcome outcome);
-    event EntryReject(GameID indexed gid, TEID eid, address indexed player, bool halted);
+    event UseExit(
+        GameID indexed gid,
+        TEID eid,
+        address indexed player,
+        ExitUse exitUse
+    ); // player is the committer of the tx
+    event ExitUsed(
+        GameID indexed gid,
+        TEID eid,
+        address indexed player,
+        ExitUseOutcome outcome
+    );
+    event EntryReject(
+        GameID indexed gid,
+        TEID eid,
+        address indexed player,
+        bool halted
+    );
 
-    event UseToken(GameID indexed gid, TEID eid, address indexed player, FurnitureUse use);
-    event FurnitureUsed(GameID indexed gid, TEID eid, address indexed player, FurnitureUseOutcome outcome);
+    event UseToken(
+        GameID indexed gid,
+        TEID eid,
+        address indexed player,
+        FurnitureUse use
+    );
+    event FurnitureUsed(
+        GameID indexed gid,
+        TEID eid,
+        address indexed player,
+        FurnitureUseOutcome outcome
+    );
 
     /// ---------------------------
     /// @dev state changing methods
@@ -164,13 +178,19 @@ library Transcripts {
         self.gid = gid;
     }
 
-    function haltedAt(Transcript storage self, address player) internal view returns (TEID) {
+    function haltedAt(
+        Transcript storage self,
+        address player
+    ) internal view returns (TEID) {
         return self.halted[player];
     }
 
     function _delcareOutcome(
-        Transcript storage self, TEID id, bool accept, bool halt) internal {
-
+        Transcript storage self,
+        TEID id,
+        bool accept,
+        bool halt
+    ) internal {
         uint16 i = self.checkedTEIDIndex(id);
 
         self.entries[i].outcomeDeclared = true;
@@ -183,7 +203,12 @@ library Transcripts {
             self.halted[self.entries[i].player] = id;
         }
         if (!accept)
-            emit EntryReject(self.gid, id, self.entries[i].player, halt /*halted*/);
+            emit EntryReject(
+                self.gid,
+                id,
+                self.entries[i].player,
+                halt /*halted*/
+            );
     }
 
     function reject(Transcript storage self, TEID id, bool halt) internal {
@@ -197,7 +222,9 @@ library Transcripts {
     /// ---------------------------
     /// @dev Move type specific commit & allow methods
 
-    function _allocMove(Transcript storage self) internal returns (Commitment storage, TEID) {
+    function _allocMove(
+        Transcript storage self
+    ) internal returns (Commitment storage, TEID) {
         if (self.entries.length >= type(uint16).max) {
             revert IDExhaustion();
         }
@@ -208,8 +235,10 @@ library Transcripts {
     }
 
     function commitExitUse(
-        Transcript storage self, address player, ExitUse calldata committed) internal returns (TEID) {
-
+        Transcript storage self,
+        address player,
+        ExitUse calldata committed
+    ) internal returns (TEID) {
         self.requireNotHalted(player);
 
         // Until the game host confirms or rejects the previous move for this
@@ -231,7 +260,11 @@ library Transcripts {
         return id;
     }
 
-    function allowExitUse(Transcript storage self, TEID id, ExitUseOutcome calldata outcome) internal {
+    function allowExitUse(
+        Transcript storage self,
+        TEID id,
+        ExitUseOutcome calldata outcome
+    ) internal {
         uint16 i = self.checkedTEIDIndex(id);
 
         self.entries[i].outcomeDeclared = true;
@@ -255,8 +288,10 @@ library Transcripts {
     }
 
     function commitFurnitureUse(
-        Transcript storage self, address player, FurnitureUse calldata committed) internal returns (TEID) {
-
+        Transcript storage self,
+        address player,
+        FurnitureUse calldata committed
+    ) internal returns (TEID) {
         self.requireNotHalted(player);
 
         // Until the game host confirms or rejects the previous move for this
@@ -277,7 +312,11 @@ library Transcripts {
         return id;
     }
 
-    function allowFurnitureUse(Transcript storage self, TEID id, FurnitureUseOutcome calldata outcome) internal {
+    function allowFurnitureUse(
+        Transcript storage self,
+        TEID id,
+        FurnitureUseOutcome calldata outcome
+    ) internal {
         uint16 i = self.checkedTEIDIndex(id);
 
         Commitment storage co = self.entries[i];
@@ -306,8 +345,10 @@ library Transcripts {
     /// ---------------------------
     /// @dev state reading methods
 
-    function exitUse(Transcript storage self, TEID id) internal view returns (ExitUse storage) {
-
+    function exitUse(
+        Transcript storage self,
+        TEID id
+    ) internal view returns (ExitUse storage) {
         ExitUse storage u = self.exitUses[id];
         if (u.side == Locations.SideKind.Undefined) {
             revert TEIDNotAnExitUse(TEID.unwrap(id));
@@ -316,8 +357,10 @@ library Transcripts {
         return u;
     }
 
-    function exitUseOutcome(Transcript storage self, TEID id) internal view returns (ExitUseOutcome storage) {
-
+    function exitUseOutcome(
+        Transcript storage self,
+        TEID id
+    ) internal view returns (ExitUseOutcome storage) {
         ExitUseOutcome storage o = self.exitUseOutcomes[id];
         if (o.side == Locations.SideKind.Undefined) {
             revert TEIDNotAnExitUse(TEID.unwrap(id));
@@ -326,8 +369,10 @@ library Transcripts {
         return o;
     }
 
-    function furnitureUse(Transcript storage self, TEID id) internal view returns (FurnitureUse storage) {
-
+    function furnitureUse(
+        Transcript storage self,
+        TEID id
+    ) internal view returns (FurnitureUse storage) {
         FurnitureUse storage u = self.furnitureUses[id];
         if (u.token == 0) {
             revert TEIDNotAFurnitureUse(TEID.unwrap(id));
@@ -335,15 +380,16 @@ library Transcripts {
         return u;
     }
 
-    function furnitureUseOutcome(Transcript storage self, TEID id) internal view returns (FurnitureUseOutcome storage) {
-
+    function furnitureUseOutcome(
+        Transcript storage self,
+        TEID id
+    ) internal view returns (FurnitureUseOutcome storage) {
         FurnitureUseOutcome storage o = self.furnitureUseOutcomes[id];
         if (o.effect == Furnishings.Effect.Undefined) {
             revert TEIDNotAFurnitureUse(TEID.unwrap(id));
         }
         return o;
     }
-
 
     /// ---------------------------
     /// @dev transcript enumeration. using an enumeration api so that we don't
@@ -355,8 +401,10 @@ library Transcripts {
     /// @param self a parameter just like in doxygen (must be followed by parameter name)
     /// @param cur The callers 'current' transcript entry position
     /// @return - The TEID, TranscriptEntry after cur and a boolean indicating if the enumeration is complete.
-    function next(Transcript storage self, TEID cur) internal view returns (TEID, Commitment storage, bool, bool) {
-
+    function next(
+        Transcript storage self,
+        TEID cur
+    ) internal view returns (TEID, Commitment storage, bool, bool) {
         TEID id = invalidTEID;
         bool halted = false;
         Commitment storage co = self.entries[0]; // this is the undefined entry
@@ -373,11 +421,10 @@ library Transcripts {
             }
         }
 
-        // if the last entry is rejected then we will enter next() and initialise i to 
+        // if the last entry is rejected then we will enter next() and initialise i to
         // self._outcomems.length due to  cur + 1
         return (id, co, halted, i >= self.entries.length - 1);
     }
-
 
     // checks and requires
     function requireValidTEID(Transcript storage self, uint16 i) internal view {
@@ -386,20 +433,28 @@ library Transcripts {
         }
     }
 
-    function requireNotHalted(Transcript storage self, address player) internal view {
+    function requireNotHalted(
+        Transcript storage self,
+        address player
+    ) internal view {
         if (TEID.unwrap(self.halted[player]) != 0) {
             revert Halted(player);
         }
     }
 
-    function checkedTEIDIndex(Transcript storage self, TEID id) internal view returns (uint16) {
+    function checkedTEIDIndex(
+        Transcript storage self,
+        TEID id
+    ) internal view returns (uint16) {
         uint16 i = TEID.unwrap(id);
         self.requireValidTEID(i);
         return i;
     }
 
-    function checkedTEIDCursorIndex(Transcript storage self, TEID id) internal view returns (uint16) {
-
+    function checkedTEIDCursorIndex(
+        Transcript storage self,
+        TEID id
+    ) internal view returns (uint16) {
         uint16 i = TEID.unwrap(id);
 
         // i==0 is cursorStart so can't use requireValidTEID, and also note we
