@@ -36,13 +36,14 @@ describe("Arena", async function () {
     let tx = await arena.createGame2({
       tokenURI: "",
       rootLabels: [ethers.utils.formatBytes32String("a-root-label")],
-      roots: ["0x141d529a677497c1e718dcaea00c5ee952720942c8a43e9fda2c38ab24cfb562"]
+      roots: [
+        "0x141d529a677497c1e718dcaea00c5ee952720942c8a43e9fda2c38ab24cfb562",
+      ],
     });
     let r = await tx.wait();
     expect(r.status).to.equal(1);
     expect(r.events?.[0]?.args?.id?.and(1)).to.equal(ethers.BigNumber.from(1));
   });
-
 
   it("Should create a new game and transcript both with the first ids", async function () {
     // Need a fresh proxy to get the gids we expect

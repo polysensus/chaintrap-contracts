@@ -15,16 +15,16 @@ import {LibERC1155Arena} from "lib/erc1155/liberc1155arena.sol";
 import {ArenaStorage} from "lib/arena/storage.sol";
 import "lib/game.sol";
 
-
 import {IERC1155Arena2} from "lib/interfaces/IERC1155Arena2.sol";
+import {IGame2Events} from "lib/interfaces/IGame2Events.sol";
 import {LibArena2Storage} from "lib/arena2/storage.sol";
-import {LibGame, Game2, Game2InitArgs} from "lib/game2.sol";
-
+import {LibGame, Transcript2, TranscriptInitArgs} from "lib/transcript2.sol";
 
 import "lib/interfaces/IERC1155Arena.sol";
 
 contract ERC1155ArenaFacet is
     IArenaEvents,
+    IGame2Events,
     IERC1155Arena,
     IERC1155Arena2,
     SolidStateERC1155,
@@ -36,33 +36,32 @@ contract ERC1155ArenaFacet is
     /// facet.
     using Transcripts for Transcript;
     using Games for Game;
-    using LibGame for Game2;
+    using LibGame for Transcript2;
 
     /// ---------------------------------------------------
     /// @dev game setup creation & player signup
     /// ---------------------------------------------------
 
-    /// @notice mint a new game 
+    /// @notice mint a new game
     function createGame2(
-        Game2InitArgs calldata initArgs
+        TranscriptInitArgs calldata initArgs
     ) external whenNotPaused returns (uint256) {
         LibArena2Storage.Layout storage s = LibArena2Storage.layout();
 
-        uint256 id = TokenID.GAME2_TYPE | uint256(s.games.length);
+        uint256 id = TokenID.GAME2_TYPE | uint256(s.lastGameId);
+        s.lastGameId++;
 
         _mint(_msgSender(), id, 1, "GAME_TYPE");
         if (bytes(initArgs.tokenURI).length > 0) {
             _setTokenURI(id, initArgs.tokenURI);
         }
 
-        // allocate the game if the token creation is allowed
-
-        s.games.push();
-        s.games[s.games.length - 1]._init(id, initArgs);
+        // allocate the game if the token creation is allowed (by erc1155
+        // _beforeTokenTransfer which checks for token bindings)
+        s.games[id]._init(id, initArgs);
 
         return id;
     }
-
 
     /// @notice creates a new game context.
     /// @return returns the id for the game
