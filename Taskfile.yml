@@ -51,7 +51,7 @@ tasks:
       - task: format
       - task: build:contracts
       - task: build:types
-      - npm run build
+      - npx rollup -c
 
   build:contracts:
     desc: build the contracts and prepare the abi and exclusions file

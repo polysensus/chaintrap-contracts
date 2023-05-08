@@ -35,7 +35,7 @@
   },
   "scripts": {
     "prepare": "true && husky install",
-    "build": "task build:contracts && rollup -c",
+    "build": "task build",
     "dev": "rollup -c -w",
     "test": "task test",
     "hh-test": "task test:hh",
