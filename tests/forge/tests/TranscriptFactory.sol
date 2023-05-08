@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
-import {GameIsInitialised, InvalidProof} from "lib/transcript2.sol";
-import {LibGame} from "lib/transcript2.sol";
-import {Transcript2, TranscriptInitArgs} from "lib/transcript2.sol";
-import {ActionCommitment, OutcomeArgument} from "lib/transcript2.sol";
+import {GameIsInitialised, InvalidProof} from "lib/libtranscript2.sol";
+import {LibTranscript} from "lib/libtranscript2.sol";
+import {Transcript2, TranscriptInitArgs} from "lib/libtranscript2.sol";
+import {ActionCommitment, OutcomeArgument} from "lib/libtranscript2.sol";
 
 /*
  TranscriptFactory creates a new Transcript2 storage entry on demand and implements
- forwarders (to the most recently created) for all the LibGame methods that
+ forwarders (to the most recently created) for all the LibTranscript methods that
  require calldata arguments
 */
 contract TranscriptFactory {
 
     Transcript2[] games;
 
-    function pushGame() public {
+    function pushTranscript() public {
         _pushGame();
     }
 
@@ -32,33 +32,37 @@ contract TranscriptFactory {
 
     // --- helpers
 
-    function forceGameState(LibGame.GameState state) public {
+    function forceGameState(LibTranscript.GameState state) public {
         currentGame().state = state;
     }
 
-    function forceTranscriptEntryOutcome(uint256 tid, LibGame.Outcome outcome) public {
+    function forceTranscriptEntryOutcome(uint256 tid, LibTranscript.Outcome outcome) public {
         currentGame().transcript[tid].outcome = outcome;
     }
 
 
-    // --- LibGame public forwarders
+    // --- LibTranscript public forwarders
     // These are required to make calldata work 
     function _init(uint256 id, TranscriptInitArgs calldata args) public {
-        LibGame._init(currentGame(), id, args);
+        LibTranscript._init(currentGame(), id, args);
+    }
+
+    function registerParticipant(address participant, bytes calldata profile) public {
+        LibTranscript.registerParticipant(currentGame(), participant, profile);
     }
 
     function commitAction(address participant, ActionCommitment calldata commitment) public returns (uint256) {
-        return LibGame.commitAction(currentGame(), participant, commitment);
+        return LibTranscript.commitAction(currentGame(), participant, commitment);
     }
 
     function resolveOutcome(address advocate, OutcomeArgument calldata argument) public {
-        LibGame.resolveOutcome(currentGame(), advocate, argument);
+        LibTranscript.resolveOutcome(currentGame(), advocate, argument);
     }
 
     function checkRoot(bytes32[] calldata proof, bytes32 label, bytes32 node) public view returns (bool) {
-        return LibGame.checkRoot(currentGame(), proof, label, node);
+        return LibTranscript.checkRoot(currentGame(), proof, label, node);
     }
     function verifyRoot(bytes32[] calldata proof, bytes32 label, bytes32 node) public view {
-        LibGame.verifyRoot(currentGame(), proof, label, node);
+        LibTranscript.verifyRoot(currentGame(), proof, label, node);
     }
 }

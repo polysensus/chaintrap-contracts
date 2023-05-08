@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
-import {TranscriptInitArgs} from "lib/transcript2.sol";
+import {TranscriptInitArgs} from "lib/libtranscript2.sol";
 
 interface IERC1155Arena2 {
     /// ---------------------------------------------------
-    /// @dev game minting functions
+    /// @dev game minting and signup
     /// ---------------------------------------------------
 
     function createGame2(

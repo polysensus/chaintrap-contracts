@@ -18,7 +18,7 @@ import "lib/game.sol";
 import {IERC1155Arena2} from "lib/interfaces/IERC1155Arena2.sol";
 import {IGame2Events} from "lib/interfaces/IGame2Events.sol";
 import {LibArena2Storage} from "lib/arena2/storage.sol";
-import {LibGame, Transcript2, TranscriptInitArgs} from "lib/transcript2.sol";
+import {LibTranscript, Transcript2, TranscriptInitArgs} from "lib/libtranscript2.sol";
 
 import "lib/interfaces/IERC1155Arena.sol";
 
@@ -36,7 +36,7 @@ contract ERC1155ArenaFacet is
     /// facet.
     using Transcripts for Transcript;
     using Games for Game;
-    using LibGame for Transcript2;
+    using LibTranscript for Transcript2;
 
     /// ---------------------------------------------------
     /// @dev game setup creation & player signup

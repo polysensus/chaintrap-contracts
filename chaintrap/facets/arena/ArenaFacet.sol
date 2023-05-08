@@ -17,6 +17,10 @@ import "lib/arena/storage.sol";
 import "lib/arena/accessors.sol";
 
 import "lib/interfaces/IArena.sol";
+import "lib/interfaces/IArenaTranscript2.sol";
+
+import {LibArena2Storage} from "lib/arena2/storage.sol";
+import {LibTranscript, Transcript2} from "lib/libtranscript2.sol";
 
 error InsufficientBalance(address addr, uint256 id, uint256 balance);
 
@@ -27,6 +31,7 @@ error ArenaError(uint);
 contract ArenaFacet is
     IArenaEvents,
     IArena,
+    IArenaTranscript2,
     // ERC1155BaseInternal,
     // ERC1155MetadataInternal,
     ModOwnable,
@@ -38,6 +43,8 @@ contract ArenaFacet is
     using Games for GameStatus;
     using Furnishings for Furniture;
 
+    using LibTranscript for Transcript2;
+
     constructor() {}
 
     /// ---------------------------------------------------
@@ -47,6 +54,20 @@ contract ArenaFacet is
      */
     function _msgSender() internal view returns (address sender) {
         return ContextMixin.msgSender();
+    }
+
+    /// ---------------------------------------------------
+    /// @dev Transcript2# game setup creation & player signup
+    /// ---------------------------------------------------
+
+    /// @notice register a participant (transcript2)
+    /// @param profile profile information, not stored on chain but emmited in log of registration
+    function registerParticipant(
+        uint256 id,
+        bytes calldata profile
+    ) public whenNotPaused {
+        LibArena2Storage.Layout storage s = LibArena2Storage.layout();
+        s.games[id].registerParticipant(_msgSender(), profile);
     }
 
     /// ---------------------------------------------------

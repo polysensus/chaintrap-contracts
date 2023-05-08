@@ -4,7 +4,7 @@ pragma solidity =0.8.9;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
-import {TranscriptInitArgs} from "lib/transcript2.sol";
+import {TranscriptInitArgs} from "lib/libtranscript2.sol";
 
 import {HEVM_ADDRESS} from "tests/constants.sol";
 import {TranscriptFactory} from "tests/TranscriptFactory.sol";
@@ -18,7 +18,7 @@ contract TranscriptWithFactory {
 
     constructor() {
         f = new TranscriptFactory();
-        f.pushGame(); // make zero'th inaccessible
+        f.pushTranscript(); // make zero'th inaccessible
     }
 }
 
@@ -50,7 +50,7 @@ struct KnownProof {
     bytes32 node;
 }
 
-contract Game2KnowProofUtils {
+contract Transcript2KnowProofUtils {
 
     mapping(string=>KnownProof) knownProofs;
 

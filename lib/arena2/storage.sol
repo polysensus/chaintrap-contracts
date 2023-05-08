@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
-import {LibGame, Transcript2} from "lib/transcript2.sol";
+import {LibTranscript, Transcript2} from "lib/libtranscript2.sol";
 
 library LibArena2Storage {
     struct Layout {
@@ -23,7 +23,7 @@ library LibArena2Storage {
     function _idempotentInit() internal {
         LibArena2Storage.Layout storage s = layout();
         if (s.lastGameId == 0) {
-            s.games[s.lastGameId].state = LibGame.GameState.Invalid;
+            s.games[s.lastGameId].state = LibTranscript.GameState.Invalid;
             s.lastGameId = 1;
         }
     }

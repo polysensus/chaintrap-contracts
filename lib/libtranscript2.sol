@@ -4,24 +4,12 @@ pragma solidity =0.8.9;
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {TEID} from "./transcriptid.sol";
 
-error GameIsInitialised();
-error GameIsInvalid();
-error GameIsComplete();
-error GameIsNotStarted();
-error InvalidProof();
-error OutcomePending();
-error InvalidRootLabel();
-error InvalidParticipant();
-error InvalidTranscriptEntry();
-error ArgumentInvalidIllegalOutcome();
-error ArgumentInvalidAcceptedMustBeProofOfInclusion();
-error ArgumentInvalidRejectedMustBeProofOfExclusion();
-error ArgumentInvalidProofFailed();
+import "lib/interfaces/ITranscript2Errors.sol";
 
 /// @dev Transcript2 describes the game session state.
 struct Transcript2 {
     uint256 id;
-    LibGame.GameState state;
+    LibTranscript.GameState state;
     /// @dev roots is a mapping from labels to roots. labels can be
     /// keccak(string|bytes) or any value that packs into bytes32. We don't use
     /// strings or bytes because we emit events on change. And the dynamic types
@@ -41,8 +29,16 @@ struct Transcript2 {
     /// spamming invalid ActionCommitments and ensures they must wait for an
     /// advocate proof before proceding.
     mapping(address => uint256) cursors;
-    address[] participants;
+
+    /// @dev make curors enumerable
+    // address[] participants;
 }
+
+/// @dev We want the property that curors[participant] != 0 for participants at
+/// all times. In joinGame we set the players cursor to this value to ensure
+/// this.  Until, and unless, they commit to their first turn, their cursor will
+/// have this value
+uint256 constant TRANSCRIPT_REGISTRATION_SENTINEL = type(uint256).max;
 
 /// @dev generic description of a game action. It is a commitment because once
 /// issued, it can not be taken back.
@@ -52,7 +48,6 @@ struct ActionCommitment {
     /// location transition is valid. The game creator the proves the outcome of
     /// the action using their trie data for the corresponding rootLabel
     bytes32 rootLabel;
-
     /// @dev the proposed node, the participant can have enough information to
     /// hand to put together a leaf without fully revealing the game
     bytes32 node;
@@ -66,26 +61,32 @@ struct ActionCommitment {
 /// in the transcript.
 struct OutcomeArgument {
     address participant;
-    LibGame.Outcome outcome;
+    LibTranscript.Outcome outcome;
     bytes data;
+    // XXX: TODO think we need rootLabel too
     bytes32[] proof;
-    /// @dev for proofs of exclusion, proof verifies *inclusion* of a node and
-    /// its sibling such that node < commitment.node < exclusion. As the tree is
-    /// balanced and sorted (complete) this makes it impossible for
-    /// commitment.node to be present in the tree. In this case node != commitment.node. Rather
-    //  it is the node such that node < x < proof[0] || node > x > proof[0], and x = commitment.node
+    /// @dev for proofs of exclusion, proof verifies *inclusion* of a
+    /// *different* node and its sibling such that node < x < proof[0] || node >
+    /// x > proof[0]. As the tree is balanced and sorted (complete) this makes
+    /// it impossible for commitment.node to be present in the tree. This
+    /// case is indicated when node != commitment.node.
     bytes32 node;
 }
 
 /// @dev TranscriptEntry records the action and outcome for each turn in a game.
 struct TranscriptEntry {
+    // XXX: TODO consider making this a has commitment to increase generality and reduce the storage use. eg
+    //  H(abi.encodePacked(participant . rootLabel . node)) -> commitment
+    // Then in verify the advocate must supply an argument where
+    //  H(abi.encodePacked(argument.participant, argument.node, argument.rootLabel))
+    // show that
     /// @dev the address that issued the ActionCommitment
     address participant;
-    /// @dev the address that provided the valid OutcomeArgument proof
+    /// @dev the address that provided the valid OutcomeArgument proof. TODO consider just emiting this in logs rather than recording on chain
     address advocate;
     bytes32 rootLabel;
     bytes32 node;
-    LibGame.Outcome outcome;
+    LibTranscript.Outcome outcome;
 }
 
 struct TranscriptInitArgs {
@@ -103,7 +104,7 @@ struct TranscriptInitArgs {
     // [keccack("Chaintrap:MapLinks"), keccack("Chaintrap:UseExit"), keccack("Chaintrap:FinalExit")]
 }
 
-library LibGame {
+library LibTranscript {
     /// ---------------------------
     /// @dev overall game state
 
@@ -124,6 +125,13 @@ library LibGame {
         Rejected,
         Accepted
     }
+
+    /// @dev emitted when a participant is registered
+    event ParticipantRegistered(
+        uint256 indexed id,
+        address indexed participant,
+        bytes profile
+    );
 
     /// @dev emitted when an act is proposed.
     /// @param id the game token
@@ -197,6 +205,18 @@ library LibGame {
         }
     }
 
+    function registerParticipant(
+        Transcript2 storage self,
+        address participant,
+        bytes calldata profile
+    ) internal {
+        if (self.state != GameState.Initialised) revert RegistrationIsClosed();
+        if (self.cursors[participant] != 0) revert AlreadyRegistered();
+
+        self.cursors[participant] = TRANSCRIPT_REGISTRATION_SENTINEL;
+        emit ParticipantRegistered(self.id, participant, profile);
+    }
+
     /// ---------------------------
     /// @dev actions & outcomes
 
@@ -210,6 +230,8 @@ library LibGame {
 
         if (self.roots[commitment.rootLabel] == bytes32(0))
             revert InvalidRootLabel();
+
+        if (self.cursors[participant] == 0) revert NotRegistered();
 
         // The cursor may not exist yet for the parcipant, or it may exist and
         // it may already be pending or resolved. A participant may not commit a
@@ -263,27 +285,38 @@ library LibGame {
         if (self.state != GameState.Started) revert GameIsNotStarted();
 
         uint256 eid = self.cursors[argument.participant];
-        if (eid == 0)
-            revert InvalidParticipant();
+        if (eid == 0) revert InvalidParticipant();
 
         TranscriptEntry storage cur = self.transcript[eid];
 
-        if (cur.outcome == LibGame.Outcome.Invalid)
+        if (cur.outcome == LibTranscript.Outcome.Invalid)
             revert InvalidTranscriptEntry();
 
-        if (argument.outcome == LibGame.Outcome.Invalid || argument.outcome == LibGame.Outcome.Pending)
-            revert ArgumentInvalidIllegalOutcome();
+        if (
+            argument.outcome == LibTranscript.Outcome.Invalid ||
+            argument.outcome == LibTranscript.Outcome.Pending
+        ) revert ArgumentInvalidIllegalOutcome();
 
         // If we are arguing for Accepted, the argument must be a proof of
         // inclusion and node must equal the committed transcript entry.
-        if (argument.outcome == LibGame.Outcome.Accepted && argument.node != cur.node)
-            revert ArgumentInvalidAcceptedMustBeProofOfInclusion();
+        if (
+            argument.outcome == LibTranscript.Outcome.Accepted &&
+            argument.node != cur.node
+        ) revert ArgumentInvalidAcceptedMustBeProofOfInclusion();
 
-        if (argument.outcome == LibGame.Outcome.Rejected && argument.node == cur.node)
-            revert ArgumentInvalidRejectedMustBeProofOfExclusion();
+        if (
+            argument.outcome == LibTranscript.Outcome.Rejected &&
+            argument.node == cur.node
+        ) revert ArgumentInvalidRejectedMustBeProofOfExclusion();
 
-        if (!LibGame.checkRoot(self, argument.proof, cur.rootLabel, argument.node))
-            revert ArgumentInvalidProofFailed();
+        if (
+            !LibTranscript.checkRoot(
+                self,
+                argument.proof,
+                cur.rootLabel,
+                argument.node
+            )
+        ) revert ArgumentInvalidProofFailed();
 
         cur.outcome = argument.outcome;
 
@@ -291,7 +324,15 @@ library LibGame {
         // external interface. clients are free to assume OutcomeResolved
         // immediately follows ArgumentProven
         emit ArgumentProven(self.id, eid, advocate);
-        emit OutcomeResolved(self.id, eid, cur.participant, advocate, cur.rootLabel, cur.outcome, argument.data);
+        emit OutcomeResolved(
+            self.id,
+            eid,
+            cur.participant,
+            advocate,
+            cur.rootLabel,
+            cur.outcome,
+            argument.data
+        );
     }
 
     /// ---------------------------

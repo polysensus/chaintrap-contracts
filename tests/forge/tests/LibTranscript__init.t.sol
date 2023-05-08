@@ -4,24 +4,25 @@ pragma solidity =0.8.9;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
-import {GameIsInitialised, InvalidProof} from "lib/transcript2.sol";
-import {LibGame, Transcript2, TranscriptInitArgs} from "lib/transcript2.sol";
+import {GameIsInitialised, InvalidProof} from "lib/libtranscript2.sol";
+import {LibTranscript, Transcript2, TranscriptInitArgs} from "lib/libtranscript2.sol";
 
-import {TranscriptWithFactory, TranscriptInitUtils } from "tests/TranscriptUtils.sol";
+import {TranscriptWithFactory, TranscriptInitUtils, Transcript2KnowProofUtils } from "tests/TranscriptUtils.sol";
 
 contract LibGame__init is
     TranscriptWithFactory,
     TranscriptInitUtils,
+    Transcript2KnowProofUtils,
     DSTest {
-    using LibGame  for Transcript2;
+    using LibTranscript  for Transcript2;
     using stdStorage for StdStorage;
 
     function test_commitAction() public {
-        f.pushGame();
+        f.pushTranscript();
     }
 
     function test__init_RevertInitialiseTwice() public {
-        f.pushGame();
+        f.pushTranscript();
         f._init(1, minimalyValidInitArgs());
 
         vm.expectRevert(GameIsInitialised.selector);
@@ -29,7 +30,7 @@ contract LibGame__init is
     }
 
     function test__init_RevertMoreRootsThanLabels() public {
-        f.pushGame();
+        f.pushTranscript();
 
         vm.expectRevert(stdError.indexOOBError); // array out of bounds
         f._init(1, TranscriptInitArgs({
@@ -40,7 +41,7 @@ contract LibGame__init is
     }
 
     function test__init_NoRevertFewerRootsThanLabels() public {
-        f.pushGame();
+        f.pushTranscript();
 
         f._init(1, TranscriptInitArgs({
             tokenURI: "tokenURI",
@@ -50,13 +51,13 @@ contract LibGame__init is
     }
 
     function test__init_EmitSetMerkleRoot() public {
-        f.pushGame();
+        f.pushTranscript();
 
         vm.expectEmit(true, true, true, true);
 
         // Should get one emit for each root
-        emit LibGame.SetMerkleRoot(1, "", "");
-        emit LibGame.SetMerkleRoot(1, "", "");
+        emit LibTranscript.SetMerkleRoot(1, "", "");
+        emit LibTranscript.SetMerkleRoot(1, "", "");
 
         f._init(1, TranscriptInitArgs({
             tokenURI: "tokenURI",
