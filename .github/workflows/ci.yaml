@@ -38,7 +38,7 @@ jobs:
           # want the ci builds to depend only on published packages. for
           # diamond-deploy we do want to force the latest for now.
           npm uninstall --save "@polysensus/diamond-deploy"
-          npm install "@polysensus/diamond-deploy@latest"
+          npm install @polysensus/diamond-deploy@latest --save-dev
           npm install
 
       - name: build 
