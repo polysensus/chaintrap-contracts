@@ -167,6 +167,7 @@ tasks:
     desc: show the json formatted list of diamond facet collisions
     cmds:
       - |
+        echo "DIAMOND_DEPLOY: $DIAMOND_DEPLOY"
         $DIAMOND_DEPLOY list \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
