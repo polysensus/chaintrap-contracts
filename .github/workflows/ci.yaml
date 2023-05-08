@@ -43,7 +43,7 @@ jobs:
 
       - name: build 
         working-directory: chaintrap-contracts
-        run: task build DIAMOND_DEPLOY="npx @polysensus/diamond-deploy"
+        run: task build
 
       - name: Run forge tests
         working-directory: chaintrap-contracts
