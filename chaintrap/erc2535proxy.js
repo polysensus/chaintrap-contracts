@@ -26,7 +26,7 @@ export class ERC2535DiamondFacetProxyHandler {
   }
 
   /**
-   * A Reflect.get implementation proxying to the facet methods. This will
+   * A Reflect.get implementation proxy to the facet methods. This will
    * return properties on the diamond contract in preference to those on the
    * underlying facets. If neither the diamond nor the facets have the prop we
    * fall back to looking in the handler itself. With the effect that facet

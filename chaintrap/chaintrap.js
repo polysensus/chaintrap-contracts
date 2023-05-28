@@ -1,3 +1,4 @@
+export * from "./erc2535proxy.js";
 import { Locations } from "./locations.js";
 export { Locations };
 import { Location } from "./locations.js";

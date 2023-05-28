@@ -41,7 +41,7 @@ contract Factory {
         furniture.push();
     }
 
-    function reset(GameInitArgs calldata game1InitArgs) public {
+    function reset(GameInitArgs calldata) public {
         delete trans;
         delete games;
         delete furniture;

@@ -23,18 +23,19 @@ contract LibGame__init is
 
     function test__init_RevertInitialiseTwice() public {
         f.pushTranscript();
-        f._init(1, minimalyValidInitArgs());
+        f._init(1, address(1), minimalyValidInitArgs());
 
         vm.expectRevert(GameIsInitialised.selector);
-        f._init(1, minimalyValidInitArgs());
+        f._init(1, address(1), minimalyValidInitArgs());
     }
 
     function test__init_RevertMoreRootsThanLabels() public {
         f.pushTranscript();
 
         vm.expectRevert(stdError.indexOOBError); // array out of bounds
-        f._init(1, TranscriptInitArgs({
+        f._init(1, address(1), TranscriptInitArgs({
             tokenURI: "tokenURI",
+            maxParticipants: 2,
             rootLabels:new bytes32[](1),
             roots:new bytes32[](2)}
             ));
@@ -43,8 +44,9 @@ contract LibGame__init is
     function test__init_NoRevertFewerRootsThanLabels() public {
         f.pushTranscript();
 
-        f._init(1, TranscriptInitArgs({
+        f._init(1, address(1), TranscriptInitArgs({
             tokenURI: "tokenURI",
+            maxParticipants: 1,
             rootLabels:new bytes32[](2),
             roots:new bytes32[](1)}
             ));
@@ -59,8 +61,9 @@ contract LibGame__init is
         emit LibTranscript.SetMerkleRoot(1, "", "");
         emit LibTranscript.SetMerkleRoot(1, "", "");
 
-        f._init(1, TranscriptInitArgs({
+        f._init(1, address(1), TranscriptInitArgs({
             tokenURI: "tokenURI",
+            maxParticipants: 2,
             rootLabels:new bytes32[](2),
             roots:new bytes32[](2)}
             ));

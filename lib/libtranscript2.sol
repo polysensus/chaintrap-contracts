@@ -9,15 +9,18 @@ import "lib/interfaces/ITranscript2Errors.sol";
 /// @dev Transcript2 describes the game session state.
 struct Transcript2 {
     uint256 id;
+    address creator;
     LibTranscript.GameState state;
     /// @dev roots is a mapping from labels to roots. labels can be
     /// keccak(string|bytes) or any value that packs into bytes32. We don't use
     /// strings or bytes because we emit events on change. And the dynamic types
     /// would be hashed anyway then.
     mapping(bytes32 => bytes32) roots;
-    /// @dev each action is recorded in the transcript. entries are allocated sequentially.
-    /// @dev using a map rather than the more obvious array form to permit the
-    /// TranscriptEntry field to be changed and to allow it to use enums safely
+    /// @dev each action commitment and outcome argument results in a transcript
+    /// entry. entries are allocated sequentially.  using a map rather than the
+    /// more obvious array form to permit the TranscriptEntry field to be
+    /// changed and to allow it to use enums safely  (diamond storage
+    /// compatibility).
 
     /// @dev the id to assign to the next transcript entry. entries are
     /// allocated sequentially.
@@ -26,18 +29,21 @@ struct Transcript2 {
     /// @dev each participant has a 'cursor' into the transcript. It refers to
     /// their most recent ActionCommitment. Each address is allowed one
     /// outstanding ActionCommitment at a time. This prevents participants from
-    /// spamming invalid ActionCommitments and ensures they must wait for an
+    /// spamming invalid ActionActionCommitments and ensures they must wait for an
     /// advocate proof before proceding.
     mapping(address => uint256) cursors;
-
-    /// @dev make curors enumerable
-    // address[] participants;
+    /// @dev each participant that is not halted (dead or completed) has an
+    /// array of available choices. The first set of choices are established
+    /// before the game starts.
+    mapping(address => bytes32[]) choices;
+    uint256 maxParticipants;
+    address[] participants;
 }
 
 /// @dev We want the property that curors[participant] != 0 for participants at
 /// all times. In joinGame we set the players cursor to this value to ensure
 /// this.  Until, and unless, they commit to their first turn, their cursor will
-/// have this value
+/// have this value.
 uint256 constant TRANSCRIPT_REGISTRATION_SENTINEL = type(uint256).max;
 
 /// @dev generic description of a game action. It is a commitment because once
@@ -48,43 +54,39 @@ struct ActionCommitment {
     /// location transition is valid. The game creator the proves the outcome of
     /// the action using their trie data for the corresponding rootLabel
     bytes32 rootLabel;
-    /// @dev the proposed node, the participant can have enough information to
-    /// hand to put together a leaf without fully revealing the game
+    /// @dev each outcome argument provides the next valid set of choice nodes.
+    /// the guardian must be able to provide an inclusion proof for all choice
+    /// nodes it supplies. The first set of choices is bootstrapped when the
+    /// guardian sets the player start scene
     bytes32 node;
     bytes data;
 }
 
 /// @dev generic description of a game action outcome. It is an argument because
-/// outcomes are only accepted if accompanied by a valid proof. Depending on the
-/// action that could be either a proof of validity or a proof of exclusion
-/// (invalidity). If the argument is accepted, the code & coutcome are recorded
+/// outcomes are only accepted if accompanied by a valid proof.
 /// in the transcript.
 struct OutcomeArgument {
     address participant;
     LibTranscript.Outcome outcome;
+    /// @dev generic data blob which will generaly describe the situation
+    /// resulting from the choice proven by the argument. for location change
+    /// outcomes, data will contain the scene reached which will include the new
+    /// set of reachable nodes.
     bytes data;
-    // XXX: TODO think we need rootLabel too
+    /// @dev proof for the node chosen by the participant
     bytes32[] proof;
-    /// @dev for proofs of exclusion, proof verifies *inclusion* of a
-    /// *different* node and its sibling such that node < x < proof[0] || node >
-    /// x > proof[0]. As the tree is balanced and sorted (complete) this makes
-    /// it impossible for commitment.node to be present in the tree. This
-    /// case is indicated when node != commitment.node.
-    bytes32 node;
+    /// @dev each entry is a node that may be commited to in the *next* move
+    bytes32[] choices;
 }
 
 /// @dev TranscriptEntry records the action and outcome for each turn in a game.
 struct TranscriptEntry {
-    // XXX: TODO consider making this a has commitment to increase generality and reduce the storage use. eg
-    //  H(abi.encodePacked(participant . rootLabel . node)) -> commitment
-    // Then in verify the advocate must supply an argument where
-    //  H(abi.encodePacked(argument.participant, argument.node, argument.rootLabel))
-    // show that
     /// @dev the address that issued the ActionCommitment
     address participant;
     /// @dev the address that provided the valid OutcomeArgument proof. TODO consider just emiting this in logs rather than recording on chain
     address advocate;
     bytes32 rootLabel;
+    /// @dev node is selected by the player from the scene, the guardian must supply an inclusion proof in the resolution.
     bytes32 node;
     LibTranscript.Outcome outcome;
 }
@@ -92,6 +94,7 @@ struct TranscriptEntry {
 struct TranscriptInitArgs {
     /// @dev nft uri for the game token
     string tokenURI;
+    uint256 maxParticipants;
     /// @dev a rootLabel identifies a root. it can be a string (eg a name), a
     /// token id, an address whatever, it must be keccak hashed if it is a
     /// dynamic type (string or bytes). Note: we don't do bytes or string
@@ -99,14 +102,24 @@ struct TranscriptInitArgs {
     bytes32[] rootLabels;
     /// @dev roots is an array of merkle tree roots. each is associated with an entry in rootLabels.
     bytes32[] roots;
+}
 
-    // TODO: consider aliases for rootLabels so we can have many 2: 1 for action encoding.
-    // [keccack("Chaintrap:MapLinks"), keccack("Chaintrap:UseExit"), keccack("Chaintrap:FinalExit")]
+struct StartGameArgs {
+    /// @dev choices available to each participant at the start of the game.
+    /// Note: there is some scope for guardian abuse while this can be set
+    /// arbitrarily (eg self participation and setting self next to the exit).
+    /// When we do furniture, tricks and treats these will be subject to some
+    /// controls. Also, we have yet to add any notion of randomness.
+    bytes32[][] choices;
+    /// @dev data for the particpant starts
+    bytes[] data;
 }
 
 library LibTranscript {
     /// ---------------------------
     /// @dev overall game state
+
+    using LibTranscript for Transcript2;
 
     enum GameState {
         Unknown,
@@ -126,7 +139,27 @@ library LibTranscript {
         Accepted
     }
 
+    event GameCreated(
+        uint256 indexed id,
+        address indexed creator,
+        uint256 maxParticipants
+    );
+    event GameStarted(uint256 indexed id);
+    event GameCompleted(uint256 indexed id);
+
+    /// @dev the choices that were revealed as a consequence of the *previous*
+    /// transcript entry. The eid is 0 when setting the starting choices and
+    /// data.
+    event RevealedChoices(
+        uint256 indexed id,
+        address indexed participant,
+        uint256 eid,
+        bytes32[] choices,
+        bytes data
+    );
+
     /// @dev emitted when a participant is registered
+    // TODO: rename profile -> data
     event ParticipantRegistered(
         uint256 indexed id,
         address indexed participant,
@@ -138,14 +171,19 @@ library LibTranscript {
     /// @param eid the transcript id, this ties the proposal to a specific game
     ///  turn. Note: this is indexed on the assumption that querying the act & outcome
     ///  for specific game turns is a hot path.
+    ///  TODO: re-consider whether it is useful to index this
+    /// @param participant a game participant, any player or the game host.
     /// @param rootLabel the label idenfitying the root for the outcome proof.
     ///  typically this indicates a game action.
-    /// @param participant a game participant, any player or the game host
+    /// @param node one of the move nodes, provided in the scene presented to
+    /// the player by the guardian. In resolving the move, the guardian must
+    /// provide a proof of inclusion in the trie identified by rootLabel
     event ActionCommitted(
         uint256 indexed id,
         uint256 indexed eid,
         address indexed participant,
         bytes32 rootLabel,
+        bytes32 node,
         bytes data
     );
 
@@ -156,6 +194,7 @@ library LibTranscript {
         address advocate,
         bytes32 rootLabel,
         Outcome outcome,
+        bytes32 node,
         bytes data
     );
 
@@ -175,8 +214,6 @@ library LibTranscript {
     /// @param id the game token
     /// @param label the trie label (because it may be used in many games it is indexed)
     /// @param root the trie root (because it may be used in many games it is indexed)
-    /// TODO consider bytes32 repalced which will have the previous root if the
-    /// event indicates a previously initialised root is being changed.
     event SetMerkleRoot(
         uint256 indexed id,
         bytes32 indexed label,
@@ -190,19 +227,23 @@ library LibTranscript {
     function _init(
         Transcript2 storage self,
         uint256 id,
+        address creator,
         TranscriptInitArgs calldata args
     ) internal {
         // Note the zero'th game is marked Invalid to ensure it can't be initialised
         if (self.state > GameState.Unknown) revert GameIsInitialised();
         self.id = id;
+        self.creator = creator;
         self.state = GameState.Initialised;
         self.nextEntryId = 1;
+        self.maxParticipants = args.maxParticipants;
 
         for (uint i = 0; i < args.roots.length; i++) {
             // Note: solidity reverts for array out of bounds so we don't check for array length equivelence.
             self.roots[args.rootLabels[i]] = args.roots[i];
             emit SetMerkleRoot(self.id, args.rootLabels[i], args.roots[i]);
         }
+        emit GameCreated(self.id, creator, args.maxParticipants);
     }
 
     function registerParticipant(
@@ -212,13 +253,51 @@ library LibTranscript {
     ) internal {
         if (self.state != GameState.Initialised) revert RegistrationIsClosed();
         if (self.cursors[participant] != 0) revert AlreadyRegistered();
+        if (self.participants.length == self.maxParticipants)
+            revert LibTranscript2_GameFull();
 
         self.cursors[participant] = TRANSCRIPT_REGISTRATION_SENTINEL;
+        self.participants.push(participant);
         emit ParticipantRegistered(self.id, participant, profile);
+    }
+
+    function startGame(
+        Transcript2 storage self,
+        StartGameArgs calldata args
+    ) internal {
+        if (self.state != GameState.Initialised) revert GameIsNotStartable();
+        self.state = GameState.Started;
+        emit GameStarted(self.id);
+        for (uint i = 0; i < self.participants.length; i++) {
+            self.revealChoices(
+                0,
+                self.participants[i],
+                args.choices[i],
+                args.data[i]
+            );
+        }
+    }
+
+    function completeGame(Transcript2 storage self) internal {
+        if (self.state != GameState.Started) revert GameIsNotCompletable();
+        self.state = GameState.Complete;
+        emit GameCompleted(self.id);
     }
 
     /// ---------------------------
     /// @dev actions & outcomes
+
+    function revealChoices(
+        Transcript2 storage self,
+        uint256 eid,
+        address participant,
+        bytes32[] calldata choices,
+        bytes calldata data
+    ) internal {
+        delete self.choices[participant];
+        self.choices[participant] = choices;
+        emit RevealedChoices(self.id, participant, eid, choices, data);
+    }
 
     function commitAction(
         Transcript2 storage self,
@@ -232,6 +311,12 @@ library LibTranscript {
             revert InvalidRootLabel();
 
         if (self.cursors[participant] == 0) revert NotRegistered();
+
+        bytes32[] storage choices = self.choices[participant];
+        uint i = 0;
+        for (; i < choices.length; i++)
+            if (choices[i] == commitment.node) break;
+        if (i == choices.length) revert InvalidChoice();
 
         // The cursor may not exist yet for the parcipant, or it may exist and
         // it may already be pending or resolved. A participant may not commit a
@@ -255,13 +340,12 @@ library LibTranscript {
         // 'invalid move spam' in the transcript.
         uint256 eid = self.nextEntryId++;
 
-        self.transcript[eid] = TranscriptEntry(
-            participant,
-            address(0),
-            commitment.rootLabel,
-            commitment.node,
-            Outcome.Pending
-        );
+        TranscriptEntry storage nextEntry = self.transcript[eid];
+
+        nextEntry.participant = participant;
+        nextEntry.rootLabel = commitment.rootLabel;
+        nextEntry.node = commitment.node;
+        nextEntry.outcome = Outcome.Pending;
 
         // Set the participants cursor to the  participants pending entry.
         self.cursors[participant] = eid;
@@ -271,6 +355,7 @@ library LibTranscript {
             eid,
             participant,
             commitment.rootLabel,
+            commitment.node,
             commitment.data
         );
         return eid;
@@ -289,34 +374,33 @@ library LibTranscript {
 
         TranscriptEntry storage cur = self.transcript[eid];
 
-        if (cur.outcome == LibTranscript.Outcome.Invalid)
-            revert InvalidTranscriptEntry();
-
         if (
-            argument.outcome == LibTranscript.Outcome.Invalid ||
-            argument.outcome == LibTranscript.Outcome.Pending
-        ) revert ArgumentInvalidIllegalOutcome();
+            cur.node == bytes32(0) ||
+            cur.outcome != LibTranscript.Outcome.Pending
+        ) revert InvalidTranscript2Entry();
 
-        // If we are arguing for Accepted, the argument must be a proof of
-        // inclusion and node must equal the committed transcript entry.
-        if (
-            argument.outcome == LibTranscript.Outcome.Accepted &&
-            argument.node != cur.node
-        ) revert ArgumentInvalidAcceptedMustBeProofOfInclusion();
+        if (argument.outcome == LibTranscript.Outcome.Accepted) {
+            if (argument.proof.length == 0)
+                revert ArgumentInvalidExpectedProof();
+            if (
+                !LibTranscript.checkRoot(
+                    self,
+                    argument.proof,
+                    cur.rootLabel,
+                    cur.node
+                )
+            ) revert ArgumentInvalidProofFailed();
 
-        if (
-            argument.outcome == LibTranscript.Outcome.Rejected &&
-            argument.node == cur.node
-        ) revert ArgumentInvalidRejectedMustBeProofOfExclusion();
-
-        if (
-            !LibTranscript.checkRoot(
-                self,
-                argument.proof,
-                cur.rootLabel,
-                argument.node
-            )
-        ) revert ArgumentInvalidProofFailed();
+            self.revealChoices(
+                eid,
+                argument.participant,
+                argument.choices,
+                argument.data
+            );
+        } else {
+            if (argument.outcome != LibTranscript.Outcome.Rejected)
+                revert ArgumentInvalidIllegalOutcome();
+        }
 
         cur.outcome = argument.outcome;
 
@@ -331,6 +415,7 @@ library LibTranscript {
             advocate,
             cur.rootLabel,
             cur.outcome,
+            cur.node,
             argument.data
         );
     }

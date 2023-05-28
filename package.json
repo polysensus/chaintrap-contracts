@@ -17,7 +17,7 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "default": "./dist/chaintrap.esm.js"
     },
     "./abi/*.json": "./abi/*.json"
   },

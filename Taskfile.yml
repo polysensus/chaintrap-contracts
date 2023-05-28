@@ -113,7 +113,7 @@ tasks:
   test:forge:
     desc: run the forge tests
     cmds:
-      - forge test -vvv --ffi
+      - forge test -vvv --ffi {{.CLI_ARGS}}
 
   test:hh:
     desc: run the hardhat tests

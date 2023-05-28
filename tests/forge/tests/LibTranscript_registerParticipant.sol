@@ -17,7 +17,7 @@ contract LibTranscript_registerParticipant is
 
     function test_registerParticipant() public {
         f.pushTranscript();
-        f._init(1, minimalyValidInitArgs());
+        f._init(1, address(1), minimalyValidInitArgs());
 
         address participant = address(9);
         vm.expectEmit(true, true, true, true);
@@ -27,7 +27,7 @@ contract LibTranscript_registerParticipant is
 
     function test_revert_ifDuplicateRegistration() public {
         f.pushTranscript();
-        f._init(1, minimalyValidInitArgs());
+        f._init(1, address(1), minimalyValidInitArgs());
 
         address participant = address(9);
         vm.expectEmit(true, true, true, true);
@@ -40,7 +40,7 @@ contract LibTranscript_registerParticipant is
 
     function test_revert_ifGameStarted() public {
         f.pushTranscript();
-        f._init(1, minimalyValidInitArgs());
+        f._init(1, address(1), minimalyValidInitArgs());
         f.forceGameState(LibTranscript.GameState.Started);
 
         vm.expectRevert(RegistrationIsClosed.selector);

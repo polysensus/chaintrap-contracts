@@ -58,9 +58,14 @@ contract ERC1155ArenaFacet is
 
         // allocate the game if the token creation is allowed (by erc1155
         // _beforeTokenTransfer which checks for token bindings)
-        s.games[id]._init(id, initArgs);
+        s.games[id]._init(id, _msgSender(), initArgs);
 
         return id;
+    }
+
+    function lastGame2() external view returns (uint256) {
+        LibArena2Storage.Layout storage s = LibArena2Storage.layout();
+        return TokenID.GAME2_TYPE | uint256(s.lastGameId);
     }
 
     /// @notice creates a new game context.

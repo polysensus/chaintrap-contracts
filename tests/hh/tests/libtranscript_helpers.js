@@ -14,6 +14,7 @@ export async function createGame2(arena, params) {
   }
   let tx = await arena.createGame2({
     tokenURI: params.tokenURI ?? "",
+    maxParticipants: params.maxParticipants ?? 3,
     rootLabels,
     roots,
   });

@@ -2,7 +2,7 @@
 pragma solidity =0.8.9;
 
 import {GameIsInitialised, InvalidProof} from "lib/libtranscript2.sol";
-import {LibTranscript} from "lib/libtranscript2.sol";
+import {LibTranscript, StartGameArgs} from "lib/libtranscript2.sol";
 import {Transcript2, TranscriptInitArgs} from "lib/libtranscript2.sol";
 import {ActionCommitment, OutcomeArgument} from "lib/libtranscript2.sol";
 
@@ -43,8 +43,11 @@ contract TranscriptFactory {
 
     // --- LibTranscript public forwarders
     // These are required to make calldata work 
-    function _init(uint256 id, TranscriptInitArgs calldata args) public {
-        LibTranscript._init(currentGame(), id, args);
+    function _init(uint256 id, address creator, TranscriptInitArgs calldata args) public {
+        LibTranscript._init(currentGame(), id, creator, args);
+    }
+    function startGame2(StartGameArgs calldata args) public {
+        LibTranscript.startGame(currentGame(), args);
     }
 
     function registerParticipant(address participant, bytes calldata profile) public {

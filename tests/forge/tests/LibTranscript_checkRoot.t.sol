@@ -46,8 +46,9 @@ contract LibGame_checkRoot is
         bytes32[] memory roots = new bytes32[](1);
         rootLabels[0]=hex"aaaa";
         roots[0] = root;
-        f._init(1, TranscriptInitArgs({
+        f._init(1, address(1), TranscriptInitArgs({
             tokenURI: "tokenURI",
+            maxParticipants: 1,
             rootLabels:rootLabels,
             roots:roots}
             ));

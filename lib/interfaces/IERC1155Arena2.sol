@@ -10,4 +10,6 @@ interface IERC1155Arena2 {
     function createGame2(
         TranscriptInitArgs calldata initArgs
     ) external returns (uint256);
+
+    function lastGame2() external view returns (uint256);
 }
