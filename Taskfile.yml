@@ -66,8 +66,6 @@ tasks:
         cp build/forge/out/Diamond.sol/Diamond.json abi/
         cp build/forge/out/DiamondNew.sol/DiamondNew.json abi/
         for d in $(ls -d build/forge/out/*Facet.sol); do cp $d/*Facet.json abi/; done
-        cp build/forge/out/IERC1155Arena.sol/IERC1155Arena.json abi
-        for d in $(ls -d build/forge/out/IArena*.sol); do cp $d/IArena*.json abi/; done
       
   build:types:
     desc: "generate typescript types using typechain"
