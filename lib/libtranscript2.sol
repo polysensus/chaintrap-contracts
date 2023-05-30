@@ -2,7 +2,6 @@
 pragma solidity =0.8.9;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {TEID} from "./transcriptid.sol";
 
 import "lib/interfaces/ITranscript2Errors.sol";
 

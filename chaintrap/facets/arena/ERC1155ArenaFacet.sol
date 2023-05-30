@@ -9,23 +9,15 @@ import "lib/solidstate/access/ownable/ModOwnable.sol";
 import "lib/contextmixin.sol";
 import "lib/erc1155/storage.sol";
 
-import {IArenaEvents} from "lib/interfaces/IArenaEvents.sol";
 import {LibERC1155Arena} from "lib/erc1155/liberc1155arena.sol";
-
-import {ArenaStorage} from "lib/arena/storage.sol";
-import "lib/game.sol";
 
 import {IERC1155Arena2} from "lib/interfaces/IERC1155Arena2.sol";
 import {IGame2Events} from "lib/interfaces/IGame2Events.sol";
 import {LibArena2Storage} from "lib/arena2/storage.sol";
 import {LibTranscript, Transcript2, TranscriptInitArgs} from "lib/libtranscript2.sol";
 
-import "lib/interfaces/IERC1155Arena.sol";
-
 contract ERC1155ArenaFacet is
-    IArenaEvents,
     IGame2Events,
-    IERC1155Arena,
     IERC1155Arena2,
     SolidStateERC1155,
     ModOwnable,
@@ -34,8 +26,6 @@ contract ERC1155ArenaFacet is
 {
     /// All arena actions which mint or transfer tokens are implemented on this
     /// facet.
-    using Transcripts for Transcript;
-    using Games for Game;
     using LibTranscript for Transcript2;
 
     /// ---------------------------------------------------
@@ -66,106 +56,6 @@ contract ERC1155ArenaFacet is
     function lastGame2() external view returns (uint256) {
         LibArena2Storage.Layout storage s = LibArena2Storage.layout();
         return TokenID.GAME2_TYPE | uint256(s.lastGameId);
-    }
-
-    /// @notice creates a new game context.
-    /// @return returns the id for the game
-    function createGame(
-        GameInitArgs calldata initArgs
-    ) public whenNotPaused returns (GameID) {
-        ArenaStorage.Layout storage s = ArenaStorage.layout();
-
-        uint256 gTokenId = TokenID.GAME_TYPE | uint256(s.games.length);
-        GameID gid = GameID.wrap(s.games.length);
-
-        s.games.push();
-        Game storage g = s.games[GameID.unwrap(gid)];
-        g._init(gTokenId, initArgs, _msgSender());
-
-        TID tid = TID.wrap(s.transcripts.length);
-        s.transcripts.push();
-        s.transcripts[TID.unwrap(tid)]._init(gid);
-
-        s.gid2tid[gid] = tid;
-
-        // XXX: the map owner can set the url later
-
-        // The trancscript gets minted to the winer when the game is completed and verified
-        _mint(_msgSender(), TokenID.TRANSCRIPT_TYPE | TID.unwrap(tid), 1, "");
-
-        // emit the game state first. we may add mints and their events will
-        // force us to update lots of transaction log array values if we put
-        // them first.
-        emit GameCreated(gid, tid, g.creator, g.maxPlayers);
-
-        // mint the transferable tokens
-
-        // game first, mint to sender
-        _mint(_msgSender(), gTokenId, 1, "GAME_TYPE");
-        if (bytes(initArgs.tokenURI).length > 0) {
-            _setTokenURI(gTokenId, initArgs.tokenURI);
-        }
-
-        // furniture created as a reward/part of new game - mint to contract owner and hand out depending on victory ?
-
-        // Now the victory condition
-        // mint a finish and bind it to the game
-        uint256 fTokenId = TokenID.FURNITURE_TYPE | uint128(s.furniture.length);
-        FurnitureID fid = FurnitureID.wrap(uint128(s.furniture.length));
-        s.furniture.push();
-        s.furniture[FurnitureID.unwrap(fid)].kind = Furnishings.Kind.Finish;
-        s.furniture[FurnitureID.unwrap(fid)].effects.push(
-            Furnishings.Effect.Victory
-        );
-
-        // bind the entrance hall token to the game token
-        LibERC1155Arena.bindToken(fTokenId, gTokenId);
-
-        _mint(_msgSender(), fTokenId, 1, "furniture/finish/victory");
-
-        // Mint two traps to the dungeon creator. We only support insta-death
-        fTokenId = TokenID.FURNITURE_TYPE | uint128(s.furniture.length);
-        fid = FurnitureID.wrap(uint128(s.furniture.length));
-        s.furniture.push();
-        s.furniture[FurnitureID.unwrap(fid)].kind = Furnishings.Kind.Trap;
-        s.furniture[FurnitureID.unwrap(fid)].effects.push(
-            Furnishings.Effect.Death
-        );
-
-        // bind the entrance hall token to the game token
-        LibERC1155Arena.bindToken(fTokenId, gTokenId);
-
-        _mint(_msgSender(), fTokenId, 1, "furniture/trap/death");
-
-        fTokenId = TokenID.FURNITURE_TYPE | uint128(s.furniture.length);
-        fid = FurnitureID.wrap(uint128(s.furniture.length));
-        s.furniture.push();
-        s.furniture[FurnitureID.unwrap(fid)].kind = Furnishings.Kind.Trap;
-        s.furniture[FurnitureID.unwrap(fid)].effects.push(
-            Furnishings.Effect.Death
-        );
-
-        // bind the entrance hall token to the game token
-        LibERC1155Arena.bindToken(fTokenId, gTokenId);
-
-        _mint(_msgSender(), fTokenId, 1, "furniture/trap/death");
-
-        // Now mint a boon
-
-        fTokenId = TokenID.FURNITURE_TYPE | uint128(s.furniture.length);
-        fid = FurnitureID.wrap(uint128(s.furniture.length));
-        s.furniture.push();
-        s.furniture[FurnitureID.unwrap(fid)].kind = Furnishings.Kind.Boon;
-        s.furniture[FurnitureID.unwrap(fid)].effects.push(
-            Furnishings.Effect.FreeLife
-        );
-
-        // bind the entrance hall token to the game token
-        LibERC1155Arena.bindToken(fTokenId, gTokenId);
-
-        _mint(_msgSender(), fTokenId, 1, "furniture/boon/free_life");
-
-        return gid;
     }
 
     /**

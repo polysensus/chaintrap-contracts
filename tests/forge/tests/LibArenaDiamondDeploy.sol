@@ -8,14 +8,9 @@ import {OwnershipFacet} from "diamond/facets/OwnershipFacet.sol";
 import {Diamond} from "diamond/Diamond.sol";
 
 import {DiamondNew, DiamondNewArgs, IDiamondNew} from "chaintrap/upgradeinit/DiamondNew.sol";
-import {ArenaCallsFacet} from "chaintrap/facets/arena/ArenaCallsFacet.sol";
 import {ArenaFacet} from "chaintrap/facets/arena/ArenaFacet.sol";
-import {ArenaTranscriptsFacet} from "chaintrap/facets/arena/ArenaTranscriptsFacet.sol";
 import {ERC1155ArenaFacet} from "chaintrap/facets/arena/ERC1155ArenaFacet.sol";
 
-import "lib/interfaces/IERC1155Arena.sol";
-
-import "lib/gameid.sol";
 import "tests/strings.sol";
 
 import {HEVM_ADDRESS} from "tests/constants.sol";
@@ -29,7 +24,6 @@ library ArenaTestStorage {
         // current array
         IDiamondCut.FacetCut[] cuts;
         Diamond arena;
-        GameID g1;
     }
 
     bytes32 internal constant STORAGE_SLOT =
@@ -79,13 +73,6 @@ library LibArenaDiamondDeploy {
             functionSelectors: generateSelectors("OwnershipFacet")
             }));
 
-        facet = address(new ArenaCallsFacet());
-        s.cuts.push(IDiamondCut.FacetCut({
-            facetAddress: facet,
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: generateSelectors("ArenaCallsFacet")
-            }));
-
         facet = address(new ArenaFacet());
         s.cuts.push(IDiamondCut.FacetCut({
             facetAddress: facet,
@@ -93,13 +80,6 @@ library LibArenaDiamondDeploy {
             functionSelectors: generateSelectors("ArenaFacet")
             }));
 
-
-        facet = address(new ArenaTranscriptsFacet());
-        s.cuts.push(IDiamondCut.FacetCut({
-            facetAddress: facet,
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: generateSelectors("ArenaTranscriptsFacet")
-            }));
 
         facet = address(new ERC1155ArenaFacet());
         s.cuts.push(IDiamondCut.FacetCut({
@@ -118,13 +98,6 @@ library LibArenaDiamondDeploy {
         // NOTE: "interfaceId" can be used since "init" is the only function in IDiamondNew
         IDiamondCut(address(s.arena)).diamondCut(
             s.cuts, address(diamondNew), abi.encode(type(IDiamondNew).interfaceId, diamondNewArgs));
-
-        // Deploy Map contract
-
-
-        s.vm.prank(master, master);
-        s.g1 = IERC1155Arena(address(s.arena)).createGame(
-            GameInitArgs({tokenURI: "", mapVRFBeta: "", maxPlayers: 2 }));
     }
 
     /* for another time
