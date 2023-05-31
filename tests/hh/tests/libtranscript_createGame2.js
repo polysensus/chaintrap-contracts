@@ -15,9 +15,9 @@ describe("LibTranscript_createGame2", async function () {
 
     const arena = createArenaProxy(proxy, owner);
 
-    let tx = await arena.createGame2({
+    let tx = await arena.createGame({
       tokenURI: "",
-      maxParticipants: 2,
+      registrationLimit: 2,
       rootLabels: [ethers.utils.formatBytes32String("a-root-label")],
       roots: [
         "0x141d529a677497c1e718dcaea00c5ee952720942c8a43e9fda2c38ab24cfb562",

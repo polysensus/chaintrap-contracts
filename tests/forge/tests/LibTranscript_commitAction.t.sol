@@ -5,9 +5,9 @@ import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
 import {TokenID} from "lib/tokenid.sol";
-import "lib/interfaces/ITranscript2Errors.sol";
+import "lib/interfaces/ITranscriptErrors.sol";
 
-import {LibTranscript, ActionCommitment, StartGameArgs} from "lib/libtranscript2.sol";
+import {LibTranscript, TranscriptCommitment, TranscriptStartArgs} from "lib/libtranscript.sol";
 
 import {
     TranscriptWithFactory,
@@ -30,10 +30,10 @@ contract LibGame_commitAction is
         f._init(gid, address(1), initArgsWith1Root(keccak256("Chaintrap:MapLinks"), keccak256("")));
 
         // force the game into started state
-        f.forceGameState(LibTranscript.GameState.Started);
+        f.forceGameState(LibTranscript.State.Started);
 
-        vm.expectRevert(NotRegistered.selector);
-        f.commitAction(address(1), ActionCommitment(keccak256("Chaintrap:MapLinks"), keccak256("node"), hex"03"));
+        vm.expectRevert(Transcript_NotRegistered.selector);
+        f.entryCommit(address(1), TranscriptCommitment(keccak256("Chaintrap:MapLinks"), keccak256("node"), hex"03"));
     }
 
     /** @dev test we get a revert if an attempt is made to commit a new action
@@ -47,23 +47,23 @@ contract LibGame_commitAction is
 
         f._init(gid, address(1), initArgsWith1Root(keccak256("Chaintrap:MapLinks"), kp.root));
 
-        f.registerParticipant(address(1), "player one");
-        f.registerParticipant(address(2), "player two");
+        f.register(address(1), "player one");
+        f.register(address(2), "player two");
 
-        StartGameArgs memory args = proofID1StartArgsNParticipants(2);
-        f.startGame2(args);
+        TranscriptStartArgs memory args = proofID1StartArgsNParticipants(2);
+        f.start(args);
 
         vm.expectEmit(true, true, true, true);
-        emit LibTranscript.ActionCommitted(gid, 1, address(1), keccak256("Chaintrap:MapLinks"), kp.node, hex"03");
-        f.commitAction(address(1), ActionCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
+        emit LibTranscript.TranscriptEntryCommitted(gid, address(1), 1, keccak256("Chaintrap:MapLinks"), kp.node, hex"03");
+        f.entryCommit(address(1), TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
 
-        vm.expectRevert(OutcomePending.selector);
-        f.commitAction(address(1), ActionCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"05"));
+        vm.expectRevert(Transcript_OutcomePending.selector);
+        f.entryCommit(address(1), TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"05"));
 
         // But it is fine for a different participant (note the tid advances)
         vm.expectEmit(true, true, true, true);
-        emit LibTranscript.ActionCommitted(gid, 2, address(2), keccak256("Chaintrap:MapLinks"), kp.node, hex"05");
-        f.commitAction(address(2), ActionCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"05"));
+        emit LibTranscript.TranscriptEntryCommitted(gid, address(2), 2, keccak256("Chaintrap:MapLinks"), kp.node, hex"05");
+        f.entryCommit(address(2), TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"05"));
     }
 
     function test_revertIfRootLabelBad() public {
@@ -73,9 +73,9 @@ contract LibGame_commitAction is
         f._init(gid, address(1), initArgsWith1Root(keccak256("Chaintrap:MapLinks"), keccak256("")));
 
         // force the game into started state
-        f.forceGameState(LibTranscript.GameState.Started);
+        f.forceGameState(LibTranscript.State.Started);
 
-        vm.expectRevert(InvalidRootLabel.selector);
-        f.commitAction(address(1), ActionCommitment(keccak256("Gibberish"), keccak256("node"), hex"03"));
+        vm.expectRevert(Transcript_InvalidRootLabel.selector);
+        f.entryCommit(address(1), TranscriptCommitment(keccak256("Gibberish"), keccak256("node"), hex"03"));
     }
 }

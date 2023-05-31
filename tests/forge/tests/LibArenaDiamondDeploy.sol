@@ -40,7 +40,7 @@ library ArenaTestStorage {
 library LibArenaDiamondDeploy {
     using strings for *;
 
-    function defaultSetup(address operator, address master) internal {
+    function defaultSetup(address operator) internal {
         ArenaTestStorage.Layout storage s = ArenaTestStorage.layout();
         s.vm = Vm(HEVM_ADDRESS);
 

@@ -10,10 +10,10 @@ import "lib/solidstate/access/ownable/ModOwnable.sol";
 
 import "lib/contextmixin.sol";
 
-import "lib/interfaces/IArenaTranscript2.sol";
+import "lib/interfaces/IArenaTranscript.sol";
 
-import {LibArena2Storage} from "lib/arena2/storage.sol";
-import {LibTranscript, Transcript2, StartGameArgs} from "lib/libtranscript2.sol";
+import {LibArenaStorage} from "lib/arena/storage.sol";
+import {LibTranscript, Transcript, TranscriptStartArgs} from "lib/libtranscript.sol";
 
 error InsufficientBalance(address addr, uint256 id, uint256 balance);
 
@@ -22,13 +22,13 @@ error ArenaError(uint);
 /// Games are played in an arena. The arena remembers all games that have ever
 /// been played
 contract ArenaFacet is
-    IArenaTranscript2,
+    IArenaTranscript,
     ModOwnable,
     ModPausable,
     ModBalanceOf,
     ContextMixin
 {
-    using LibTranscript for Transcript2;
+    using LibTranscript for Transcript;
 
     constructor() {}
 
@@ -42,40 +42,40 @@ contract ArenaFacet is
     }
 
     /// ---------------------------------------------------
-    /// @dev Transcript2# game setup creation & player signup
+    /// @dev Transcript# game setup creation & player signup
     /// ---------------------------------------------------
 
     /// @notice register a participant (transcript2)
     /// @param profile profile information, not stored on chain but emmited in log of registration
-    function registerParticipant(
+    function registerTrialist(
         uint256 gid,
         bytes calldata profile
     ) public whenNotPaused {
-        LibArena2Storage.Layout storage s = LibArena2Storage.layout();
-        s.games[gid].registerParticipant(_msgSender(), profile);
+        LibArenaStorage.Layout storage s = LibArenaStorage.layout();
+        s.games[gid].register(_msgSender(), profile);
     }
 
-    function startGame2(
+    function startTranscript(
         uint256 gid,
-        StartGameArgs calldata args
+        TranscriptStartArgs calldata args
     ) public whenNotPaused holdsToken(_msgSender(), gid) {
-        LibArena2Storage.Layout storage s = LibArena2Storage.layout();
-        s.games[gid].startGame(args);
+        LibArenaStorage.Layout storage s = LibArenaStorage.layout();
+        s.games[gid].start(args);
     }
 
-    function commitAction(
+    function transcriptEntryCommit(
         uint256 gid,
-        ActionCommitment calldata commitment
+        TranscriptCommitment calldata commitment
     ) public whenNotPaused returns (uint256) {
-        LibArena2Storage.Layout storage s = LibArena2Storage.layout();
-        return s.games[gid].commitAction(_msgSender(), commitment);
+        LibArenaStorage.Layout storage s = LibArenaStorage.layout();
+        return s.games[gid].entryCommit(_msgSender(), commitment);
     }
 
-    function resolveOutcome(
+    function transcriptEntryResolve(
         uint256 gid,
-        OutcomeArgument calldata argument
+        TranscriptOutcome calldata argument
     ) public whenNotPaused {
-        LibArena2Storage.Layout storage s = LibArena2Storage.layout();
-        s.games[gid].resolveOutcome(_msgSender(), argument);
+        LibArenaStorage.Layout storage s = LibArenaStorage.layout();
+        s.games[gid].entryResolve(_msgSender(), argument);
     }
 }

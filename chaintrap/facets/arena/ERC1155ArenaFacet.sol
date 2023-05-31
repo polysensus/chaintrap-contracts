@@ -11,14 +11,14 @@ import "lib/erc1155/storage.sol";
 
 import {LibERC1155Arena} from "lib/erc1155/liberc1155arena.sol";
 
-import {IERC1155Arena2} from "lib/interfaces/IERC1155Arena2.sol";
-import {IGame2Events} from "lib/interfaces/IGame2Events.sol";
-import {LibArena2Storage} from "lib/arena2/storage.sol";
-import {LibTranscript, Transcript2, TranscriptInitArgs} from "lib/libtranscript2.sol";
+import {IERC1155Arena} from "lib/interfaces/IERC1155Arena.sol";
+import {ITranscriptEvents} from "lib/interfaces/ITranscriptEvents.sol";
+import {LibArenaStorage} from "lib/arena/storage.sol";
+import {LibTranscript, Transcript, TranscriptInitArgs} from "lib/libtranscript.sol";
 
 contract ERC1155ArenaFacet is
-    IGame2Events,
-    IERC1155Arena2,
+    ITranscriptEvents,
+    IERC1155Arena,
     SolidStateERC1155,
     ModOwnable,
     ModPausable,
@@ -26,17 +26,17 @@ contract ERC1155ArenaFacet is
 {
     /// All arena actions which mint or transfer tokens are implemented on this
     /// facet.
-    using LibTranscript for Transcript2;
+    using LibTranscript for Transcript;
 
     /// ---------------------------------------------------
     /// @dev game setup creation & player signup
     /// ---------------------------------------------------
 
     /// @notice mint a new game
-    function createGame2(
+    function createGame(
         TranscriptInitArgs calldata initArgs
     ) external whenNotPaused returns (uint256) {
-        LibArena2Storage.Layout storage s = LibArena2Storage.layout();
+        LibArenaStorage.Layout storage s = LibArenaStorage.layout();
 
         uint256 id = TokenID.GAME2_TYPE | uint256(s.lastGameId);
         s.lastGameId++;
@@ -53,8 +53,8 @@ contract ERC1155ArenaFacet is
         return id;
     }
 
-    function lastGame2() external view returns (uint256) {
-        LibArena2Storage.Layout storage s = LibArena2Storage.layout();
+    function lastGame() external view returns (uint256) {
+        LibArenaStorage.Layout storage s = LibArenaStorage.layout();
         return TokenID.GAME2_TYPE | uint256(s.lastGameId);
     }
 

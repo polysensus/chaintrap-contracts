@@ -13,7 +13,7 @@ import {IERC165} from "diamond/interfaces/IERC165.sol";
 // with data from a deployment script. Use the init function to initialize state variables
 // of your diamond. Add parameters to the init funciton if you need to.
 
-import {LibArena2Storage} from "lib/arena2/storage.sol";
+import {LibArenaStorage} from "lib/arena/storage.sol";
 import {ArenaERC1155Storage} from "lib/erc1155/storage.sol";
 import {LibERC1155Arena} from "lib/erc1155/liberc1155arena.sol";
 
@@ -35,6 +35,6 @@ contract DiamondNew {
         ds.supportedInterfaces[type(IERC173).interfaceId] = true;
 
         ArenaERC1155Storage._idempotentInit(args.typeURIs);
-        LibArena2Storage._idempotentInit();
+        LibArenaStorage._idempotentInit();
     }
 }

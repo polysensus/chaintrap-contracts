@@ -4,8 +4,8 @@ pragma solidity =0.8.9;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
-import {GameIsInitialised, InvalidProof} from "lib/libtranscript2.sol";
-import {LibTranscript, Transcript2, TranscriptInitArgs} from "lib/libtranscript2.sol";
+import {Transcript_IsInitialised, Transcript_VerifyFailed} from "lib/libtranscript.sol";
+import {LibTranscript, Transcript, TranscriptInitArgs} from "lib/libtranscript.sol";
 
 import {TranscriptWithFactory, TranscriptInitUtils, Transcript2KnowProofUtils } from "tests/TranscriptUtils.sol";
 
@@ -14,7 +14,7 @@ contract LibGame__init is
     TranscriptInitUtils,
     Transcript2KnowProofUtils,
     DSTest {
-    using LibTranscript  for Transcript2;
+    using LibTranscript  for Transcript;
     using stdStorage for StdStorage;
 
     function test_commitAction() public {
@@ -25,7 +25,7 @@ contract LibGame__init is
         f.pushTranscript();
         f._init(1, address(1), minimalyValidInitArgs());
 
-        vm.expectRevert(GameIsInitialised.selector);
+        vm.expectRevert(Transcript_IsInitialised.selector);
         f._init(1, address(1), minimalyValidInitArgs());
     }
 
@@ -35,7 +35,7 @@ contract LibGame__init is
         vm.expectRevert(stdError.indexOOBError); // array out of bounds
         f._init(1, address(1), TranscriptInitArgs({
             tokenURI: "tokenURI",
-            maxParticipants: 2,
+            registrationLimit: 2,
             rootLabels:new bytes32[](1),
             roots:new bytes32[](2)}
             ));
@@ -46,7 +46,7 @@ contract LibGame__init is
 
         f._init(1, address(1), TranscriptInitArgs({
             tokenURI: "tokenURI",
-            maxParticipants: 1,
+            registrationLimit: 1,
             rootLabels:new bytes32[](2),
             roots:new bytes32[](1)}
             ));
@@ -58,12 +58,12 @@ contract LibGame__init is
         vm.expectEmit(true, true, true, true);
 
         // Should get one emit for each root
-        emit LibTranscript.SetMerkleRoot(1, "", "");
-        emit LibTranscript.SetMerkleRoot(1, "", "");
+        emit LibTranscript.TranscriptMerkleRootSet(1, "", "");
+        emit LibTranscript.TranscriptMerkleRootSet(1, "", "");
 
         f._init(1, address(1), TranscriptInitArgs({
             tokenURI: "tokenURI",
-            maxParticipants: 2,
+            registrationLimit: 2,
             rootLabels:new bytes32[](2),
             roots:new bytes32[](2)}
             ));

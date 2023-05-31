@@ -4,8 +4,8 @@ pragma solidity =0.8.9;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
-import {TranscriptInitArgs} from "lib/libtranscript2.sol";
-import {LibTranscript, StartGameArgs, OutcomeArgument} from "lib/libtranscript2.sol";
+import {TranscriptInitArgs} from "lib/libtranscript.sol";
+import {LibTranscript, TranscriptStartArgs, TranscriptOutcome} from "lib/libtranscript.sol";
 
 import {HEVM_ADDRESS} from "tests/constants.sol";
 import {TranscriptFactory} from "tests/TranscriptFactory.sol";
@@ -27,7 +27,7 @@ contract TranscriptInitUtils {
     function minimalyValidInitArgs() internal pure returns (TranscriptInitArgs memory) {
         return TranscriptInitArgs({
             tokenURI: "tokenURI",
-            maxParticipants: 2,
+            registrationLimit: 2,
             rootLabels:new bytes32[](1),
             roots:new bytes32[](1)}
             );
@@ -39,7 +39,7 @@ contract TranscriptInitUtils {
         roots[0] = root;
         return TranscriptInitArgs({
             tokenURI: "tokenURI",
-            maxParticipants: 2,
+            registrationLimit: 2,
             rootLabels: labels,
             roots: roots}
             );
@@ -86,9 +86,9 @@ contract Transcript2KnowProofUtils {
         kp.proof[4] = hex"8c4e03aa1a345609a3550b6a1d33de710ecd0398f38c992344b78b0b4aaf4ff7";
     }
 
-    function proofID1StartArgs() internal view returns (StartGameArgs memory) {
+    function proofID1StartArgs() internal view returns (TranscriptStartArgs memory) {
 
-        StartGameArgs memory args;
+        TranscriptStartArgs memory args;
         args.choices = new bytes32[][](1);
         args.choices[0] = new bytes32[](1);
         args.choices[0][0] = knownProofs[ProofID1].node;
@@ -97,9 +97,9 @@ contract Transcript2KnowProofUtils {
         return args;
     }
 
-    function proofID1StartArgsNParticipants(uint numParticipants) internal view returns (StartGameArgs memory) {
+    function proofID1StartArgsNParticipants(uint numParticipants) internal view returns (TranscriptStartArgs memory) {
 
-        StartGameArgs memory args;
+        TranscriptStartArgs memory args;
         args.choices = new bytes32[][](numParticipants);
         args.data = new bytes[](numParticipants);
 
@@ -114,8 +114,8 @@ contract Transcript2KnowProofUtils {
 
     function proofID1CommitArgument(
         address participant, LibTranscript.Outcome outcome
-        )  internal view returns (OutcomeArgument memory) {
-        OutcomeArgument memory out;
+        )  internal view returns (TranscriptOutcome memory) {
+        TranscriptOutcome memory out;
         out.participant = participant;
         out.outcome =  outcome;
         out.data = hex"dddd";

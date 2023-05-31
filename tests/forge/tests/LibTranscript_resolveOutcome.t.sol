@@ -5,11 +5,11 @@ import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
 import {TokenID} from "lib/tokenid.sol";
-import {LibTranscript, ActionCommitment, OutcomeArgument, StartGameArgs} from "lib/libtranscript2.sol";
+import {LibTranscript, TranscriptCommitment, TranscriptOutcome, TranscriptStartArgs} from "lib/libtranscript.sol";
 
-import {OutcomePending, InvalidRootLabel, InvalidParticipant} from "lib/libtranscript2.sol";
-import {InvalidTranscript2Entry} from "lib/libtranscript2.sol";
-import {ArgumentInvalidProofFailed, InvalidChoice} from "lib/libtranscript2.sol";
+import {Transcript_OutcomePending, Transcript_InvalidRootLabel, Transcript_NotRegistered} from "lib/libtranscript.sol";
+import {Transcript_InvalidEntry} from "lib/libtranscript.sol";
+import {Transcript_OutcomeVerifyFailed, Transcript_InvalidChoice} from "lib/libtranscript.sol";
 
 import {TranscriptWithFactory, TranscriptInitUtils, Transcript2KnowProofUtils } from "tests/TranscriptUtils.sol";
 import {Transcript2KnowProofUtils, KnownProof } from "tests/TranscriptUtils.sol";
@@ -31,22 +31,21 @@ contract LibTranscript_resolveOutcome is
         uint256 gid = TokenID.GAME2_TYPE | 1;
         f._init(gid, address(1), initArgsWith1Root(keccak256("Chaintrap:MapLinks"), kp.root));
 
-        f.registerParticipant(participant, "participant");
+        f.register(participant, "participant");
 
-        f.startGame2(proofID1StartArgs());
+        f.start(proofID1StartArgs());
 
         // first, ensure there is a valid tid in place for participant address(1)
-        f.commitAction(participant, ActionCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
+        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
 
         // now resolve with valid argument
         vm.expectEmit(true, true, true, true);
-        emit LibTranscript.ArgumentProven(gid, 1, advocate);
-        emit LibTranscript.OutcomeResolved(
-            gid, 1, participant, advocate, keccak256("Chaintrap:MapLinks"),
+        emit LibTranscript.TranscriptEntryOutcome(
+            gid, participant, 1, advocate, keccak256("Chaintrap:MapLinks"),
             LibTranscript.Outcome.Accepted, kp.node, hex"dbdb");
-        f.resolveOutcome(
+        f.entryResolve(
             advocate,
-            OutcomeArgument(
+            TranscriptOutcome(
                 participant, LibTranscript.Outcome.Accepted,
                 hex"dbdb", kp.proof, new bytes32[](0)) 
         );
@@ -64,18 +63,18 @@ contract LibTranscript_resolveOutcome is
         uint256 gid = TokenID.GAME2_TYPE | 1;
         f._init(gid, address(1), initArgsWith1Root(keccak256("Chaintrap:MapLinks"), kp.root));
 
-        f.registerParticipant(participant, "participant");
+        f.register(participant, "participant");
 
-        StartGameArgs memory startArgs = proofID1StartArgs();
+        TranscriptStartArgs memory startArgs = proofID1StartArgs();
 
-        f.startGame2(startArgs);
+        f.start(startArgs);
 
         // first, ensure there is a valid tid in place for participant address(1)
-        f.commitAction(participant, ActionCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
+        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
 
         // now attempt to resolve for the randomWallet
-        vm.expectRevert(InvalidParticipant.selector);
-        f.resolveOutcome(
+        vm.expectRevert(Transcript_NotRegistered.selector);
+        f.entryResolve(
             advocate,
             proofID1CommitArgument(randomWallet, LibTranscript.Outcome.Accepted)
         );
@@ -91,19 +90,19 @@ contract LibTranscript_resolveOutcome is
         uint256 gid = TokenID.GAME2_TYPE | 1;
         f._init(gid, address(1), initArgsWith1Root(keccak256("Chaintrap:MapLinks"), kp.root));
 
-        f.registerParticipant(participant, "participant");
+        f.register(participant, "participant");
 
-        StartGameArgs memory startArgs = proofID1StartArgs();
-        f.startGame2(startArgs);
+        TranscriptStartArgs memory startArgs = proofID1StartArgs();
+        f.start(startArgs);
 
         // first, ensure there is a valid tid in place for participant address(1)
-        f.commitAction(participant, ActionCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
+        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
 
         f.forceTranscriptEntryOutcome(1, LibTranscript.Outcome.Invalid);
 
         // now attempt to resolve for the randomWallet
-        vm.expectRevert(InvalidTranscript2Entry.selector);
-        f.resolveOutcome(
+        vm.expectRevert(Transcript_InvalidEntry.selector);
+        f.entryResolve(
             advocate, proofID1CommitArgument(participant, LibTranscript.Outcome.Accepted)); 
     }
 
@@ -116,14 +115,14 @@ contract LibTranscript_resolveOutcome is
         uint256 gid = TokenID.GAME2_TYPE | 1;
         f._init(gid, address(1), initArgsWith1Root(keccak256("Chaintrap:MapLinks"), kp.root));
 
-        f.registerParticipant(participant, "participant");
+        f.register(participant, "participant");
 
-        StartGameArgs memory startArgs = proofID1StartArgs();
+        TranscriptStartArgs memory startArgs = proofID1StartArgs();
         // default start args use kp.node as the only valid choice
-        f.startGame2(startArgs);
+        f.start(startArgs);
 
-        vm.expectRevert(InvalidChoice.selector);
-        f.commitAction(participant, ActionCommitment(keccak256("Chaintrap:MapLinks"), keccak256("node"), hex"03"));
+        vm.expectRevert(Transcript_InvalidChoice.selector);
+        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), keccak256("node"), hex"03"));
     }
 
     function test_revert_resolveOutcome_invalid_proof() public {
@@ -136,17 +135,17 @@ contract LibTranscript_resolveOutcome is
         uint256 gid = TokenID.GAME2_TYPE | 1;
         f._init(gid, address(1), initArgsWith1Root(keccak256("Chaintrap:MapLinks"), kp.root));
 
-        f.registerParticipant(participant, "participant");
+        f.register(participant, "participant");
 
-        StartGameArgs memory startArgs = proofID1StartArgs();
+        TranscriptStartArgs memory startArgs = proofID1StartArgs();
         // default start args use kp.node as the only valid choice
-        f.startGame2(startArgs);
+        f.start(startArgs);
 
-        f.commitAction(participant, ActionCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
+        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
 
-        OutcomeArgument memory argument = proofID1CommitArgument(participant, LibTranscript.Outcome.Accepted);
+        TranscriptOutcome memory argument = proofID1CommitArgument(participant, LibTranscript.Outcome.Accepted);
         argument.proof[1] = hex"840af2c72ba2afe9962febbc9b5b8f2eb98fcf3c22193be8fa299e5add46b2f6";
-        vm.expectRevert(ArgumentInvalidProofFailed.selector);
-        f.resolveOutcome( advocate, argument);
+        vm.expectRevert(Transcript_OutcomeVerifyFailed.selector);
+        f.entryResolve( advocate, argument);
     }
 }

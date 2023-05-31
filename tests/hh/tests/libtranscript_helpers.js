@@ -1,7 +1,7 @@
 import hre from "hardhat";
 const ethers = hre.ethers;
 
-export async function createGame2(arena, params) {
+export async function createGame(arena, params) {
   const rootLabels = [];
   const roots = [];
   const labeled = {};
@@ -12,9 +12,9 @@ export async function createGame2(arena, params) {
     roots.push(root);
     labeled[label] = { label32, root };
   }
-  let tx = await arena.createGame2({
+  let tx = await arena.createGame({
     tokenURI: params.tokenURI ?? "",
-    maxParticipants: params.maxParticipants ?? 3,
+    registrationLimit: params.registrationLimit ?? 3,
     rootLabels,
     roots,
   });
