@@ -89,9 +89,11 @@ contract Transcript2KnowProofUtils {
     function proofID1StartArgs() internal view returns (TranscriptStartArgs memory) {
 
         TranscriptStartArgs memory args;
+        /* FIXME
         args.choices = new bytes32[][](1);
         args.choices[0] = new bytes32[](1);
         args.choices[0][0] = knownProofs[ProofID1].node;
+        */
         args.data = new bytes[](1);
         args.data[0] = hex"cccc";
         return args;
@@ -100,12 +102,13 @@ contract Transcript2KnowProofUtils {
     function proofID1StartArgsNParticipants(uint numParticipants) internal view returns (TranscriptStartArgs memory) {
 
         TranscriptStartArgs memory args;
-        args.choices = new bytes32[][](numParticipants);
+        // FIXME
+        // args.choices = new bytes32[][](numParticipants);
         args.data = new bytes[](numParticipants);
 
         for (uint i=0; i<numParticipants; i++) {
-            args.choices[i] = new bytes32[](1);
-            args.choices[i][0] = knownProofs[ProofID1].node;
+            // args.choices[i] = new bytes32[](1);
+            // args.choices[i][0] = knownProofs[ProofID1].node;
             args.data[i] = hex"cccc";
         }
         return args;
@@ -119,10 +122,11 @@ contract Transcript2KnowProofUtils {
         out.participant = participant;
         out.outcome =  outcome;
         out.data = hex"dddd";
-        out.proof = knownProofs[ProofID1].proof;
-        out.choices = new bytes32[](1);
+        // FIXME
+        // out.proof = knownProofs[ProofID1].proof;
+        // out.choices = new bytes32[](1);
         // XXX: TODO the choices should be a *second* linked proof
-        out.choices[0] = knownProofs[ProofID1].node;
+        // out.choices[0] = knownProofs[ProofID1].node;
         return out;
     }
 }

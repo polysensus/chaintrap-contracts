@@ -58,8 +58,8 @@ contract TranscriptFactory {
         return LibTranscript.entryCommit(currentGame(), participant, commitment);
     }
 
-    function entryResolve(address advocate, TranscriptOutcome calldata argument) public {
-        LibTranscript.entryResolve(currentGame(), advocate, argument);
+    function entryReveal(address advocate, TranscriptOutcome calldata argument) public {
+        LibTranscript.entryReveal(currentGame(), advocate, argument);
     }
 
     function checkRoot(bytes32[] calldata proof, bytes32 label, bytes32 node) public view returns (bool) {

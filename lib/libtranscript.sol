@@ -4,23 +4,16 @@ pragma solidity =0.8.9;
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 import "lib/interfaces/ITranscriptErrors.sol";
+import {StackProof, ProofLeaf, LibProofStack} from "lib/libproofstack.sol";
 
 /// @dev Transcript records and verifies a series of interactions. Interactions
 /// are verified by having encoded them into merkle tries whose roots are
 /// commited when the transcript is initialised. A registered participant is
-/// offered choices which are nodes on the merkle tries. The available choices
+/// offered choices which are leaves on the merkle tries. The available choices
 /// for a participant is a product their initial state (establised in `start`)
 /// and their previous coices.
 ///  After `start` subsequent choices are provided when a choice is accepted
-/// (and proven) by the transcript creator. This proof only demonstrates that
-/// the choices exist on the trie, it does not demonstrate that the new set of
-/// choices legitemately follow from the committed choice.
-///  The nodes on the trie visible to the contracts are hashes, it is down to
-/// the application whether, when and how to demonstrate that the 'trail' of
-/// choices is legitemate. Typically, this will involve a partial reveal of the
-/// trie pre-image data. That reveal may happen on chain or it may happen off
-/// chain.  If off chain, *absence* of timely demonstration would trigger some
-/// sort of challenge process.
+/// (and proven) by the transcript creator.
 struct Transcript {
     uint256 id;
     address creator;
@@ -47,10 +40,10 @@ struct Transcript {
     /// entry proof before proceding.
     mapping(address => uint256) cursors;
     /// @dev each participant that is not halted (dead or completed) has an
-    /// array of available choices. The first set of choices are established
-    /// when the transcript is started. If there are no choices, the participant
-    /// has halted.
-    mapping(address => bytes32[]) choices;
+    /// array of available choices. They are encoded as ProofLeaf's so there
+    /// existence can be pre-commited before the game starts. The first set of
+    /// choices for a registrant are established when the transcript is started.
+    mapping(address => ProofLeaf) choices;
     /// @dev if registrationLimit is 0, registration for a transcript is unlimited.
     uint256 registrationLimit;
     address[] registered;
@@ -65,10 +58,8 @@ uint256 constant TRANSCRIPT_REGISTRATION_SENTINEL = type(uint256).max;
 /// @dev generic description of a game action. It is a commitment because once
 /// issued, it can not be taken back.
 struct TranscriptCommitment {
-    /// @dev choice nodes are resolved against a merkle root. Typically the
-    /// rootLabel indicates some action, eg "keccak(Chaintrap:MapLinks)" proving
-    /// a map location transition is valid. The transcript creator mustproves
-    /// the outcome using their trie data for the corresponding rootLabel
+    /// @dev choice nodes are resolved against the merkle root identified by
+    /// this label.
     bytes32 rootLabel;
     /// @dev each outcome provides the next valid set of choice nodes.  the
     /// transcript creator must be able to provide an inclusion proof for all
@@ -84,15 +75,16 @@ struct TranscriptOutcome {
     /// @dev identifies the participant the outcome affects.
     address participant;
     LibTranscript.Outcome outcome;
+    /// @dev proof for the node chosen by the participant
+    StackProof[] stack;
+    ProofLeaf[] leaves;
     /// @dev generic data blob which will generaly describe the situation
     /// resulting from the choice proven by the outcome. This data is emitted in
     /// logs but not stored on chain.
     bytes data;
-    /// @dev proof for the node chosen by the participant
-    bytes32[] proof;
     /// @dev the set of choices available to participant for there next
     /// commitment. typically, the data will provide context for these.
-    bytes32[] choices;
+    ProofLeaf choices;
 }
 
 /// @dev TranscriptEntry records the commitment and outcome for each entry in the transcript.
@@ -127,13 +119,19 @@ struct TranscriptInitArgs {
 
 struct TranscriptStartArgs {
     /// @dev choices available to each participant at the start of the game.
+    /// Each entry is a single ProofLeaf which contains the set of exit choices
+    /// available to the registrant at their start location.
+    /// The accompanying data
     /// Note: there is some scope for abuse while this can be set arbitrarily
     /// (eg self participation and setting self next to the exit).  When we do
     /// furniture, tricks and treats these will be subject to some controls.
     /// Also, we have yet to add any notion of randomness.
-    bytes32[][] choices;
+    ProofLeaf[] choices;
     /// @dev data for the particpant starts
     bytes[] data;
+    /// @dev the rootLabel and proofs for each of the choices
+    bytes32 rootLabel;
+    bytes32[][] proofs;
 }
 
 library LibTranscript {
@@ -178,13 +176,6 @@ library LibTranscript {
     /// ---------------------------
     /// @dev individual transcript entries (turns)
 
-    enum Outcome {
-        Invalid,
-        Pending,
-        Rejected,
-        Accepted
-    }
-
     /// @dev the choices that were revealed as a consequence of the *previous*
     /// transcript entry. The eid is 0 when setting the starting choices and
     /// data.
@@ -192,7 +183,7 @@ library LibTranscript {
         uint256 indexed id,
         address indexed participant,
         uint256 eid,
-        bytes32[] choices,
+        ProofLeaf choices,
         bytes data
     );
 
@@ -217,6 +208,13 @@ library LibTranscript {
         bytes32 node,
         bytes data
     );
+
+    enum Outcome {
+        Invalid,
+        Pending,
+        Rejected,
+        Accepted
+    }
 
     /// @dev initialise the transcript
     function _init(
@@ -272,6 +270,14 @@ library LibTranscript {
         self.state = State.Started;
         emit TranscriptStarted(self.id);
         for (uint i = 0; i < self.registered.length; i++) {
+            // require proof that the initial exit choices are committed to an
+            // identified merkle trie.
+            bytes32 merkleLeaf = LibProofStack.directMerkleLeaf(
+                args.choices[i]
+            );
+            if (!self.checkRoot(args.proofs[i], args.rootLabel, merkleLeaf))
+                revert Transcript_InvalidStartChoice();
+
             self._revealChoices(
                 0,
                 self.registered[i],
@@ -294,7 +300,7 @@ library LibTranscript {
         Transcript storage self,
         uint256 eid,
         address participant,
-        bytes32[] calldata choices,
+        ProofLeaf calldata choices,
         bytes calldata data
     ) internal {
         delete self.choices[participant];
@@ -315,11 +321,14 @@ library LibTranscript {
 
         if (self.cursors[participant] == 0) revert Transcript_NotRegistered();
 
-        bytes32[] storage choices = self.choices[participant];
+        // Require that the participant provides a legitemate choice.
+        ProofLeaf storage choices = self.choices[participant];
         uint i = 0;
-        for (; i < choices.length; i++)
-            if (choices[i] == commitment.node) break;
-        if (i == choices.length) revert Transcript_InvalidChoice();
+        for (; i < choices.inputs.length; i++) {
+            bytes32[] storage input = choices.inputs[i];
+            if (input[input.length - 1] == commitment.node) break;
+        }
+        if (i == choices.inputs.length) revert Transcript_InvalidChoice();
 
         // The cursor may not exist yet for the parcipant, or it may exist and
         // it may already be pending or resolved. A participant may not commit a
@@ -365,7 +374,7 @@ library LibTranscript {
         return eid;
     }
 
-    function entryResolve(
+    function entryReveal(
         Transcript storage self,
         address advocate,
         TranscriptOutcome calldata argument
@@ -384,17 +393,32 @@ library LibTranscript {
         ) revert Transcript_InvalidEntry();
 
         if (argument.outcome == LibTranscript.Outcome.Accepted) {
-            if (argument.proof.length == 0)
+            if (argument.stack.length == 0)
                 revert Transcript_OutcomeExpectedProof();
-            if (
-                !LibTranscript.checkRoot(
-                    self,
-                    argument.proof,
-                    cur.rootLabel,
-                    cur.node
-                )
-            ) revert Transcript_OutcomeVerifyFailed();
 
+            (bytes32[] memory proven, bool ok) = LibProofStack.check(
+                argument.stack,
+                argument.leaves,
+                self.roots
+            );
+            if (!ok) revert Transcript_OutcomeVerifyFailed();
+
+            // Check that one of the proven entries matches the participants
+            // commited node AND that the rootLabel was the same for the proof
+            // as for the player commit.  We dont impose any semantics on the
+            // order or placement of the node in the stack, just that it exists
+            // and is labeled correctly.
+            uint256 i = 0;
+            for (; i < proven.length; i++) if (proven[i] == cur.node) break;
+
+            if (
+                i == proven.length ||
+                argument.stack[i].rootLabel != cur.rootLabel
+            ) revert Transcript_OutcomeNotProven();
+
+            // "reveal" the choices. we say reveal, but he act of including them
+            // in the call data has already done that. this just emits the logs
+            // signaling proof completion.
             self._revealChoices(
                 eid,
                 argument.participant,
@@ -406,6 +430,9 @@ library LibTranscript {
                 revert Transcript_OutcomeIllegal();
         }
 
+        // Reaching here allows the participant to progress and dictates what
+        // their next choices are. So we must complete all proofs before doing
+        // this.
         cur.outcome = argument.outcome;
 
         emit TranscriptEntryOutcome(
@@ -422,6 +449,14 @@ library LibTranscript {
 
     /// ---------------------------
     /// @dev proof checking and root maintenance
+
+    function checkProofStack(
+        Transcript storage self,
+        StackProof[] calldata stack,
+        ProofLeaf[] calldata leaves
+    ) internal view returns (bytes32[] memory, bool) {
+        return LibProofStack.check(stack, leaves, self.roots);
+    }
 
     /// @dev checkRoot returns true if the proof for the lableled root is correct
     function checkRoot(

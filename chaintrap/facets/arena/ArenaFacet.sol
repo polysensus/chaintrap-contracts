@@ -76,6 +76,6 @@ contract ArenaFacet is
         TranscriptOutcome calldata argument
     ) public whenNotPaused {
         LibArenaStorage.Layout storage s = LibArenaStorage.layout();
-        s.games[gid].entryResolve(_msgSender(), argument);
+        s.games[gid].entryReveal(_msgSender(), argument);
     }
 }
