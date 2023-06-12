@@ -73,11 +73,11 @@ library LibProofStack {
 
         for (uint i = 0; i < stack.length; i++) {
             bytes32 merkleLeaf = LibProofStack.entryLeafNode(
-                    stack,
-                    leaves,
-                    i,
-                    proven
-                );
+                stack,
+                leaves,
+                i,
+                proven
+            );
             if (
                 !MerkleProof.verifyCalldata(
                     stack[i].proof,
@@ -123,9 +123,12 @@ library LibProofStack {
                 // Note: the value refered to here cannot be a reference. (or if it is it is not resolved to the target value)
 
                 // value indexes the input holding the actual value
-                bytes32[] calldata input = leaves[(uint256(value) >> 128)].inputs[
-                    uint128(uint256(value) & 0xffffffffffffffffffffffffffffffff)
-                ];
+                bytes32[] calldata input = leaves[(uint256(value) >> 128)]
+                    .inputs[
+                        uint128(
+                            uint256(value) & 0xffffffffffffffffffffffffffffffff
+                        )
+                    ];
                 value = input[input.length - 1];
                 if (input.length == 2) {
                     // If it's a choice leaf then there is a path to include
@@ -142,6 +145,13 @@ library LibProofStack {
             // discriminator there is no possiblity of crafting hash collisions.
             leafPreimage = bytes.concat(leafPreimage, value);
         }
-        return keccak256(bytes.concat(keccak256(bytes.concat(abi.encode(leaf.typeId, leafPreimage)))));
+        return
+            keccak256(
+                bytes.concat(
+                    keccak256(
+                        bytes.concat(abi.encode(leaf.typeId, leafPreimage))
+                    )
+                )
+            );
     }
 }
