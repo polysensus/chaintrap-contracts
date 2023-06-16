@@ -82,9 +82,9 @@ struct TranscriptOutcome {
     /// resulting from the choice proven by the outcome. This data is emitted in
     /// logs but not stored on chain.
     bytes data;
-    /// @dev the set of choices available to participant for there next
+    /// @dev the stack position of the set of choices available to participant for there next
     /// commitment. typically, the data will provide context for these.
-    ProofLeaf choices;
+    uint256 choiceLeafIndex;
 }
 
 /// @dev TranscriptEntry records the commitment and outcome for each entry in the transcript.
@@ -416,13 +416,15 @@ library LibTranscript {
                 argument.stack[i].rootLabel != cur.rootLabel
             ) revert Transcript_OutcomeNotProven();
 
+            // TODO: check that proven contains proofs for the choices being revealed
+
             // "reveal" the choices. we say reveal, but he act of including them
             // in the call data has already done that. this just emits the logs
             // signaling proof completion.
             self._revealChoices(
                 eid,
                 argument.participant,
-                argument.choices,
+                argument.leaves[argument.choiceLeafIndex],
                 argument.data
             );
         } else {

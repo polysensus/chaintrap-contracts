@@ -61,7 +61,10 @@ library LibProofStack {
         ProofLeaf calldata leaf
     ) internal pure returns (bytes32) {
         bytes memory leafPreimage = LibProofStack.directPreimage(leaf);
-        return keccak256(bytes.concat(keccak256(leafPreimage)));
+        return
+            keccak256(
+                bytes.concat(keccak256(abi.encode(leaf.typeId, leafPreimage)))
+            );
     }
 
     function check(

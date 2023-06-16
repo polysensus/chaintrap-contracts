@@ -2,6 +2,7 @@
 pragma solidity =0.8.9;
 
 import {LibTranscript} from "lib/libtranscript.sol";
+import {ProofLeaf} from "lib/libproofstack.sol";
 
 interface ITranscriptEvents {
     event TranscriptCreated(
@@ -36,7 +37,7 @@ interface ITranscriptEvents {
         uint256 indexed id,
         address indexed participant,
         uint256 eid,
-        bytes32[] choices,
+        ProofLeaf choices,
         bytes data
     );
 
