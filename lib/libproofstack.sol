@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
+import "hardhat/console.sol";
+
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "lib/interfaces/IProofStackErrors.sol";
 
 struct ProofLeaf {
     uint256 typeId;
@@ -39,31 +42,15 @@ library LibProofStack {
     function directPreimage(
         ProofLeaf calldata leaf
     ) internal pure returns (bytes memory) {
-        bytes memory leafPreimage = bytes.concat();
-        for (uint i = 0; i < leaf.inputs.length; i++) {
-            bytes32[] calldata input = leaf.inputs[i];
-            bytes32 value = input[input.length - 1];
-
-            /// Is it a menu choice value ?
-            if (input.length == 2) {
-                // If it's a choice leaf then there is a path to include If one
-                // entry has length 2, they all should have, but at this level
-                // we don't care.
-                bytes32 path = input[0];
-                value = keccak256(abi.encode(path, value));
-            }
-            leafPreimage = bytes.concat(leafPreimage, value);
-        }
-        return leafPreimage;
+        return abi.encode(leaf.typeId, leaf.inputs);
     }
 
     function directMerkleLeaf(
-        ProofLeaf calldata leaf
+        ProofLeaf calldata leaf /*pure console.log */
     ) internal pure returns (bytes32) {
-        bytes memory leafPreimage = LibProofStack.directPreimage(leaf);
         return
             keccak256(
-                bytes.concat(keccak256(abi.encode(leaf.typeId, leafPreimage)))
+                bytes.concat(keccak256(LibProofStack.directPreimage(leaf)))
             );
     }
 
@@ -81,6 +68,13 @@ library LibProofStack {
                 i,
                 proven
             );
+            console.log("merkleLeaf");
+            console.logBytes32(merkleLeaf);
+            console.log("rootLabel");
+            console.logBytes32(stack[i].rootLabel);
+            console.log("root");
+            console.logBytes32(roots[stack[i].rootLabel]);
+
             if (
                 !MerkleProof.verifyCalldata(
                     stack[i].proof,
@@ -88,6 +82,7 @@ library LibProofStack {
                     merkleLeaf
                 )
             ) return (proven, false);
+            console.log("proven %d", i);
 
             proven[i] = merkleLeaf;
         }
@@ -98,62 +93,109 @@ library LibProofStack {
         StackProof[] calldata stack,
         ProofLeaf[] calldata leaves,
         uint256 i,
-        bytes32[] memory proven
-    ) internal pure returns (bytes32) {
+        bytes32[] memory proven /*pure console.log */
+    ) internal view returns (bytes32) {
+        if (stack[i].inputRefs.length == 0 && stack[i].proofRefs.length == 0)
+            return LibProofStack.directMerkleLeaf(leaves[i]);
+        else
+            return
+                LibProofStack.entryIndirectLeafNode(stack, leaves, i, proven);
+    }
+
+    function entryIndirectLeafNode(
+        StackProof[] calldata stack,
+        ProofLeaf[] calldata leaves,
+        uint256 i,
+        bytes32[] memory proven /*pure console.log */
+    ) internal view returns (bytes32) {
         StackProof calldata item = stack[i];
         ProofLeaf calldata leaf = leaves[i];
-        bytes memory leafPreimage = bytes.concat();
         uint nextProofRef = 0;
         uint nextInputRef = 0;
+
+        // Note: memory expansion and copying from calldata could probably be
+        // avoided with clever encoding. But it shouldn't be that bad for now.
+        // https://ethereum.stackexchange.com/questions/92546/what-is-expansion-cost
+
+        // Remember, in solidity (at the point of allocation only) the 'outer'
+        // dimension is on the right read as (bytes32[])[]  and length applies
+        // to the outermost
+        bytes32[][] memory inputs = new bytes32[][](leaf.inputs.length);
+
         for (uint j = 0; j < leaf.inputs.length; j++) {
-            // The value is always the last element of the specific input. For
-            // reference inputs, the immediave value is used to look up the
-            // refered value.
+            inputs[j] = new bytes32[](leaf.inputs[j].length);
+
+            // The inputs are interpreted like this
+            // imediate input is [value0, ..., valueN]
+            // proofRef input is [elements, stack-position]
+            // inputRef input is [elements, stack-position, input-index]
+            //
+            // There are loads of ways this can be optimised structuraly if we
+            // need too.
+
+            // Always need the last value, no matter if it is a referece or what
+            // kind of reference.  For reference inputs, the immediate value(s)
+            // are used to look up the refered value.
             bytes32 value = leaf.inputs[j][leaf.inputs[j].length - 1];
+
+            console.log("input value");
+            console.logBytes32(value);
 
             // is the next reference the input currently being collected ?
             if (
                 nextProofRef < item.proofRefs.length &&
                 item.proofRefs[nextProofRef] == j
             ) {
+                console.log("PROOF REF ---");
+                if (leaf.inputs[j].length != 1)
+                    revert ProofStack_ProoRefInvalid();
+
                 // It is a back reference to a node proven by a lower stack item.
-                value = proven[uint256(value)];
+                inputs[j][0] = proven[uint256(value)];
+                console.log("pref: inputs 0");
+                console.logBytes32(inputs[j][0]);
+
                 nextProofRef++;
             } else if (
                 nextInputRef < item.inputRefs.length &&
                 item.inputRefs[nextInputRef] == j
             ) {
+                console.log("INPUT REF ---");
                 // Note: the value refered to here cannot be a reference. (or if it is it is not resolved to the target value)
 
-                // value indexes the input holding the actual value
-                bytes32[] calldata input = leaves[(uint256(value) >> 128)]
-                    .inputs[
-                        uint128(
-                            uint256(value) & 0xffffffffffffffffffffffffffffffff
-                        )
-                    ];
-                value = input[input.length - 1];
-                if (input.length == 2) {
-                    // If it's a choice leaf then there is a path to include
-                    bytes32 path = input[0];
-                    value = keccak256(abi.encode(path, value));
+                // It is an input ref there must be *at least* two values, the stack position and the input index.
+
+                if (leaf.inputs[j].length < 2)
+                    revert ProofStack_InputRefToShort();
+
+                uint stackPos = uint(leaf.inputs[j][leaf.inputs[j].length - 2]);
+                bytes32[] calldata referedInput = leaves[stackPos].inputs[
+                    uint(value)
+                ];
+                inputs[j] = new bytes32[](referedInput.length);
+                for (uint k = 0; k < referedInput.length; k++) {
+                    inputs[j][k] = referedInput[k];
+                    console.log("iref: inputs k");
+                    console.logBytes32(inputs[j][k]);
                 }
                 nextInputRef++;
+            } else {
+                for (uint k = 0; k < leaf.inputs[j].length; k++) {
+                    inputs[j][k] = leaf.inputs[j][k];
+                    console.log("noref: inputs k");
+                    console.logBytes32(inputs[j][k]);
+                }
             }
             // else the value is not a reference and it needs no further
             // resolution.
-
-            // Note: Because we are always catenating fixed 32 byte chunks. and
-            // because the final payload is perfixed with an ordinal type
-            // discriminator there is no possiblity of crafting hash collisions.
-            leafPreimage = bytes.concat(leafPreimage, value);
         }
+        bytes memory encoded = abi.encode(leaf.typeId, inputs);
+        console.log("encoded");
+        console.logBytes(encoded);
         return
             keccak256(
                 bytes.concat(
-                    keccak256(
-                        bytes.concat(abi.encode(leaf.typeId, leafPreimage))
-                    )
+                    keccak256(bytes.concat(abi.encode(leaf.typeId, inputs)))
                 )
             );
     }

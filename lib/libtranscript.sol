@@ -3,6 +3,7 @@ pragma solidity =0.8.9;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
+import "hardhat/console.sol";
 import "lib/interfaces/ITranscriptErrors.sol";
 import {StackProof, ProofLeaf, LibProofStack} from "lib/libproofstack.sol";
 
@@ -275,6 +276,9 @@ library LibTranscript {
             bytes32 merkleLeaf = LibProofStack.directMerkleLeaf(
                 args.choices[i]
             );
+            console.log("merkleLeaf");
+            console.logBytes32(merkleLeaf);
+
             if (!self.checkRoot(args.proofs[i], args.rootLabel, merkleLeaf))
                 revert Transcript_InvalidStartChoice();
 
@@ -322,6 +326,8 @@ library LibTranscript {
         if (self.cursors[participant] == 0) revert Transcript_NotRegistered();
 
         // Require that the participant provides a legitemate choice.
+        // XXX: TODO it turns out if we want generic inputs, we need to identify
+        // which choices are menu inputs and which are other things
         ProofLeaf storage choices = self.choices[participant];
         uint i = 0;
         for (; i < choices.inputs.length; i++) {
@@ -363,6 +369,9 @@ library LibTranscript {
         // Set the registered cursor to the  registered pending entry.
         self.cursors[participant] = eid;
 
+        console.log("comment eid for %s", participant);
+        console.logUint(uint(eid));
+
         emit TranscriptEntryCommitted(
             self.id,
             participant,
@@ -386,11 +395,18 @@ library LibTranscript {
         if (eid == 0) revert Transcript_NotRegistered();
 
         TranscriptEntry storage cur = self.transcript[eid];
+        console.log("comment eid for %s", argument.participant);
+        console.logUint(uint(eid));
 
-        if (
-            cur.node == bytes32(0) ||
-            cur.outcome != LibTranscript.Outcome.Pending
-        ) revert Transcript_InvalidEntry();
+        console.log("outcome");
+        console.logUint(uint(cur.outcome));
+        console.log("cur.rootLabel");
+        console.logBytes32(cur.rootLabel);
+        console.log("stack[0].rootLabel");
+        console.logBytes32(argument.stack[0].rootLabel);
+
+        if (cur.outcome != LibTranscript.Outcome.Pending)
+            revert Transcript_InvalidEntry();
 
         if (argument.outcome == LibTranscript.Outcome.Accepted) {
             if (argument.stack.length == 0)
@@ -405,11 +421,15 @@ library LibTranscript {
 
             // Check that one of the proven entries matches the participants
             // commited node AND that the rootLabel was the same for the proof
-            // as for the player commit.  We dont impose any semantics on the
-            // order or placement of the node in the stack, just that it exists
-            // and is labeled correctly.
+            // as for the player commit.  For now, we dont impose any semantics
+            // on the order or placement of the node in the stack, just that it
+            // exists and is labeled correctly.
             uint256 i = 0;
             for (; i < proven.length; i++) if (proven[i] == cur.node) break;
+            console.log("cur.node");
+            console.logBytes32(cur.node);
+            console.log("proven[0]");
+            console.logBytes32(proven[0]);
 
             if (
                 i == proven.length ||
