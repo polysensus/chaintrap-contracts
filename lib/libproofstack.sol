@@ -187,11 +187,18 @@ library LibProofStack {
                 bytes32[] calldata referedInput = leaves[stackPos].inputs[
                     uint(value)
                 ];
-                inputs[j] = new bytes32[](referedInput.length);
+
+                // allocate space for target leaf hash + refered inputs
+                inputs[j] = new bytes32[](referedInput.length + 1);
+
+                inputs[j][0] = proven[stackPos];
+                console.log("iref: target hash");
+                console.logBytes32(inputs[j][0]);
+
                 for (uint k = 0; k < referedInput.length; k++) {
-                    inputs[j][k] = referedInput[k];
-                    console.log("iref: inputs k");
-                    console.logBytes32(inputs[j][k]);
+                    inputs[j][k + 1] = referedInput[k];
+                    console.log("iref: inputs %d", k + 1);
+                    console.logBytes32(inputs[j][k + 1]);
                 }
                 nextInputRef++;
             } else {
