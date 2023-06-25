@@ -45,9 +45,24 @@ library LibProofStack {
         return abi.encode(leaf.typeId, leaf.inputs);
     }
 
+    function directPreimage(
+        ProofLeaf storage leaf
+    ) internal view returns (bytes memory) {
+        return abi.encode(leaf.typeId, leaf.inputs);
+    }
+
     function directMerkleLeaf(
-        ProofLeaf calldata leaf /*pure console.log */
+        ProofLeaf calldata leaf
     ) internal pure returns (bytes32) {
+        return
+            keccak256(
+                bytes.concat(keccak256(LibProofStack.directPreimage(leaf)))
+            );
+    }
+
+    function directMerkleLeaf(
+        ProofLeaf storage leaf
+    ) internal view returns (bytes32) {
         return
             keccak256(
                 bytes.concat(keccak256(LibProofStack.directPreimage(leaf)))

@@ -36,13 +36,19 @@ contract LibTranscript_resolveOutcome is
         f.start(proofID1StartArgs());
 
         // first, ensure there is a valid tid in place for participant address(1)
-        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
+        bytes32[] memory input = new bytes32[](2);
+        input[0] = bytes32(uint256(0));
+        input[1] = bytes32(uint256(3));
+
+        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), input, hex"03"));
 
         // now resolve with valid argument
         vm.expectEmit(true, true, true, true);
+
+
         emit LibTranscript.TranscriptEntryOutcome(
             gid, participant, 1, advocate, keccak256("Chaintrap:MapLinks"),
-            LibTranscript.Outcome.Accepted, kp.node, hex"dbdb");
+            LibTranscript.Outcome.Accepted, hex"dbdb");
         // FIXME
         /*
         f.entryReveal(
@@ -71,8 +77,12 @@ contract LibTranscript_resolveOutcome is
 
         f.start(startArgs);
 
+        bytes32[] memory input = new bytes32[](2);
+        input[0] = bytes32(uint256(0));
+        input[1] = bytes32(uint256(3));
+
         // first, ensure there is a valid tid in place for participant address(1)
-        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
+        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), input, hex"03"));
 
         // now attempt to resolve for the randomWallet
         vm.expectRevert(Transcript_NotRegistered.selector);
@@ -97,8 +107,12 @@ contract LibTranscript_resolveOutcome is
         TranscriptStartArgs memory startArgs = proofID1StartArgs();
         f.start(startArgs);
 
+        bytes32[] memory input = new bytes32[](2);
+        input[0] = bytes32(uint256(0));
+        input[1] = bytes32(uint256(3));
+
         // first, ensure there is a valid tid in place for participant address(1)
-        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
+        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), input, hex"03"));
 
         f.forceTranscriptEntryOutcome(1, LibTranscript.Outcome.Invalid);
 
@@ -124,7 +138,12 @@ contract LibTranscript_resolveOutcome is
         f.start(startArgs);
 
         vm.expectRevert(Transcript_InvalidChoice.selector);
-        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), keccak256("node"), hex"03"));
+
+        bytes32[] memory input = new bytes32[](2);
+        input[0] = bytes32(uint256(0));
+        input[1] = bytes32(uint256(3));
+
+        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), input, hex"03"));
     }
 
     function test_revert_resolveOutcome_invalid_proof() public {
@@ -143,7 +162,11 @@ contract LibTranscript_resolveOutcome is
         // default start args use kp.node as the only valid choice
         f.start(startArgs);
 
-        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
+        bytes32[] memory input = new bytes32[](2);
+        input[0] = bytes32(uint256(0));
+        input[1] = bytes32(uint256(3));
+
+        f.entryCommit(participant, TranscriptCommitment(keccak256("Chaintrap:MapLinks"), input, hex"03"));
 
         TranscriptOutcome memory argument = proofID1CommitArgument(participant, LibTranscript.Outcome.Accepted);
         // FIXME

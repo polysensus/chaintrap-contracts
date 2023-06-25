@@ -33,7 +33,12 @@ contract LibGame_commitAction is
         f.forceGameState(LibTranscript.State.Started);
 
         vm.expectRevert(Transcript_NotRegistered.selector);
-        f.entryCommit(address(1), TranscriptCommitment(keccak256("Chaintrap:MapLinks"), keccak256("node"), hex"03"));
+
+        bytes32[] memory input = new bytes32[](2);
+        input[0] = bytes32(uint256(0));
+        input[1] = bytes32(uint256(3));
+
+        f.entryCommit(address(1), TranscriptCommitment(keccak256("Chaintrap:MapLinks"), input, hex"03"));
     }
 
     /** @dev test we get a revert if an attempt is made to commit a new action
@@ -54,16 +59,25 @@ contract LibGame_commitAction is
         f.start(args);
 
         vm.expectEmit(true, true, true, true);
-        emit LibTranscript.TranscriptEntryCommitted(gid, address(1), 1, keccak256("Chaintrap:MapLinks"), kp.node, hex"03");
-        f.entryCommit(address(1), TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"03"));
+
+        bytes32[] memory input03 = new bytes32[](2);
+        input03[0] = bytes32(uint256(0));
+        input03[1] = bytes32(uint256(3));
+
+        bytes32[] memory input05 = new bytes32[](2);
+        input05[0] = bytes32(uint256(0));
+        input05[1] = bytes32(uint256(3));
+
+        emit LibTranscript.TranscriptEntryCommitted(gid, address(1), 1, keccak256("Chaintrap:MapLinks"), 0, hex"03");
+        f.entryCommit(address(1), TranscriptCommitment(keccak256("Chaintrap:MapLinks"), input03, hex"03"));
 
         vm.expectRevert(Transcript_OutcomePending.selector);
-        f.entryCommit(address(1), TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"05"));
+        f.entryCommit(address(1), TranscriptCommitment(keccak256("Chaintrap:MapLinks"), input05, hex"05"));
 
         // But it is fine for a different participant (note the tid advances)
         vm.expectEmit(true, true, true, true);
-        emit LibTranscript.TranscriptEntryCommitted(gid, address(2), 2, keccak256("Chaintrap:MapLinks"), kp.node, hex"05");
-        f.entryCommit(address(2), TranscriptCommitment(keccak256("Chaintrap:MapLinks"), kp.node, hex"05"));
+        emit LibTranscript.TranscriptEntryCommitted(gid, address(2), 2, keccak256("Chaintrap:MapLinks"), 0, hex"05");
+        f.entryCommit(address(2), TranscriptCommitment(keccak256("Chaintrap:MapLinks"), input05, hex"05"));
     }
 
     function test_revertIfRootLabelBad() public {
@@ -76,6 +90,11 @@ contract LibGame_commitAction is
         f.forceGameState(LibTranscript.State.Started);
 
         vm.expectRevert(Transcript_InvalidRootLabel.selector);
-        f.entryCommit(address(1), TranscriptCommitment(keccak256("Gibberish"), keccak256("node"), hex"03"));
+
+        bytes32[] memory input03 = new bytes32[](2);
+        input03[0] = bytes32(uint256(0));
+        input03[1] = bytes32(uint256(3));
+
+        f.entryCommit(address(1), TranscriptCommitment(keccak256("Gibberish"), input03, hex"03"));
     }
 }

@@ -62,10 +62,10 @@ struct TranscriptCommitment {
     /// @dev choice nodes are resolved against the merkle root identified by
     /// this label.
     bytes32 rootLabel;
-    /// @dev each outcome provides the next valid set of choice nodes.  the
-    /// transcript creator must be able to provide an inclusion proof for all
-    /// choice nodes it supplies.
-    bytes32 node;
+    /// @dev each outcome (and the start) provides the next valid set of choices
+    /// encoded as ProofLeaf with type and inputs (menu items essentially).  The
+    /// player commits by chosing one of those inputs.
+    bytes32[] input;
     /// @dev arbitrary application data blob, may be empty. It is emitted in logs but not stored.
     bytes data;
 }
@@ -97,10 +97,8 @@ struct TranscriptEntry {
     /// automation.
     address advocate;
     bytes32 rootLabel;
-    /// @dev choice node is selected by the participant. The creator (or
-    /// advocate automation) must supply an inclusion proof to accept the
-    /// choice.
-    bytes32 node;
+    /// @dev the index of the choice input the participant selected
+    uint256 chosenInput;
     LibTranscript.Outcome outcome;
 }
 
@@ -194,7 +192,7 @@ library LibTranscript {
         address indexed participant,
         uint256 eid,
         bytes32 rootLabel,
-        bytes32 node,
+        uint256 inputChoice,
         bytes data
     );
 
@@ -206,7 +204,6 @@ library LibTranscript {
         address advocate,
         bytes32 rootLabel,
         Outcome outcome,
-        bytes32 node,
         bytes data
     );
 
@@ -309,6 +306,11 @@ library LibTranscript {
     ) internal {
         delete self.choices[participant];
         self.choices[participant] = choices;
+        console.log(
+            "choices revealed ---- %d %d",
+            choices.typeId,
+            choices.inputs.length
+        );
         emit TranscriptEntryChoices(self.id, participant, eid, choices, data);
     }
 
@@ -326,13 +328,19 @@ library LibTranscript {
         if (self.cursors[participant] == 0) revert Transcript_NotRegistered();
 
         // Require that the participant provides a legitemate choice.
-        // XXX: TODO it turns out if we want generic inputs, we need to identify
-        // which choices are menu inputs and which are other things
         ProofLeaf storage choices = self.choices[participant];
         uint i = 0;
         for (; i < choices.inputs.length; i++) {
             bytes32[] storage input = choices.inputs[i];
-            if (input[input.length - 1] == commitment.node) break;
+            if (input.length != commitment.input.length) continue;
+
+            // Don't allow empty matches.
+            if (input.length == 0) continue;
+
+            uint matched = 0;
+            for (uint j = 0; j < input.length; j++)
+                if (input[j] == commitment.input[j]) matched += 1;
+            if (matched == input.length) break;
         }
         if (i == choices.inputs.length) revert Transcript_InvalidChoice();
 
@@ -363,7 +371,7 @@ library LibTranscript {
 
         nextEntry.participant = participant;
         nextEntry.rootLabel = commitment.rootLabel;
-        nextEntry.node = commitment.node;
+        nextEntry.chosenInput = i;
         nextEntry.outcome = Outcome.Pending;
 
         // Set the registered cursor to the  registered pending entry.
@@ -377,7 +385,7 @@ library LibTranscript {
             participant,
             eid,
             commitment.rootLabel,
-            commitment.node,
+            i, // nextEntry.chosenInput
             commitment.data
         );
         return eid;
@@ -423,11 +431,15 @@ library LibTranscript {
             // commited node AND that the rootLabel was the same for the proof
             // as for the player commit.  For now, we dont impose any semantics
             // on the order or placement of the node in the stack, just that it
-            // exists and is labeled correctly.
+            // exists and is labeled correctly - this is insufficient, but more
+            // to follow.
             uint256 i = 0;
-            for (; i < proven.length; i++) if (proven[i] == cur.node) break;
+            bytes32 choiceLeaf = LibProofStack.directMerkleLeaf(
+                self.choices[argument.participant]
+            );
+            for (; i < proven.length; i++) if (proven[i] == choiceLeaf) break;
             console.log("cur.node");
-            console.logBytes32(cur.node);
+            console.logBytes32(choiceLeaf);
             console.log("proven[0]");
             console.logBytes32(proven[0]);
 
@@ -464,7 +476,6 @@ library LibTranscript {
             advocate,
             cur.rootLabel,
             cur.outcome,
-            cur.node,
             argument.data
         );
     }

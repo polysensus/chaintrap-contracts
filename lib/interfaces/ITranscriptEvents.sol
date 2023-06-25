@@ -47,15 +47,13 @@ interface ITranscriptEvents {
     /// @param participant a game participant, any player or the game host.
     /// @param rootLabel the label idenfitying the root for the outcome proof.
     ///  typically this indicates a game action.
-    /// @param node one of the move nodes, provided in the scene presented to
-    /// the player by the guardian. In resolving the move, the guardian must
-    /// provide a proof of inclusion in the trie identified by rootLabel
+    /// @param inputChoice the input selected from the choices available to the participant
     event TranscriptEntryCommitted(
         uint256 indexed id,
         address indexed participant,
         uint256 eid,
         bytes32 rootLabel,
-        bytes32 node,
+        uint256 inputChoice,
         bytes data
     );
 
@@ -67,7 +65,6 @@ interface ITranscriptEvents {
         address advocate,
         bytes32 rootLabel,
         LibTranscript.Outcome outcome,
-        bytes32 node,
         bytes data
     );
 }
