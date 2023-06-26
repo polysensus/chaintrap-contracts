@@ -1,7 +1,7 @@
 
 pragma solidity =0.8.9;
 
-import {LibProofStack, StackProof, ProofLeaf } from "lib/libproofstack.sol";
+import {LibProofStack, StackProof, ProofLeaf, ChoiceProof } from "lib/libproofstack.sol";
 
 contract LibProofStackFacade {
     mapping(bytes32 => bytes32) roots;
@@ -15,9 +15,8 @@ contract LibProofStackFacade {
     }
 
     function check(
-        StackProof[] calldata stack,
-        ProofLeaf[] calldata leaves
+        ChoiceProof calldata proof
         ) public view returns (bytes32[] memory, bool) {
-        return LibProofStack.check(stack, leaves, roots);
+        return LibProofStack.check(proof, roots);
     }
 }

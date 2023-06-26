@@ -5,7 +5,7 @@ import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProo
 
 import "hardhat/console.sol";
 import "lib/interfaces/ITranscriptErrors.sol";
-import {StackProof, ProofLeaf, LibProofStack} from "lib/libproofstack.sol";
+import {StackProof, ProofLeaf, LibProofStack, ChoiceProof} from "lib/libproofstack.sol";
 
 /// @dev Transcript records and verifies a series of interactions. Interactions
 /// are verified by having encoded them into merkle tries whose roots are
@@ -56,6 +56,11 @@ struct Transcript {
 /// have this value.
 uint256 constant TRANSCRIPT_REGISTRATION_SENTINEL = type(uint256).max;
 
+// TODO: make the CHOICE_SET and TRANSITION_TYPE's part of the start game setup
+// in the interests of generality.
+uint256 constant CHOICE_SET_TYPE_LOCATION = 9; // LocationChoices
+uint256 constant TRANSITION_TYPE_LOCATION_LINK = 8; // Link2
+
 /// @dev generic description of a game action. It is a commitment because once
 /// issued, it can not be taken back.
 struct TranscriptCommitment {
@@ -77,8 +82,7 @@ struct TranscriptOutcome {
     address participant;
     LibTranscript.Outcome outcome;
     /// @dev proof for the node chosen by the participant
-    StackProof[] stack;
-    ProofLeaf[] leaves;
+    ChoiceProof proof;
     /// @dev generic data blob which will generaly describe the situation
     /// resulting from the choice proven by the outcome. This data is emitted in
     /// logs but not stored on chain.
@@ -411,18 +415,17 @@ library LibTranscript {
         console.log("cur.rootLabel");
         console.logBytes32(cur.rootLabel);
         console.log("stack[0].rootLabel");
-        console.logBytes32(argument.stack[0].rootLabel);
+        console.logBytes32(argument.proof.stack[0].rootLabel);
 
         if (cur.outcome != LibTranscript.Outcome.Pending)
             revert Transcript_InvalidEntry();
 
         if (argument.outcome == LibTranscript.Outcome.Accepted) {
-            if (argument.stack.length == 0)
+            if (argument.proof.stack.length == 0)
                 revert Transcript_OutcomeExpectedProof();
 
             (bytes32[] memory proven, bool ok) = LibProofStack.check(
-                argument.stack,
-                argument.leaves,
+                argument.proof,
                 self.roots
             );
             if (!ok) revert Transcript_OutcomeVerifyFailed();
@@ -445,7 +448,7 @@ library LibTranscript {
 
             if (
                 i == proven.length ||
-                argument.stack[i].rootLabel != cur.rootLabel
+                argument.proof.stack[i].rootLabel != cur.rootLabel
             ) revert Transcript_OutcomeNotProven();
 
             // TODO: check that proven contains proofs for the choices being revealed
@@ -456,7 +459,7 @@ library LibTranscript {
             self._revealChoices(
                 eid,
                 argument.participant,
-                argument.leaves[argument.choiceLeafIndex],
+                argument.proof.leaves[argument.choiceLeafIndex], // XXX: reconsider this in light of enforced stack layout
                 argument.data
             );
         } else {
@@ -485,10 +488,9 @@ library LibTranscript {
 
     function checkProofStack(
         Transcript storage self,
-        StackProof[] calldata stack,
-        ProofLeaf[] calldata leaves
+        ChoiceProof calldata proof
     ) internal view returns (bytes32[] memory, bool) {
-        return LibProofStack.check(stack, leaves, self.roots);
+        return LibProofStack.check(proof, self.roots);
     }
 
     /// @dev checkRoot returns true if the proof for the lableled root is correct
