@@ -5,7 +5,7 @@ import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProo
 
 import "hardhat/console.sol";
 import "lib/interfaces/ITranscriptErrors.sol";
-import {StackProof, ProofLeaf, LibProofStack, ChoiceProof} from "lib/libproofstack.sol";
+import {StackProof, ProofLeaf, LibProofStack, ChoiceProof, StackState} from "lib/libproofstack.sol";
 
 /// @dev Transcript records and verifies a series of interactions. Interactions
 /// are verified by having encoded them into merkle tries whose roots are
@@ -424,7 +424,7 @@ library LibTranscript {
             if (argument.proof.stack.length == 0)
                 revert Transcript_OutcomeExpectedProof();
 
-            (bytes32[] memory proven, bool ok) = LibProofStack.check(
+            (StackState memory state, bool ok) = LibProofStack.check(
                 argument.proof,
                 self.roots
             );
@@ -440,14 +440,18 @@ library LibTranscript {
             bytes32 choiceLeaf = LibProofStack.directMerkleLeaf(
                 self.choices[argument.participant]
             );
-            for (; i < proven.length; i++) if (proven[i] == choiceLeaf) break;
-            console.log("cur.node");
-            console.logBytes32(choiceLeaf);
-            console.log("proven[0]");
-            console.logBytes32(proven[0]);
+
+            // The choice / consenquent stack semantics require that the first
+            // proof is a choice set. Here we require that it is also the choice
+            // set that was available to the participant.
+            console.log(
+                "proven[0] %d = %d ?",
+                uint256(state.proven[0]),
+                uint256(choiceLeaf)
+            );
 
             if (
-                i == proven.length ||
+                state.proven[0] != choiceLeaf ||
                 argument.proof.stack[i].rootLabel != cur.rootLabel
             ) revert Transcript_OutcomeNotProven();
 
@@ -490,7 +494,11 @@ library LibTranscript {
         Transcript storage self,
         ChoiceProof calldata proof
     ) internal view returns (bytes32[] memory, bool) {
-        return LibProofStack.check(proof, self.roots);
+        (StackState memory state, bool ok) = LibProofStack.check(
+            proof,
+            self.roots
+        );
+        return (state.proven, ok);
     }
 
     /// @dev checkRoot returns true if the proof for the lableled root is correct
