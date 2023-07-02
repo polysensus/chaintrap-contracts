@@ -4,8 +4,8 @@ pragma solidity =0.8.9;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
-import {GameIsInitialised, InvalidProof} from "lib/libtranscript2.sol";
-import {LibTranscript, Transcript2, TranscriptInitArgs} from "lib/libtranscript2.sol";
+import {Transcript_IsInitialised, Transcript_VerifyFailed} from "lib/libtranscript.sol";
+import {LibTranscript, Transcript, TranscriptInitArgs} from "lib/libtranscript.sol";
 
 import {TranscriptWithFactory, TranscriptInitUtils } from "tests/TranscriptUtils.sol";
 
@@ -13,7 +13,7 @@ contract LibGame_checkRoot is
     TranscriptWithFactory,
     TranscriptInitUtils,
     DSTest {
-    using LibTranscript  for Transcript2;
+    using LibTranscript  for Transcript;
     using stdStorage for StdStorage;
 
     function test_checkRoot() public {
@@ -46,8 +46,9 @@ contract LibGame_checkRoot is
         bytes32[] memory roots = new bytes32[](1);
         rootLabels[0]=hex"aaaa";
         roots[0] = root;
-        f._init(1, TranscriptInitArgs({
+        f._init(1, address(1), TranscriptInitArgs({
             tokenURI: "tokenURI",
+            registrationLimit: 1,
             rootLabels:rootLabels,
             roots:roots}
             ));

@@ -30,20 +30,15 @@ jobs:
           sh -c "$(curl --location https://taskfile.dev/install.sh)" -- \
             -d -b $GITHUB_WORKSPACE/bin
           echo $GITHUB_WORKSPACE/bin >> $GITHUB_PATH
-
-      - name: Install contract dependencies and hh test deps
+      - name: install packages
         working-directory: chaintrap-contracts
         run: |
-          # ensure we are using the latest packaged source, going forward we
-          # want the ci builds to depend only on published packages. for
-          # diamond-deploy we do want to force the latest for now.
-          npm uninstall --save "@polysensus/diamond-deploy"
-          npm install @polysensus/diamond-deploy@latest --save-dev
           npm install
-
       - name: build 
         working-directory: chaintrap-contracts
-        run: task build
+        run: |
+          mkdir -p .local/out-tsc
+          task build
 
       - name: Run forge tests
         working-directory: chaintrap-contracts
@@ -62,9 +57,7 @@ jobs:
         #          startsWith(github.event.head_commit.message, 're-release:') ||
         #          startsWith(github.event.head_commit.message, 'fix:') }}
         run: |
-          echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > ~/.npmrc
-
-          tree dist abi
+          npm config list
 
           # github has scale issues when there are a large (> 20 ) npm packages in
           # a repo, so force for fixes seems like the right thing for now.
@@ -73,18 +66,3 @@ jobs:
             export FORCE=--force
           fi
           npm publish $FORCE
-
-      - name: package cleanup
-        # note this hasn't been tested yet
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: actions/delete-package-versions@v4
-        if: contains(github.ref, 'refs/tags/') && github.event_name == 'push'
-        # if: ${{ startsWith(github.event.head_commit.message, 'release:v') ||
-        #           startsWith(github.event.head_commit.message, 're-release:') ||
-        #           startsWith(github.event.head_commit.message, 'fix:') }}
-        with:
-          package-name: "chaintrap-contracts"
-          package-type: "npm"
-          min-versions-to-keep: 5
-

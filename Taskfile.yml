@@ -66,8 +66,6 @@ tasks:
         cp build/forge/out/Diamond.sol/Diamond.json abi/
         cp build/forge/out/DiamondNew.sol/DiamondNew.json abi/
         for d in $(ls -d build/forge/out/*Facet.sol); do cp $d/*Facet.json abi/; done
-        cp build/forge/out/IERC1155Arena.sol/IERC1155Arena.json abi
-        for d in $(ls -d build/forge/out/IArena*.sol); do cp $d/IArena*.json abi/; done
       
   build:types:
     desc: "generate typescript types using typechain"
@@ -87,7 +85,8 @@ tasks:
       that.
     cmds:
       - |
-        npx diamond-deploy list \
+        node node_modules/.bin/diamond-deploy \
+          list \
           -I facet -i build/forge/out \
           --collisions-only --format json \
           | jq -r '[ .[] | select(.name=="ERC1155ArenaFacet") ]' \
@@ -98,7 +97,8 @@ tasks:
     desc: generate the deployable list of facets
     cmds:
       - |
-        npx diamond-deploy list \
+        node node_modules/.bin/diamond-deploy \
+          list \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
           --exclude {{.FACETS_EXCLUDE}} \
@@ -113,7 +113,7 @@ tasks:
   test:forge:
     desc: run the forge tests
     cmds:
-      - forge test -vvv --ffi
+      - forge test -vvv --ffi {{.CLI_ARGS}}
 
   test:hh:
     desc: run the hardhat tests
@@ -166,7 +166,8 @@ tasks:
     desc: show the json formatted list of diamond facet collisions
     cmds:
       - |
-        npx diamond-deploy list \
+        node node_modules/.bin/diamond-deploy \
+          list \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
           --exclude {{.FACETS_EXCLUDE}} \
@@ -178,7 +179,8 @@ tasks:
     desc: generate the deployable list of facets
     cmds:
       - |
-        npx diamond-deploy list \
+        node node_modules/.bin/diamond-deploy \
+          list \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
           --exclude {{.FACETS_EXCLUDE}} \
@@ -188,7 +190,8 @@ tasks:
     desc: generate the deployable list of facets
     cmds:
       - |
-        npx diamond-deploy list \
+        node node_modules/.bin/diamond-deploy \
+          list \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
           --exclude {{.FACETS_EXCLUDE}} \

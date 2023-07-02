@@ -5,7 +5,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { deployArenaFixture } from "./deploy.js";
 import { createArenaProxy } from "./arenaproxy.js";
 
-import { createGame2 } from "./libtranscript_helpers.js";
+import { createGame } from "./libtranscript_helpers.js";
 
 describe("LibTranscript_registerParticipant", async function () {
   let proxy;
@@ -16,8 +16,9 @@ describe("LibTranscript_registerParticipant", async function () {
     [proxy, owner] = await loadFixture(deployArenaFixture);
 
     const arena = createArenaProxy(proxy, owner);
-    let { r } = await createGame2(arena, {
+    let { r } = await createGame(arena, {
       tokenURI: "",
+      registrationLimit: 2,
       roots: {
         a_root_label:
           "0x141d529a677497c1e718dcaea00c5ee952720942c8a43e9fda2c38ab24cfb562",
@@ -29,7 +30,7 @@ describe("LibTranscript_registerParticipant", async function () {
     const gid = r.events?.[0]?.args?.id;
     expect(gid?.and(1)).to.equal(ethers.BigNumber.from(1));
 
-    const tx = await arena.registerParticipant(
+    const tx = await arena.registerTrialist(
       gid,
       ethers.utils.toUtf8Bytes("player one")
     );

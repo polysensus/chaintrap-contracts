@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
+
+import {IERC1155BaseInternal} from "@solidstate/contracts/token/ERC1155/base/IERC1155BaseInternal.sol";
+import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseStorage.sol";
+
 import "lib/erc1155/storage.sol";
 import "lib/tokenid.sol";
-import "lib/gameid.sol";
 
 error TokenNotBoundBy(uint256, uint256);
 
@@ -18,12 +21,6 @@ library LibERC1155Arena {
 
     ///
     /// @dev minting methods
-
-    /// ---------------------------
-    /// @dev tokens from game identifiers
-    function idfrom(GameID gid) internal pure returns (uint256) {
-        return TokenID.GAME_TYPE | GameID.unwrap(gid);
-    }
 
     /// ---------------------------
     /// @dev token binding methods
