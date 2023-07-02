@@ -85,7 +85,8 @@ tasks:
       that.
     cmds:
       - |
-        npx diamond-deploy list \
+        node node_modules/.bin/diamond-deploy \
+          list \
           -I facet -i build/forge/out \
           --collisions-only --format json \
           | jq -r '[ .[] | select(.name=="ERC1155ArenaFacet") ]' \
@@ -96,7 +97,8 @@ tasks:
     desc: generate the deployable list of facets
     cmds:
       - |
-        npx diamond-deploy list \
+        node node_modules/.bin/diamond-deploy \
+          list \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
           --exclude {{.FACETS_EXCLUDE}} \
@@ -164,7 +166,8 @@ tasks:
     desc: show the json formatted list of diamond facet collisions
     cmds:
       - |
-        npx diamond-deploy list \
+        node node_modules/.bin/diamond-deploy \
+          list \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
           --exclude {{.FACETS_EXCLUDE}} \
@@ -176,7 +179,8 @@ tasks:
     desc: generate the deployable list of facets
     cmds:
       - |
-        npx diamond-deploy list \
+        node node_modules/.bin/diamond-deploy \
+          list \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
           --exclude {{.FACETS_EXCLUDE}} \
@@ -186,7 +190,8 @@ tasks:
     desc: generate the deployable list of facets
     cmds:
       - |
-        npx diamond-deploy list \
+        node node_modules/.bin/diamond-deploy \
+          list \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
           --exclude {{.FACETS_EXCLUDE}} \

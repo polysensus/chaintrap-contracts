@@ -31,16 +31,6 @@ jobs:
             -d -b $GITHUB_WORKSPACE/bin
           echo $GITHUB_WORKSPACE/bin >> $GITHUB_PATH
 
-      - name: Install contract dependencies and hh test deps
-        working-directory: chaintrap-contracts
-        run: |
-          # ensure we are using the latest packaged source, going forward we
-          # want the ci builds to depend only on published packages. for
-          # diamond-deploy we do want to force the latest for now.
-          npm uninstall --save "@polysensus/diamond-deploy"
-          npm install @polysensus/diamond-deploy@latest --save-dev
-          npm install
-
       - name: build 
         working-directory: chaintrap-contracts
         run: task build
