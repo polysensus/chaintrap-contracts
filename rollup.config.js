@@ -4,9 +4,10 @@ import pkg from './package.json' assert {type: 'json'};
 
 export default [
 
+	/*
 	{
 		input: {
-			"index.d": 'dist',
+			"index.d": 'types',
 			"index": 'chaintrap/erc2535proxy.js'
 		},
 		output: {
@@ -16,7 +17,7 @@ export default [
 			resolve({preferBuiltins:true}), // so Rollup can find `ms`
 			commonjs() // so Rollup can convert `ms` to an ES module
 		]
-	},
+	},*/
 
 	// browser-friendly UMD build
 	{
