@@ -30,6 +30,14 @@ jobs:
           sh -c "$(curl --location https://taskfile.dev/install.sh)" -- \
             -d -b $GITHUB_WORKSPACE/bin
           echo $GITHUB_WORKSPACE/bin >> $GITHUB_PATH
+
+      - name: Setup node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.15.0
+          scope: "@polysensus"
+          registry-url: "https://registry.npmjs.org"
+
       - name: install packages
         working-directory: chaintrap-contracts
         run: |
@@ -51,8 +59,8 @@ jobs:
       - name: publish npm package
         working-directory: chaintrap-contracts
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: contains(github.ref, 'refs/tags/') && github.event_name == 'push'
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH }}
+        #if: contains(github.ref, 'refs/tags/') && github.event_name == 'push'
         #if: ${{ startsWith(github.event.head_commit.message, 'release:v') ||
         #          startsWith(github.event.head_commit.message, 're-release:') ||
         #          startsWith(github.event.head_commit.message, 'fix:') }}
