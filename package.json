@@ -61,7 +61,7 @@
     "contracts"
   ],
   "author": "Robin Bryce",
-  "license": "UNLICENSED",
+  "license": "APACHE-2",
   "bugs": {
     "url": "https://github.com/polysensus/chaintrap-contracts/issues"
   },
