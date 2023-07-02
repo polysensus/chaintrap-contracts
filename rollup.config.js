@@ -6,7 +6,7 @@ export default [
 
 	{
 		input: {
-			"index.d": '.local/out-tsc',
+			"index.d": 'dist',
 			"index": 'chaintrap/erc2535proxy.js'
 		},
 		output: {
