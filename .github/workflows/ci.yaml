@@ -60,7 +60,7 @@ jobs:
         working-directory: chaintrap-contracts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH }}
-        # if: contains(github.ref, 'refs/tags/') && github.event_name == 'push'
+        if: contains(github.ref, 'refs/tags/') && github.event_name == 'push'
         #if: ${{ startsWith(github.event.head_commit.message, 'release:v') ||
         #          startsWith(github.event.head_commit.message, 're-release:') ||
         #          startsWith(github.event.head_commit.message, 'fix:') }}
