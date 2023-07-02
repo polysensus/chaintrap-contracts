@@ -36,7 +36,9 @@ jobs:
           npm install
       - name: build 
         working-directory: chaintrap-contracts
-        run: task build
+        run: |
+          mkdir -p .local/out-tsc
+          task build
 
       - name: Run forge tests
         working-directory: chaintrap-contracts
