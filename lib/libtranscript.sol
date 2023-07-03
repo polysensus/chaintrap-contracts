@@ -48,6 +48,15 @@ struct Transcript {
     /// @dev if registrationLimit is 0, registration for a transcript is unlimited.
     uint256 registrationLimit;
     address[] registered;
+    // Before participants are expected to register, the guardian must commit to
+    // the legitemate choice input, and transition types. And the various
+    // furniture types.
+    uint256[] choiceInputTypes;
+    uint256[] transitionTypes;
+    // At least one victory transition type must be included.
+    uint256[] victoryTransitionTypes;
+    // halt is probably death, but could be retire if we support that.
+    uint256[] haltParticipantTransitionTypes;
 }
 
 /// @dev We want the property that curors[participant] != 0 for registered at
@@ -118,6 +127,18 @@ struct TranscriptInitArgs {
     bytes32[] rootLabels;
     /// @dev roots is an array of merkle tree roots. each is associated with an entry in rootLabels.
     bytes32[] roots;
+    // Before participants are expected to register, the guardian must commit to
+    // the legitemate choice input, and transition types. And the various
+    // furniture types.
+    uint256[] choiceInputTypes;
+    uint256[] transitionTypes;
+    // At least one victory transition type must be included.
+    uint256[] victoryTransitionTypes;
+    uint256[] haltParticipantTransitionTypes; // death or retirement
+
+    // TODO: guardian "house" wins If the game eid reaches this, the game
+    // terminates with the guardian victorious.
+    // uint256 deadlineEID;
 }
 
 struct TranscriptStartArgs {
@@ -227,11 +248,32 @@ library LibTranscript {
     ) internal {
         // Note the zero'th game is marked Invalid to ensure it can't be initialised
         if (self.state > State.Unknown) revert Transcript_IsInitialised();
+
+        // We require the input types are pre-declared so that the guardian can
+        // only resolve choices to outcomes known to the participants on
+        // registration. Game stats may include instance counts for traps and so
+        // on as a measure of dungeon challenge.
+        if (args.choiceInputTypes.length == 0)
+            revert Transcript_ChoiceInputTypeRequired();
+        if (args.transitionTypes.length < 2)
+            // need at least a finish and a normal transition
+            // TODO: require they are different values
+            revert Transcript_TwoTransitionTypesRequired();
+        if (args.victoryTransitionTypes.length == 0)
+            // TODO: require they are different values
+            revert Transcript_VictoryTransitionTypeRequired();
+
         self.id = id;
         self.creator = creator;
         self.state = State.Initialised;
         self.nextEntryId = 1;
         self.registrationLimit = args.registrationLimit;
+
+        self.choiceInputTypes = args.choiceInputTypes;
+        self.transitionTypes = args.transitionTypes;
+        self.victoryTransitionTypes = args.victoryTransitionTypes;
+        self.haltParticipantTransitionTypes = args
+            .haltParticipantTransitionTypes;
 
         for (uint i = 0; i < args.roots.length; i++) {
             // Note: solidity reverts for array out of bounds so we don't check for array length equivelence.
@@ -395,6 +437,33 @@ library LibTranscript {
         return eid;
     }
 
+    function arrayContains(
+        uint256[] storage array,
+        uint256 value
+    ) internal view returns (bool) {
+        for (uint i = 0; i < array.length; i++)
+            if (array[i] == value) return true;
+        return false;
+    }
+
+    function checkChoiceProof(
+        Transcript storage self,
+        ChoiceProof calldata proof
+    ) internal view {
+        if (
+            !LibTranscript.arrayContains(
+                self.choiceInputTypes,
+                proof.choiceSetType
+            )
+        ) revert Transcript_ChoiceSetTypeInvalid();
+        if (
+            !LibTranscript.arrayContains(
+                self.transitionTypes,
+                proof.transitionType
+            )
+        ) revert Transcript_TransitionTypeInvalid();
+    }
+
     function entryReveal(
         Transcript storage self,
         address advocate,
@@ -405,6 +474,23 @@ library LibTranscript {
 
         uint256 eid = self.cursors[argument.participant];
         if (eid == 0) revert Transcript_NotRegistered();
+
+        // require that there are no other participants whose cursors are lower
+        // than this one and which have an outcome pending. so that a guardian
+        // can't preferentialy advance a particular participant (including self
+        // sybils)
+        for (uint i = 0; i < self.registered.length; i++) {
+            if (self.registered[i] == argument.participant) continue;
+
+            uint256 otherEID = self.cursors[self.registered[i]];
+            // two players can't have the same eid because of how they are allocated.
+            if (otherEID > eid) continue;
+
+            if (
+                self.transcript[otherEID].outcome ==
+                LibTranscript.Outcome.Pending
+            ) revert Transcript_EarlierPendingOutcomeExists();
+        }
 
         TranscriptEntry storage cur = self.transcript[eid];
         console.log("comment eid for %s", argument.participant);

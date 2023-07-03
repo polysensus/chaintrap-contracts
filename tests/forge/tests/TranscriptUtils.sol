@@ -29,7 +29,12 @@ contract TranscriptInitUtils {
             tokenURI: "tokenURI",
             registrationLimit: 2,
             rootLabels:new bytes32[](1),
-            roots:new bytes32[](1)}
+            roots:new bytes32[](1),
+            choiceInputTypes: new uint256[](1),
+            transitionTypes: new uint256[](2),
+            victoryTransitionTypes: new uint256[](2),
+            haltParticipantTransitionTypes: new uint256[](1)
+            }
             );
     }
     function initArgsWith1Root(bytes32 label, bytes32 root) internal pure returns (TranscriptInitArgs memory) {
@@ -41,7 +46,12 @@ contract TranscriptInitUtils {
             tokenURI: "tokenURI",
             registrationLimit: 2,
             rootLabels: labels,
-            roots: roots}
+            roots: roots,
+            choiceInputTypes: new uint256[](1),
+            transitionTypes: new uint256[](2),
+            victoryTransitionTypes: new uint256[](2),
+            haltParticipantTransitionTypes: new uint256[](1)
+            }
             );
     }
 }

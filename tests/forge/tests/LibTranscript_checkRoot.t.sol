@@ -50,7 +50,12 @@ contract LibGame_checkRoot is
             tokenURI: "tokenURI",
             registrationLimit: 1,
             rootLabels:rootLabels,
-            roots:roots}
+            roots:roots,
+            choiceInputTypes: new uint256[](1),
+            transitionTypes: new uint256[](2),
+            victoryTransitionTypes: new uint256[](2),
+            haltParticipantTransitionTypes: new uint256[](1)           
+            }
             ));
 
         bool result = f.checkRoot(proof, hex"aaaa", leaf);

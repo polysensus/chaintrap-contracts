@@ -50,7 +50,12 @@ contract LibGame_verifyRoot is
             tokenURI: "tokenURI",
             registrationLimit: 2,
             rootLabels:rootLabels,
-            roots:roots}
+            roots:roots,
+            choiceInputTypes: new uint256[](1),
+            transitionTypes: new uint256[](2),
+            victoryTransitionTypes: new uint256[](2),
+            haltParticipantTransitionTypes: new uint256[](1)
+            }
             ));
 
         f.verifyRoot(proof, hex"aaaa", leaf);

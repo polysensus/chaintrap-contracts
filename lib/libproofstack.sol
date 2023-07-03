@@ -171,11 +171,17 @@ library LibProofStack {
         uint256 nextInputRef = 0;
 
         if (i == args.stack.length - 1) {
-            // The last entry is the transition, it must have references to both
-            // choice sets. could generalise this for multiple choice sets and
-            // 'and' transitions in future.
-            if (leaf.inputs.length != 2)
-                revert ProofStack_TransitionProofIncomplete();
+            if (state.lastChoiceSet != 0) {
+                // We have a pair of choice sets. The last entry is the transition,
+                // it must have references to both choice sets. could generalise
+                // this for multiple choice sets and 'and' transitions in future.
+                if (leaf.inputs.length != 2)
+                    revert ProofStack_TransitionProofIncomplete();
+            } else {
+                // Its a terminal choice set (victory, death or retirement)
+                if (leaf.inputs.length != 1)
+                    revert ProofStack_TransitionProofIncomplete();
+            }
         }
 
         // Note: memory expansion and copying from calldata could probably be
@@ -277,8 +283,12 @@ library LibProofStack {
             // resolution.
         }
 
-        if (i == args.stack.length - 1 && state.floorBreached != 1)
-            revert ProofStack_MustDeriveFromBothChoiceSet();
+        // if we have a pair of choice sets, require that the proof spans them
+        if (
+            i == args.stack.length - 1 &&
+            state.lastChoiceSet != 0 &&
+            state.floorBreached != 1
+        ) revert ProofStack_MustDeriveFromBothChoiceSet();
 
         bytes memory encoded = abi.encode(leaf.typeId, inputs);
         console.log("encoded");

@@ -37,7 +37,12 @@ contract LibGame__init is
             tokenURI: "tokenURI",
             registrationLimit: 2,
             rootLabels:new bytes32[](1),
-            roots:new bytes32[](2)}
+            roots:new bytes32[](2),
+            choiceInputTypes: new uint256[](1),
+            transitionTypes: new uint256[](2),
+            victoryTransitionTypes: new uint256[](2),
+            haltParticipantTransitionTypes: new uint256[](1)
+            }
             ));
     }
 
@@ -48,7 +53,12 @@ contract LibGame__init is
             tokenURI: "tokenURI",
             registrationLimit: 1,
             rootLabels:new bytes32[](2),
-            roots:new bytes32[](1)}
+            roots:new bytes32[](1),
+            choiceInputTypes: new uint256[](1),
+            transitionTypes: new uint256[](2),
+            victoryTransitionTypes: new uint256[](2),
+            haltParticipantTransitionTypes: new uint256[](1)
+            }
             ));
     }
 
@@ -65,7 +75,12 @@ contract LibGame__init is
             tokenURI: "tokenURI",
             registrationLimit: 2,
             rootLabels:new bytes32[](2),
-            roots:new bytes32[](2)}
+            roots:new bytes32[](2),
+            choiceInputTypes: new uint256[](1),
+            transitionTypes: new uint256[](2),
+            victoryTransitionTypes: new uint256[](2),
+            haltParticipantTransitionTypes: new uint256[](1)
+            }
             ));
     }
 }

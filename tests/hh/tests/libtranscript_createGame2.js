@@ -22,6 +22,10 @@ describe("LibTranscript_createGame2", async function () {
       roots: [
         "0x141d529a677497c1e718dcaea00c5ee952720942c8a43e9fda2c38ab24cfb562",
       ],
+      choiceInputTypes: [1],
+      transitionTypes: [2, 3],
+      victoryTransitionTypes: [4],
+      haltParticipantTransitionTypes: [],
     });
     let r = await tx.wait();
     expect(r.status).to.equal(1);
