@@ -1,6 +1,12 @@
 import hre from "hardhat";
 const ethers = hre.ethers;
 
+export function conditionInput(value) {
+  return ethers.utils.hexlify(
+    ethers.utils.zeroPad(ethers.utils.hexlify(value), 32)
+  );
+}
+
 export async function createGame(arena, params) {
   const rootLabels = [];
   const roots = [];
@@ -17,6 +23,11 @@ export async function createGame(arena, params) {
     registrationLimit: params.registrationLimit ?? 3,
     rootLabels,
     roots,
+    choiceInputTypes: params.choiceInputTypes.map(conditionInput),
+    transitionTypes: params.transitionTypes.map(conditionInput),
+    victoryTransitionTypes: params.victoryTransitionTypes.map(conditionInput),
+    haltParticipantTransitionTypes:
+      params.haltParticipantTransitionTypes.map(conditionInput),
   });
   let r = await tx.wait();
   return { tx, r, rootLabels, roots, labeled };
