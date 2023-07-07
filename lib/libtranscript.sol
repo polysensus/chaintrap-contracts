@@ -49,7 +49,7 @@ struct Transcript {
     uint256 registrationLimit;
     address[] registered;
     // Before participants are expected to register, the guardian must commit to
-    // the legitemate choice input, and transition types. And the various
+    // the legitemate choice input, and transition types. And the vari/ous
     // furniture types.
     uint256[] choiceInputTypes;
     uint256[] transitionTypes;
@@ -64,11 +64,6 @@ struct Transcript {
 /// Until, and unless, the first entry is committed, the participants cursor will
 /// have this value.
 uint256 constant TRANSCRIPT_REGISTRATION_SENTINEL = type(uint256).max;
-
-// TODO: make the CHOICE_SET and TRANSITION_TYPE's part of the start game setup
-// in the interests of generality.
-uint256 constant CHOICE_SET_TYPE_LOCATION = 9; // LocationChoices
-uint256 constant TRANSITION_TYPE_LOCATION_LINK = 8; // Link2
 
 /// @dev generic description of a game action. It is a commitment because once
 /// issued, it can not be taken back.
@@ -522,7 +517,6 @@ library LibTranscript {
             // on the order or placement of the node in the stack, just that it
             // exists and is labeled correctly - this is insufficient, but more
             // to follow.
-            uint256 i = 0;
             bytes32 choiceLeaf = LibProofStack.directMerkleLeaf(
                 self.choices[argument.participant]
             );
@@ -538,20 +532,10 @@ library LibTranscript {
 
             if (
                 state.proven[0] != choiceLeaf ||
-                argument.proof.stack[i].rootLabel != cur.rootLabel
+                argument.proof.stack[0].rootLabel != cur.rootLabel
             ) revert Transcript_OutcomeNotProven();
 
-            // TODO: check that proven contains proofs for the choices being revealed
-
-            // "reveal" the choices. we say reveal, but he act of including them
-            // in the call data has already done that. this just emits the logs
-            // signaling proof completion.
-            self._revealChoices(
-                eid,
-                argument.participant,
-                argument.proof.leaves[argument.choiceLeafIndex], // XXX: reconsider this in light of enforced stack layout
-                argument.data
-            );
+            // The *caller* is responsible for acting on the proof outcome
         } else {
             if (argument.outcome != LibTranscript.Outcome.Rejected)
                 revert Transcript_OutcomeIllegal();
