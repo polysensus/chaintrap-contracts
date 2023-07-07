@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
-// import "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
+import {ERC1155BaseInternal} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
 // import "@solidstate/contracts/token/ERC1155/metadata/ERC1155MetadataInternal.sol";
 
 import "lib/solidstate/token/ERC1155/ModBalanceOf.sol";
@@ -23,14 +23,19 @@ error ArenaError(uint);
 /// been played
 contract ArenaFacet is
     IArenaTranscript,
+    ERC1155BaseInternal,
     ModOwnable,
     ModPausable,
-    ModBalanceOf,
     ContextMixin
 {
     using LibTranscript for Transcript;
 
     constructor() {}
+
+    modifier holdsToken(address account, uint256 id) {
+        if (_balanceOf(account, id) == 0) revert ModBalanceOf__NotTokenHolder();
+        _;
+    }
 
     /// ---------------------------------------------------
     /**
@@ -74,8 +79,52 @@ contract ArenaFacet is
     function transcriptEntryResolve(
         uint256 gid,
         TranscriptOutcome calldata argument
-    ) public whenNotPaused {
+    ) public whenNotPaused holdsToken(_msgSender(), gid) {
         LibArenaStorage.Layout storage s = LibArenaStorage.layout();
-        s.games[gid].entryReveal(_msgSender(), argument);
+
+        Transcript storage t = s.games[gid];
+        t.entryReveal(_msgSender(), argument);
+
+        // if there was any issue with the proof, entryReveal reverts
+
+        // 1. if the choice type was declared as a victory condition,
+        // complete the game and transfer ownership to the participant.
+        if (
+            LibTranscript.arrayContains(
+                t.victoryTransitionTypes,
+                argument.proof.transitionType
+            )
+        ) {
+            // complete is an irreversible state, no code exists to
+            // 'un-complete'. this method can only be called by the current
+            // holder of the game transcript token
+            t.complete();
+
+            // ownership transfer *from* the current holder (the guardian)
+            // TODO: remember to disperse and release bound tokens appropriately when we do treats
+            // see _beforeTokenTransfer in the ERC1155ArenaFacet
+
+            address from = _msgSender();
+            _safeTransfer(
+                from,
+                from,
+                argument.participant,
+                gid,
+                1,
+                argument.data
+            );
+        } else {
+            uint256 eid = t.cursors[argument.participant];
+
+            // "reveal" the choices. we say reveal, but he act of including them
+            // in the call data has already done that. this just emits the logs
+            // signaling proof completion.
+            t._revealChoices(
+                eid,
+                argument.participant,
+                argument.proof.leaves[argument.choiceLeafIndex], // XXX: reconsider this in light of enforced stack layout
+                argument.data
+            );
+        }
     }
 }
