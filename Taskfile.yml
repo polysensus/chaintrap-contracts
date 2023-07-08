@@ -52,6 +52,134 @@ tasks:
       - task: build:types
       - npx rollup -c
 
+  verify:diamond:sourcify:
+    desc: verify the contracts
+    cmds:
+      - |
+        # use https://louper.dev to inspect the facet addresses
+
+        # Diamond constructor args abi like this
+
+        CONSTRUCTOR_ARGS=0x000000000000000000000000b179a6f44472a0446e003117dc870b5c99ccea22000000000000000000000000e2205b98c12c5c2f5e58299e7ef2247215cfbef6
+        CONSTRUCTOR_ARGS=$(cast abi-encode "constructor(address,address)" $(cat .local/dev/arena-owner.addr) 0xe2205b98c12c5c2f5e58299e7ef2247215cfbef6)
+        echo $CONSTRUCTOR_ARGS
+        forge verify-contract \
+          --constructor-args $CONSTRUCTOR_ARGS \
+          --chain 420 \
+          --watch \
+            0x0c075885e9EBB701997bA3e1B8D291688Dc0bCEE \
+            chaintrap/diamond/Diamond.sol:Diamond \
+          --verifier sourcify
+
+  verify:diamond:
+    dotenv: [".env.op"]
+    desc: verify the contracts
+    cmds:
+      - |
+        # use https://louper.dev to inspect the facet addresses
+
+        # Diamond constructor args abi like this
+
+        CONSTRUCTOR_ARGS=0x000000000000000000000000b179a6f44472a0446e003117dc870b5c99ccea22000000000000000000000000e2205b98c12c5c2f5e58299e7ef2247215cfbef6
+        CONSTRUCTOR_ARGS=$(cast abi-encode "constructor(address,address)" $(cat .local/dev/arena-owner.addr) 0xe2205b98c12c5c2f5e58299e7ef2247215cfbef6)
+        echo $CONSTRUCTOR_ARGS
+        forge verify-contract \
+          --constructor-args $CONSTRUCTOR_ARGS \
+          --chain 420 \
+          --watch \
+            0x0c075885e9EBB701997bA3e1B8D291688Dc0bCEE \
+            chaintrap/diamond/Diamond.sol:Diamond \
+          --verifier etherscan \
+          --verifier-url $ARENASTATE_ETHERSCAN_URL \
+          --etherscan-api-key=$ARENASTATE_ETHERSCAN_API_KEY
+
+
+  verify:erc1155arenafacet:
+    desc: verify the contracts
+    dotenv: [".env.op"]
+    cmds:
+      - |
+        # use https://louper.dev to inspect the facet addresses
+
+        # Diamond constructor args abi like this
+
+        echo $CONSTRUCTOR_ARGS
+        forge verify-contract \
+          --chain 420 \
+          --watch \
+            0x8af7c7d19857a3596f735f5daff729291e9ceff0 \
+            chaintrap/facets/arena/ERC1155ArenaFacet.sol:ERC1155ArenaFacet \
+          --verifier etherscan \
+          --verifier-url $ARENASTATE_ETHERSCAN_URL \
+          --etherscan-api-key=$ARENASTATE_ETHERSCAN_API_KEY
+
+
+
+  verify:arenafacet:
+    desc: verify the contracts
+    dotenv: [".env.op"]
+    cmds:
+      - |
+        # use https://louper.dev to inspect the facet addresses
+
+        forge verify-contract \
+          --chain 420 \
+          --watch \
+            0x2603add762a2ab348329792b10a893194a075ab2 \
+            chaintrap/facets/arena/ArenaFacet.sol:ArenaFacet \
+          --verifier etherscan \
+          --verifier-url $ARENASTATE_ETHERSCAN_URL \
+          --etherscan-api-key=$ARENASTATE_ETHERSCAN_API_KEY
+
+  verify:loupefacet:
+    desc: verify the contracts
+    dotenv: [".env.op"]
+    cmds:
+      - |
+        # use https://louper.dev to inspect the facet addresses
+
+        forge verify-contract \
+          --chain 420 \
+          --watch \
+            0xe2205b98c12c5c2f5e58299e7ef2247215cfbef6 \
+            chaintrap/diamond/facets/DiamondLoupeFacet.sol:DiamondLoupeFacet \
+          --verifier etherscan \
+          --verifier-url $ARENASTATE_ETHERSCAN_URL \
+          --etherscan-api-key=$ARENASTATE_ETHERSCAN_API_KEY
+
+  verify:cutfacet:
+    desc: verify the contracts
+    dotenv: [".env.op"]
+    cmds:
+      - |
+        # use https://louper.dev to inspect the facet addresses
+
+        forge verify-contract \
+          --chain 420 \
+          --watch \
+            0xe2205b98c12c5c2f5e58299e7ef2247215cfbef6 \
+            chaintrap/diamond/facets/DiamondCutFacet.sol:DiamondCutFacet \
+          --verifier etherscan \
+          --verifier-url $ARENASTATE_ETHERSCAN_URL \
+          --etherscan-api-key=$ARENASTATE_ETHERSCAN_API_KEY
+
+
+  verify:ownershipfacet:
+    desc: verify the contracts
+    dotenv: [".env.op"]
+    cmds:
+      - |
+        # use https://louper.dev to inspect the facet addresses
+
+        forge verify-contract \
+          --chain 420 \
+          --watch \
+            0xc4f6daafbff38e57100abb4e5ce5025e82075622 \
+            chaintrap/diamond/facets/OwnershipFacet.sol:OwnershipFacet \
+          --verifier etherscan \
+          --verifier-url $ARENASTATE_ETHERSCAN_URL \
+          --etherscan-api-key=$ARENASTATE_ETHERSCAN_API_KEY
+
   build:contracts:
     desc: build the contracts and prepare the abi and exclusions file
     cmds:
