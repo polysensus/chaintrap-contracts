@@ -1,7 +1,7 @@
 {
   "name": "@polysensus/chaintrap-contracts",
   "type": "module",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "smart contracts and supporting javascript for chaintrap",
   "main": "dist/chaintrap.cjs.js",
   "module": "dist/chaintrap.esm.js",
