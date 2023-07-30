@@ -74,7 +74,7 @@
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@openzeppelin/contracts": "^4.7.3",
-    "@polysensus/diamond-deploy": "^0.2.2",
+    "@polysensus/diamond-deploy": "^0.3.1",
     "@rari-capital/solmate": "^6.2.0",
     "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-node-resolve": "^15.0.2",

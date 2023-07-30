@@ -1,9 +1,10 @@
 ---
 version: '3'
-silent: true
 env:
   ENV: '{{.ENV | default ".local/dev" }}'
   PROFILE: '{{.PROFILE | default ""}}'
+  DEPLOYCLI: "node node_modules/@polysensus/diamond-deploy/dist/deploycli.esm.js"
+
 dotenv: [".env", '{{.ENV}}/.env', '{{.HOME}}/.env']
 
 vars:
@@ -183,12 +184,11 @@ tasks:
   build:contracts:
     desc: build the contracts and prepare the abi and exclusions file
     cmds:
-      - mkdir -p abi
+      - rm -rf abi && mkdir -p abi
       - mkdir -p .local/dev
       - forge build --sizes
       - task: build:facets-exclude
       - task: build:diamond-deploy
-      - task: facet:check
       - |
         echo "copying abi files from build"
         cp build/forge/out/Diamond.sol/Diamond.json abi/
@@ -213,19 +213,16 @@ tasks:
       that.
     cmds:
       - |
-        node node_modules/.bin/diamond-deploy \
-          list \
-          -I facet -i build/forge/out \
-          --collisions-only --format json \
-          | jq -r '[ .[] | select(.name=="ERC1155ArenaFacet") ]' \
-          | tee {{.FACETS_EXCLUDE}} \
-          || true
+        ${DEPLOYCLI} \
+          select \
+          --select-excluded -I facet -i build/forge/out \
+          | tee {{.FACETS_EXCLUDE}}
 
   build:diamond-deploy:
     desc: generate the deployable list of facets
     cmds:
       - |
-        node node_modules/.bin/diamond-deploy \
+        ${DEPLOYCLI} \
           list \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
@@ -253,6 +250,11 @@ tasks:
       - task: deploy-caimst
       - task: deploy-pol
 
+  deploy-hh:
+    cmds:
+      - task: deploy-to
+        vars: { RPC_URL: "http://localhost:8545" }
+
   deploy-caimst:
     cmds:
       - task: deploy-to
@@ -261,16 +263,22 @@ tasks:
   deploy-pol:
     cmds:
       - task: deploy-to
-        vars: { RPC_URL: "https://polygon-mumbai.g.alchemy.com/v2/zyiZCXLwVEOZPVoixfOBBVvp7KE1oiqf" }
+        vars:
+          PRIVATE_KEY:
+            sh: cat .local/dev/wallet-deploy.key
+          DEPLOYER_ADDR:
+            sh: cat .local/dev/wallet-deploy.addr
+          RPC_URL: "https://polygon-mumbai.g.alchemy.com/v2/zyiZCXLwVEOZPVoixfOBBVvp7KE1oiqf"
 
   deploy-to:
     desc: deploy the contracts
     cmds:
       - |
-        PRIVATE_KEY=$(cat .local/dev/wallet-deploy.key)
-        DEPLOYER_ADDR=$(cat .local/dev/wallet-deploy.addr)
+        PRIVATE_KEY='{{.PRIVATE_KEY | default "hardhat:0" }}'
+        DEPLOYER_ADDR='{{.DEPLOYER_ADDR | default "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"}}'
         echo "PRIVATE_KEY: $PRIVATE_KEY"
-        [ -z "$PRIVATE_KEY" ] && echo "no deployment key, try new-deploy-wallet" && exit 1
+        echo "DEPLOYER_ADDR: $DEPLOYER_ADDR"
+        [ -z "$PRIVATE_KEY" ] && echo "no deployment key" && exit 1
 
         echo "RPC_URL: {{.RPC_URL}}" 
         echo "Deployer: $DEPLOYER_ADDR"
@@ -285,29 +293,16 @@ tasks:
     desc: show the json formatted list of diamond facet collisions
     cmds:
       - |
-        npx diamond-deploy list \
+        ${DEPLOYCLI} select \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
-          --collisions-only --format json || true
-
-  facet:check:
-    desc: show the json formatted list of diamond facet collisions
-    cmds:
-      - |
-        node node_modules/.bin/diamond-deploy \
-          list \
-          -I facet -i build/forge/out \
-          -n Diamond DiamondNew \
-          --exclude {{.FACETS_EXCLUDE}} \
-          --collisions-only
-        # note exit status will be 1 if the exclude file doesn't reconcile all the collisions
-        echo "ok"
+          --show-collisions --format json
 
   facet:list:
     desc: generate the deployable list of facets
     cmds:
       - |
-        node node_modules/.bin/diamond-deploy \
+        ${DEPLOYCLI} \
           list \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
@@ -318,7 +313,7 @@ tasks:
     desc: generate the deployable list of facets
     cmds:
       - |
-        node node_modules/.bin/diamond-deploy \
+        ${DEPLOYCLI} \
           list \
           -I facet -i build/forge/out \
           -n Diamond DiamondNew \
