@@ -64,6 +64,7 @@ struct Transcript {
 /// Until, and unless, the first entry is committed, the participants cursor will
 /// have this value.
 uint256 constant TRANSCRIPT_REGISTRATION_SENTINEL = type(uint256).max;
+uint256 constant TRANSCRIPT_CURSOR_HALTED = type(uint256).max - 1;
 
 /// @dev generic description of a game action. It is a commitment because once
 /// issued, it can not be taken back.
@@ -183,6 +184,12 @@ library LibTranscript {
         uint256 indexed id,
         address indexed participant,
         bytes profile
+    );
+
+    event TranscriptParticipantHalted(
+        uint256 indexed id,
+        address indexed participant,
+        uint256 lastEID
     );
 
     /// @dev emited when a root is initialised or changed
@@ -338,6 +345,20 @@ library LibTranscript {
     /// ---------------------------
     /// @dev actions & outcomes
 
+    function haltParticipant(
+        Transcript storage self,
+        TranscriptOutcome calldata argument
+    ) internal {
+        uint256 lastEID = self.cursors[argument.participant];
+        self.cursors[argument.participant] = TRANSCRIPT_CURSOR_HALTED;
+        emit TranscriptParticipantHalted(
+            self.id,
+            argument.participant,
+            lastEID
+        );
+        console.log("halted participant %s", argument.participant);
+    }
+
     function _revealChoices(
         Transcript storage self,
         uint256 eid,
@@ -367,6 +388,8 @@ library LibTranscript {
             revert Transcript_InvalidRootLabel();
 
         if (self.cursors[participant] == 0) revert Transcript_NotRegistered();
+        if (self.cursors[participant] == TRANSCRIPT_CURSOR_HALTED)
+            revert Transcript_ParticipantHalted();
 
         // Require that the participant provides a legitemate choice.
         ProofLeaf storage choices = self.choices[participant];
@@ -469,6 +492,8 @@ library LibTranscript {
 
         uint256 eid = self.cursors[argument.participant];
         if (eid == 0) revert Transcript_NotRegistered();
+        if (eid == TRANSCRIPT_CURSOR_HALTED)
+            revert Transcript_ParticipantHalted();
 
         // require that there are no other participants whose cursors are lower
         // than this one and which have an outcome pending. so that a guardian
