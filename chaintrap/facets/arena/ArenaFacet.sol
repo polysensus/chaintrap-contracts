@@ -13,7 +13,7 @@ import "lib/contextmixin.sol";
 import "lib/interfaces/IArenaTranscript.sol";
 
 import {LibArenaStorage} from "lib/arena/storage.sol";
-import {LibTranscript, Transcript, TranscriptStartArgs} from "lib/libtranscript.sol";
+import {TRANSCRIPT_CURSOR_HALTED, LibTranscript, Transcript, TranscriptStartArgs} from "lib/libtranscript.sol";
 
 error InsufficientBalance(address addr, uint256 id, uint256 balance);
 
@@ -113,6 +113,15 @@ contract ArenaFacet is
                 1,
                 argument.data
             );
+            // 2. if the choice type was declared as a participant halt condition,
+            // halt the participant.
+        } else if (
+            LibTranscript.arrayContains(
+                t.haltParticipantTransitionTypes,
+                argument.proof.transitionType
+            )
+        ) {
+            t.haltParticipant(argument);
         } else {
             uint256 eid = t.cursors[argument.participant];
 

@@ -8,6 +8,7 @@ error Transcript_NotReady();
 error Transcript_NotCompletable();
 error Transcript_NotStarted();
 error Transcript_RegistrationFull();
+error Transcript_ParticipantHalted();
 error Transcript_InvalidChoice();
 error Transcript_InvalidStartChoice();
 error Transcript_TwoTransitionTypesRequired();

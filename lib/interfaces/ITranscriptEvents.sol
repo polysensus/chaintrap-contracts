@@ -67,4 +67,12 @@ interface ITranscriptEvents {
         LibTranscript.Outcome outcome,
         bytes data
     );
+
+    /// @dev emitted when the participant makes an individualy terminal choice -
+    /// typically a death trap.
+    event TranscriptParticipantHalted(
+        uint256 indexed id,
+        address indexed participant,
+        uint256 lastEID
+    );
 }

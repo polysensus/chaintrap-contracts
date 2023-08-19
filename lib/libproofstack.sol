@@ -132,6 +132,9 @@ library LibProofStack {
             }
 
             bytes32 merkleLeaf = LibProofStack.entryLeafNode(args, state, i);
+            console.log("merkleLeaf & proof[0]:");
+            console.logBytes32(merkleLeaf);
+            console.logBytes32(args.stack[i].proof[0]);
 
             if (
                 !MerkleProof.verifyCalldata(
@@ -140,6 +143,17 @@ library LibProofStack {
                     merkleLeaf
                 )
             ) return (state, false);
+
+            // if we have more than one choice set, require that the proof for
+            // the most recent refers to leaves associated with the earlier
+            // choice set (below the floor). Note: this clause alows for > 2
+            // choice sets for now.
+            if (
+                i == args.stack.length - 1 &&
+                state.lastChoiceSet > 1 &&
+                state.floorBreached != 1
+            ) revert ProofStack_MustDeriveFromBothChoiceSet();
+
             console.log("proven %d", i);
 
             state.proven[i] = merkleLeaf;
@@ -170,20 +184,6 @@ library LibProofStack {
         uint256 nextProofRef = 0;
         uint256 nextInputRef = 0;
 
-        if (i == args.stack.length - 1) {
-            if (state.lastChoiceSet != 0) {
-                // We have a pair of choice sets. The last entry is the transition,
-                // it must have references to both choice sets. could generalise
-                // this for multiple choice sets and 'and' transitions in future.
-                if (leaf.inputs.length != 2)
-                    revert ProofStack_TransitionProofIncomplete();
-            } else {
-                // Its a terminal choice set (victory, death or retirement)
-                if (leaf.inputs.length != 1)
-                    revert ProofStack_TransitionProofIncomplete();
-            }
-        }
-
         // Note: memory expansion and copying from calldata could probably be
         // avoided with clever encoding. But it shouldn't be that bad for now.
         // https://ethereum.stackexchange.com/questions/92546/what-is-expansion-cost
@@ -206,7 +206,7 @@ library LibProofStack {
                 nextProofRef < item.proofRefs.length &&
                 item.proofRefs[nextProofRef] == j
             ) {
-                console.log("STACK(%d) PROOF REF ---", i);
+                console.log("STACK(%d)[%d] PROOF REF ---", i, j);
                 if (leaf.inputs[j].length != 1)
                     revert ProofStack_ProoRefInvalid();
 
@@ -229,7 +229,7 @@ library LibProofStack {
                 nextInputRef < item.inputRefs.length &&
                 item.inputRefs[nextInputRef] == j
             ) {
-                console.log("STACK(%d) INPUT REF ---", i);
+                console.log("STACK(%d)[%d] INPUT REF ---", i, j);
                 // Note: the value refered to here cannot be a reference. (or if it is it is not resolved to the target value)
 
                 // It is an input ref there must be *at least* two values, the stack position and the input index.
@@ -237,15 +237,20 @@ library LibProofStack {
                 if (leaf.inputs[j].length < 2)
                     revert ProofStack_InputRefToShort();
 
+                // index back from the end of the input so we can have other values *before* the stack position
                 uint stackPos = uint(leaf.inputs[j][leaf.inputs[j].length - 2]);
                 if (stackPos < state.lastChoiceSet)
                     if (i != args.stack.length - 1 || state.floorBreached != 0)
-                        // The transition references must span the floor, two below the floor or two above are both invalid.
+                        // Each choice set establishes a 'floor'. Transition
+                        // references, which result in a new choice set, must
+                        // span the floor in order to demonstrate a connection between
+                        // the twho choice sets.
                         revert ProofStack_ReferenceFloorBreach();
                     else state.floorBreached++;
 
                 console.log("proof index %d", stackPos);
 
+                // The input reference is the last input item, henge length - 1
                 bytes32[] calldata referedInput = args.leaves[stackPos].inputs[
                     uint(leaf.inputs[j][leaf.inputs[j].length - 1])
                 ];
@@ -269,7 +274,7 @@ library LibProofStack {
                 }
                 nextInputRef++;
             } else {
-                console.log("STACK (%d) DIRECT PROOF ---", i);
+                console.log("STACK (%d)[%d] DIRECT PROOF ---", i, j);
                 for (uint k = 0; k < leaf.inputs[j].length; k++) {
                     inputs[j][k] = leaf.inputs[j][k];
                     console.log(
@@ -282,13 +287,6 @@ library LibProofStack {
             // else the value is not a reference and it needs no further
             // resolution.
         }
-
-        // if we have a pair of choice sets, require that the proof spans them
-        if (
-            i == args.stack.length - 1 &&
-            state.lastChoiceSet != 0 &&
-            state.floorBreached != 1
-        ) revert ProofStack_MustDeriveFromBothChoiceSet();
 
         bytes memory encoded = abi.encode(leaf.typeId, inputs);
         console.log("encoded");
