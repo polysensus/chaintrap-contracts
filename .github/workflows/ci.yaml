@@ -1,7 +1,5 @@
 on:
   push:
-  #  tags:
-  #    - 'v[0-9]+.[0-9]+.[0-9]+'
 
 name: ci
 
@@ -55,22 +53,3 @@ jobs:
       - name: Run hardhat tests
         working-directory: chaintrap-contracts
         run: task test:hh
-
-      - name: publish npm package
-        working-directory: chaintrap-contracts
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH }}
-        if: contains(github.ref, 'refs/tags/') && github.event_name == 'push'
-        #if: ${{ startsWith(github.event.head_commit.message, 'release:v') ||
-        #          startsWith(github.event.head_commit.message, 're-release:') ||
-        #          startsWith(github.event.head_commit.message, 'fix:') }}
-        run: |
-          npm config list
-
-          # github has scale issues when there are a large (> 20 ) npm packages in
-          # a repo, so force for fixes seems like the right thing for now.
-          FORCE=""
-          if [[ ! $(git log -1 --pretty=%B) =~ '^release:v' ]]; then
-            export FORCE=--force
-          fi
-          npm publish $FORCE --access public
