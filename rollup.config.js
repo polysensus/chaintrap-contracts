@@ -28,7 +28,7 @@ export default [
 		input: 'chaintrap/chaintrap.js',
 		external: ['ms'],
 		output: [
-			{ file: pkg.main, format: 'cjs' },
+			{ file: pkg.main, format: 'es' },
 			{ file: pkg.module, format: 'es' }
 		],
 		plugins: [
