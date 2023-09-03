@@ -19,6 +19,7 @@ describe("LibTranscript_registerParticipant", async function () {
     let { r } = await createGame(arena, {
       tokenURI: "",
       registrationLimit: 2,
+      trialistArgs: { flags: 0, lives: 1 },
       roots: {
         a_root_label:
           "0x141d529a677497c1e718dcaea00c5ee952720942c8a43e9fda2c38ab24cfb562",
@@ -27,6 +28,8 @@ describe("LibTranscript_registerParticipant", async function () {
       transitionTypes: [2, 3],
       victoryTransitionTypes: [4],
       haltParticipantTransitionTypes: [],
+      livesIncrement: [],
+      livesDecrement: [],
     });
 
     expect(r.status).to.equal(1);

@@ -75,4 +75,17 @@ interface ITranscriptEvents {
         address indexed participant,
         uint256 lastEID
     );
+
+    event TranscriptParticipantLivesAdded(
+        uint256 indexed id,
+        address indexed participant,
+        uint256 lives,
+        uint256 added
+    );
+    event TranscriptParticipantLivesLost(
+        uint256 indexed id,
+        address indexed participant,
+        uint256 lives,
+        uint256 lost
+    );
 }

@@ -28,3 +28,6 @@ error Transcript_InvalidEntry();
 error Transcript_OutcomeIllegal();
 error Transcript_OutcomeExpectedProof();
 error Transcript_OutcomeVerifyFailed();
+error Transcript_TrialistIsInitialised();
+error Transcript_TrialistNotInitialised();
+error Transcript_TrialistInvalidInitArgs();

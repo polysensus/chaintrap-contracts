@@ -6,6 +6,8 @@ import "forge-std/Vm.sol";
 
 import {Transcript_IsInitialised, Transcript_VerifyFailed} from "lib/libtranscript.sol";
 import {LibTranscript, Transcript, TranscriptInitArgs} from "lib/libtranscript.sol";
+import {TrialistInitArgs} from "lib/libtrialiststate.sol";
+import {minimalyValidInitArgs} from "tests/TranscriptUtils.sol";
 
 import {TranscriptWithFactory, TranscriptInitUtils } from "tests/TranscriptUtils.sol";
 
@@ -49,12 +51,15 @@ contract LibGame_checkRoot is
         f._init(1, address(1), TranscriptInitArgs({
             tokenURI: "tokenURI",
             registrationLimit: 1,
+            trialistArgs: TrialistInitArgs({flags: 0, lives: 1}),
             rootLabels:rootLabels,
             roots:roots,
             choiceInputTypes: new uint256[](1),
             transitionTypes: new uint256[](2),
             victoryTransitionTypes: new uint256[](2),
-            haltParticipantTransitionTypes: new uint256[](1)           
+            haltParticipantTransitionTypes: new uint256[](1),
+            livesIncrement: new uint256[](1),
+            livesDecrement: new uint256[](1)
             }
             ));
 
