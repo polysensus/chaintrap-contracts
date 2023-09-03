@@ -87,14 +87,15 @@ contract ArenaFacet is
 
         // if there was any issue with the proof, entryReveal reverts
 
-        // 1. if the choice type was declared as a victory condition,
-        // complete the game and transfer ownership to the participant.
         if (
             LibTranscript.arrayContains(
                 t._transitionTypes().victoryTransitions,
                 argument.proof.transitionType
             )
         ) {
+            // 1. if the choice type was declared as a victory condition,
+            // complete the game and transfer ownership to the participant.
+
             // complete is an irreversible state, no code exists to
             // 'un-complete'. this method can only be called by the current
             // holder of the game transcript token
@@ -113,14 +114,36 @@ contract ArenaFacet is
                 1,
                 argument.data
             );
-            // 2. if the choice type was declared as a participant halt condition,
-            // halt the participant.
+        } else if (
+            LibTranscript.arrayContains(
+                t._transitionTypes().livesIncrement,
+                argument.proof.transitionType
+            )
+        ) {
+            // 3. Add a single life.
+            t.trialistAddLives(argument, 1);
+        } else if (
+            // 4. remove a single life, and halt if the participant lives are exhausted.
+            LibTranscript.arrayContains(
+                t._transitionTypes().livesDecrement,
+                argument.proof.transitionType
+            )
+        ) {
+            // 3. Add a single life.
+            if (!t.trialistApplyFatality(argument)) {
+                return; // not fatal
+            }
+            // then the player ran out of lives
+            t.haltParticipant(argument);
         } else if (
             LibTranscript.arrayContains(
                 t._transitionTypes().haltParticipantTransitions,
                 argument.proof.transitionType
             )
         ) {
+            // 2. if the choice type was declared as a participant halt condition,
+            // halt the participant. Note that this by passes lives
+
             t.haltParticipant(argument);
         } else {
             // "reveal" the choices. we say reveal, but he act of including them

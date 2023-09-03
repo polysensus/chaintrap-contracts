@@ -6,6 +6,8 @@ import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProo
 import "hardhat/console.sol";
 import "lib/interfaces/ITranscriptErrors.sol";
 import {StackProof, ProofLeaf, LibProofStack, ChoiceProof, StackState} from "lib/libproofstack.sol";
+import {TrialistState, TrialistInitArgs, trialistIsInitialised, trialistInitCheck, trialistInit} from "lib/libtrialiststate.sol";
+import {TranscriptInitArgs, TranscriptStartArgs} from "lib/libtranscriptstructs.sol";
 
 /// @dev Transcript records and verifies a series of interactions. Interactions
 /// are verified by having encoded them into merkle tries whose roots are
@@ -19,6 +21,9 @@ struct Transcript {
     uint256 id;
     address creator;
     LibTranscript.State state;
+    // the trialistInitArgs must not be changed after the transcript is created,
+    // (it would bias the session)
+    TrialistInitArgs trialistInit;
     /// @dev roots is a mapping from labels to roots. labels can be
     /// keccak(string|bytes) or any value that packs into bytes32. We don't use
     /// strings or bytes because we emit events on change. And the dynamic types
@@ -52,6 +57,8 @@ struct Transcript {
     /// Note that the mapping is used to allow for diamond upgrades - https://eip2535diamonds.substack.com/p/diamond-upgrades
     /// DIAMOND_NESTED_STRUCT is the only key
     mapping(uint256 => TranscriptTransitionTypes) transitionTypes;
+    /// @dev participant => State
+    mapping(address => TrialistState) trialistStates;
 }
 
 /// @dev We want the property that curors[participant] != 0 for registered at
@@ -62,15 +69,25 @@ uint256 constant TRANSCRIPT_REGISTRATION_SENTINEL = type(uint256).max;
 uint256 constant TRANSCRIPT_CURSOR_HALTED = type(uint256).max - 1;
 uint256 constant DIAMOND_NESTED_STRUCT = 0; // see the INNER_STRUCT trick here https://eip2535diamonds.substack.com/p/diamond-upgrades
 
+/// @dev The game state transition types enacted by transcriptEntryResolve
+/// Before participants are expected to register, the guardian must commit to the
+/// legitemate choice input, and transition types. And the various furniture
+/// types.
 struct TranscriptTransitionTypes {
-    // Before participants are expected to register, the guardian must commit to
-    // the legitemate choice input, and transition types. And the various
-    // furniture types.
-    uint256[] choiceInputs;
+    /// @dev all valid types
+    /// XXX: this duplicates all the others, but it makes the implementation
+    /// convenient.
     uint256[] all;
-    // At least one victory transition type must be included.
+    /// @dev transitions that update the available choice set (ie go to page)
+    uint256[] choiceInputs;
+    /// @dev On any of thse, the trialist becomes the victor and the game completes.
+    /// At least one victory transition type must be included.
     uint256[] victoryTransitions;
+    /// @dev the trialist will be halted, (can't commit to further moves)
     uint256[] haltParticipantTransitions; // death or retirement
+    /// @dev TrialistState.lives will be incremented
+    uint256[] livesIncrement;
+    uint256[] livesDecrement;
 }
 
 /// @dev generic description of a game action. It is a commitment because once
@@ -118,49 +135,6 @@ struct TranscriptEntry {
     LibTranscript.Outcome outcome;
 }
 
-struct TranscriptInitArgs {
-    /// @dev nft uri for the game token
-    string tokenURI;
-    /// @dev limits the number of participants. set zero for unlimited.
-    uint256 registrationLimit;
-    /// @dev a rootLabel identifies a root. it can be a string (eg a name), a
-    /// token id, an address whatever, it must be keccak hashed if it is a
-    /// dynamic type (string or bytes). Note: we don't do bytes or string
-    /// because those can't be indexed in log topics.
-    bytes32[] rootLabels;
-    /// @dev roots is an array of merkle tree roots. each is associated with an entry in rootLabels.
-    bytes32[] roots;
-    // Before participants are expected to register, the guardian must commit to
-    // the legitemate choice input, and transition types. And the various
-    // furniture types.
-    uint256[] choiceInputTypes;
-    uint256[] transitionTypes;
-    // At least one victory transition type must be included.
-    uint256[] victoryTransitionTypes;
-    uint256[] haltParticipantTransitionTypes; // death or retirement
-
-    // TODO: guardian "house" wins If the game eid reaches this, the game
-    // terminates with the guardian victorious.
-    // uint256 deadlineEID;
-}
-
-struct TranscriptStartArgs {
-    /// @dev choices available to each participant at the start of the game.
-    /// Each entry is a single ProofLeaf which contains the set of exit choices
-    /// available to the registrant at their start location.
-    /// The accompanying data
-    /// Note: there is some scope for abuse while this can be set arbitrarily
-    /// (eg self participation and setting self next to the exit).  When we do
-    /// furniture, tricks and treats these will be subject to some controls.
-    /// Also, we have yet to add any notion of randomness.
-    ProofLeaf[] choices;
-    /// @dev data for the particpant starts
-    bytes[] data;
-    /// @dev the rootLabel and proofs for each of the choices
-    bytes32 rootLabel;
-    bytes32[][] proofs;
-}
-
 library LibTranscript {
     /// ---------------------------
     /// @dev overall transcript state
@@ -197,6 +171,19 @@ library LibTranscript {
         uint256 indexed id,
         address indexed participant,
         uint256 lastEID
+    );
+
+    event TranscriptParticipantLivesAdded(
+        uint256 indexed id,
+        address indexed participant,
+        uint256 lives,
+        uint256 added
+    );
+    event TranscriptParticipantLivesLost(
+        uint256 indexed id,
+        address indexed participant,
+        uint256 lives,
+        uint256 lost
     );
 
     /// @dev emited when a root is initialised or changed
@@ -254,6 +241,13 @@ library LibTranscript {
         return self.transitionTypes[DIAMOND_NESTED_STRUCT];
     }
 
+    function _trialistState(
+        Transcript storage self,
+        address participant
+    ) internal view returns (TrialistState storage) {
+        return self.trialistStates[participant];
+    }
+
     /// @dev initialise the transcript
     function _init(
         Transcript storage self,
@@ -278,10 +272,16 @@ library LibTranscript {
             // TODO: require they are different values
             revert Transcript_VictoryTransitionTypeRequired();
 
+        // Check that the initialisation arguments for trialists are acceptable.
+        if (!trialistInitCheck(args.trialistArgs))
+            revert Transcript_TrialistInvalidInitArgs();
+
         self.id = id;
         self.creator = creator;
         self.state = State.Initialised;
         self.nextEntryId = 1;
+
+        self.trialistInit = args.trialistArgs;
         self.registrationLimit = args.registrationLimit;
 
         self._transitionTypes().choiceInputs = args.choiceInputTypes;
@@ -290,6 +290,8 @@ library LibTranscript {
             .victoryTransitionTypes;
         self._transitionTypes().haltParticipantTransitions = args
             .haltParticipantTransitionTypes;
+        self._transitionTypes().livesIncrement = args.livesIncrement;
+        self._transitionTypes().livesDecrement = args.livesDecrement;
 
         for (uint i = 0; i < args.roots.length; i++) {
             // Note: solidity reverts for array out of bounds so we don't check for array length equivelence.
@@ -320,6 +322,18 @@ library LibTranscript {
         self.cursors[participant] = TRANSCRIPT_REGISTRATION_SENTINEL;
         self.registered.push(participant);
         emit TranscriptRegistration(self.id, participant, profile);
+
+        // check the trialist state initialisation, we have checked for unique
+        // registration above so we know the trialist can't be initialised
+        TrialistState storage ts = self.trialistStates[participant];
+        trialistInit(ts, self.trialistInit);
+
+        emit TranscriptParticipantLivesAdded(
+            self.id,
+            participant,
+            ts.lives,
+            self.trialistInit.lives
+        );
     }
 
     function start(
@@ -371,6 +385,39 @@ library LibTranscript {
             lastEID
         );
         console.log("halted participant %s", argument.participant);
+    }
+
+    /// @dev decrements the player lives, and halts if 0
+    function trialistApplyFatality(
+        Transcript storage self,
+        TranscriptOutcome calldata argument
+    ) internal returns (bool) {
+        TrialistState storage ts = self.trialistStates[argument.participant];
+        if (ts.lives == 0) return true; // already dead
+        ts.lives -= 1;
+        emit TranscriptParticipantLivesLost(
+            self.id,
+            argument.participant,
+            ts.lives,
+            1
+        );
+        return (ts.lives == 0); // true if lives ran out
+    }
+
+    function trialistAddLives(
+        Transcript storage self,
+        TranscriptOutcome calldata argument,
+        uint256 adding
+    ) internal {
+        if (adding == 0) return;
+        TrialistState storage ts = self.trialistStates[argument.participant];
+        ts.lives += adding;
+        emit TranscriptParticipantLivesAdded(
+            self.id,
+            argument.participant,
+            ts.lives,
+            adding
+        );
     }
 
     function revealChoices(

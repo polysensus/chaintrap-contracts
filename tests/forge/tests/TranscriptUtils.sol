@@ -6,6 +6,7 @@ import "forge-std/Vm.sol";
 
 import {TranscriptInitArgs} from "lib/libtranscript.sol";
 import {LibTranscript, TranscriptStartArgs, TranscriptOutcome} from "lib/libtranscript.sol";
+import {TrialistInitArgs} from "lib/libtrialiststate.sol";
 
 import {HEVM_ADDRESS} from "tests/constants.sol";
 import {TranscriptFactory} from "tests/TranscriptFactory.sol";
@@ -23,20 +24,25 @@ contract TranscriptWithFactory {
     }
 }
 
+function minimalyValidInitArgs() pure returns (TranscriptInitArgs memory) {
+    return TranscriptInitArgs({
+        tokenURI: "tokenURI",
+        registrationLimit: 2,
+        trialistArgs: TrialistInitArgs({flags: 0, lives: 1}),
+        rootLabels:new bytes32[](1),
+        roots:new bytes32[](1),
+        choiceInputTypes: new uint256[](1),
+        transitionTypes: new uint256[](2),
+        victoryTransitionTypes: new uint256[](2),
+        haltParticipantTransitionTypes: new uint256[](1),
+        livesIncrement: new uint256[](1),
+        livesDecrement: new uint256[](1)
+        }
+        );
+}
+
+
 contract TranscriptInitUtils {
-    function minimalyValidInitArgs() internal pure returns (TranscriptInitArgs memory) {
-        return TranscriptInitArgs({
-            tokenURI: "tokenURI",
-            registrationLimit: 2,
-            rootLabels:new bytes32[](1),
-            roots:new bytes32[](1),
-            choiceInputTypes: new uint256[](1),
-            transitionTypes: new uint256[](2),
-            victoryTransitionTypes: new uint256[](2),
-            haltParticipantTransitionTypes: new uint256[](1)
-            }
-            );
-    }
     function initArgsWith1Root(bytes32 label, bytes32 root) internal pure returns (TranscriptInitArgs memory) {
         bytes32[] memory labels = new bytes32[](1);
         bytes32[] memory roots = new bytes32[](1);
@@ -45,12 +51,15 @@ contract TranscriptInitUtils {
         return TranscriptInitArgs({
             tokenURI: "tokenURI",
             registrationLimit: 2,
+            trialistArgs: TrialistInitArgs({flags: 0, lives: 1}),
             rootLabels: labels,
             roots: roots,
             choiceInputTypes: new uint256[](1),
             transitionTypes: new uint256[](2),
             victoryTransitionTypes: new uint256[](2),
-            haltParticipantTransitionTypes: new uint256[](1)
+            haltParticipantTransitionTypes: new uint256[](1),
+            livesIncrement: new uint256[](1),
+            livesDecrement: new uint256[](1)
             }
             );
     }

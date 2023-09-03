@@ -18,6 +18,7 @@ describe("LibTranscript_createGame2", async function () {
     let tx = await arena.createGame({
       tokenURI: "",
       registrationLimit: 2,
+      trialistArgs: { flags: 0, lives: 1 },
       rootLabels: [ethers.utils.formatBytes32String("a-root-label")],
       roots: [
         "0x141d529a677497c1e718dcaea00c5ee952720942c8a43e9fda2c38ab24cfb562",
@@ -26,6 +27,8 @@ describe("LibTranscript_createGame2", async function () {
       transitionTypes: [2, 3],
       victoryTransitionTypes: [4],
       haltParticipantTransitionTypes: [],
+      livesIncrement: [],
+      livesDecrement: [],
     });
     let r = await tx.wait();
     expect(r.status).to.equal(1);

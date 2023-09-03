@@ -21,6 +21,7 @@ export async function createGame(arena, params) {
   let tx = await arena.createGame({
     tokenURI: params.tokenURI ?? "",
     registrationLimit: params.registrationLimit ?? 3,
+    trialistArgs: params.trialistArgs,
     rootLabels,
     roots,
     choiceInputTypes: params.choiceInputTypes.map(conditionInput),
@@ -28,6 +29,8 @@ export async function createGame(arena, params) {
     victoryTransitionTypes: params.victoryTransitionTypes.map(conditionInput),
     haltParticipantTransitionTypes:
       params.haltParticipantTransitionTypes.map(conditionInput),
+    livesIncrement: params.livesIncrement.map(conditionInput),
+    livesDecrement: params.livesDecrement.map(conditionInput),
   });
   let r = await tx.wait();
   return { tx, r, rootLabels, roots, labeled };
