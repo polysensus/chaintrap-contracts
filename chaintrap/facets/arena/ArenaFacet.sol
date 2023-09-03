@@ -91,7 +91,7 @@ contract ArenaFacet is
         // complete the game and transfer ownership to the participant.
         if (
             LibTranscript.arrayContains(
-                t.victoryTransitionTypes,
+                t._transitionTypes().victoryTransitions,
                 argument.proof.transitionType
             )
         ) {
@@ -117,23 +117,16 @@ contract ArenaFacet is
             // halt the participant.
         } else if (
             LibTranscript.arrayContains(
-                t.haltParticipantTransitionTypes,
+                t._transitionTypes().haltParticipantTransitions,
                 argument.proof.transitionType
             )
         ) {
             t.haltParticipant(argument);
         } else {
-            uint256 eid = t.cursors[argument.participant];
-
             // "reveal" the choices. we say reveal, but he act of including them
             // in the call data has already done that. this just emits the logs
             // signaling proof completion.
-            t._revealChoices(
-                eid,
-                argument.participant,
-                argument.proof.leaves[argument.choiceLeafIndex], // XXX: reconsider this in light of enforced stack layout
-                argument.data
-            );
+            t.revealChoices(argument);
         }
     }
 }
