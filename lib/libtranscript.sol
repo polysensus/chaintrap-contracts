@@ -48,15 +48,10 @@ struct Transcript {
     /// @dev if registrationLimit is 0, registration for a transcript is unlimited.
     uint256 registrationLimit;
     address[] registered;
-    // Before participants are expected to register, the guardian must commit to
-    // the legitemate choice input, and transition types. And the vari/ous
-    // furniture types.
-    uint256[] choiceInputTypes;
-    uint256[] transitionTypes;
-    // At least one victory transition type must be included.
-    uint256[] victoryTransitionTypes;
-    // halt is probably death, but could be retire if we support that.
-    uint256[] haltParticipantTransitionTypes;
+    /// @dev the transition types configured for the game when it was established.
+    /// Note that the mapping is used to allow for diamond upgrades - https://eip2535diamonds.substack.com/p/diamond-upgrades
+    /// DIAMOND_NESTED_STRUCT is the only key
+    mapping(uint256 => TranscriptTransitionTypes) transitionTypes;
 }
 
 /// @dev We want the property that curors[participant] != 0 for registered at
@@ -65,6 +60,18 @@ struct Transcript {
 /// have this value.
 uint256 constant TRANSCRIPT_REGISTRATION_SENTINEL = type(uint256).max;
 uint256 constant TRANSCRIPT_CURSOR_HALTED = type(uint256).max - 1;
+uint256 constant DIAMOND_NESTED_STRUCT = 0; // see the INNER_STRUCT trick here https://eip2535diamonds.substack.com/p/diamond-upgrades
+
+struct TranscriptTransitionTypes {
+    // Before participants are expected to register, the guardian must commit to
+    // the legitemate choice input, and transition types. And the various
+    // furniture types.
+    uint256[] choiceInputs;
+    uint256[] all;
+    // At least one victory transition type must be included.
+    uint256[] victoryTransitions;
+    uint256[] haltParticipantTransitions; // death or retirement
+}
 
 /// @dev generic description of a game action. It is a commitment because once
 /// issued, it can not be taken back.
@@ -241,6 +248,12 @@ library LibTranscript {
         Accepted
     }
 
+    function _transitionTypes(
+        Transcript storage self
+    ) internal view returns (TranscriptTransitionTypes storage) {
+        return self.transitionTypes[DIAMOND_NESTED_STRUCT];
+    }
+
     /// @dev initialise the transcript
     function _init(
         Transcript storage self,
@@ -271,10 +284,11 @@ library LibTranscript {
         self.nextEntryId = 1;
         self.registrationLimit = args.registrationLimit;
 
-        self.choiceInputTypes = args.choiceInputTypes;
-        self.transitionTypes = args.transitionTypes;
-        self.victoryTransitionTypes = args.victoryTransitionTypes;
-        self.haltParticipantTransitionTypes = args
+        self._transitionTypes().choiceInputs = args.choiceInputTypes;
+        self._transitionTypes().all = args.transitionTypes;
+        self._transitionTypes().victoryTransitions = args
+            .victoryTransitionTypes;
+        self._transitionTypes().haltParticipantTransitions = args
             .haltParticipantTransitionTypes;
 
         for (uint i = 0; i < args.roots.length; i++) {
@@ -357,6 +371,18 @@ library LibTranscript {
             lastEID
         );
         console.log("halted participant %s", argument.participant);
+    }
+
+    function revealChoices(
+        Transcript storage self,
+        TranscriptOutcome calldata argument
+    ) internal {
+        self._revealChoices(
+            self.cursors[argument.participant],
+            argument.participant,
+            argument.proof.leaves[argument.choiceLeafIndex], // XXX: reconsider this in light of enforced stack layout
+            argument.data
+        );
     }
 
     function _revealChoices(
@@ -470,13 +496,13 @@ library LibTranscript {
     ) internal view {
         if (
             !LibTranscript.arrayContains(
-                self.choiceInputTypes,
+                self._transitionTypes().choiceInputs,
                 proof.choiceSetType
             )
         ) revert Transcript_ChoiceSetTypeInvalid();
         if (
             !LibTranscript.arrayContains(
-                self.transitionTypes,
+                self._transitionTypes().all,
                 proof.transitionType
             )
         ) revert Transcript_TransitionTypeInvalid();
