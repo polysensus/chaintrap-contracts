@@ -125,7 +125,7 @@ contract ArenaFacet is
         } else if (
             // 4. remove a single life, and halt if the participant lives are exhausted.
             LibTranscript.arrayContains(
-                t._transitionTypes().livesIncrement,
+                t._transitionTypes().livesDecrement,
                 argument.proof.transitionType
             )
         ) {
