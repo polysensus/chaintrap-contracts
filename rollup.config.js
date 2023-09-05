@@ -2,7 +2,8 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import pkg from './package.json' assert {type: 'json'};
 
-const externalxx = ["ms", "ethers", "ethereum-cryptography"];
+// The parts of ethers that are problematic appear to tree shaken out, hence no
+// externals here
 
 export default [
 
@@ -14,9 +15,7 @@ export default [
 	// `file` and `format` for each target)
 	{
 		input: 'chaintrap/chaintrap.js',
-		external: externalxx,
 		output: [
-			{ file: pkg.main, format: 'es' },
 			{ file: pkg.module, format: 'es' }
 		],
 		plugins: [
