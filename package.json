@@ -3,9 +3,9 @@
   "type": "module",
   "version": "0.3.6",
   "description": "smart contracts and supporting javascript for chaintrap",
-  "main": "dist/chaintrap.cjs",
+  "main": "dist/chaintrap.esm.js",
   "module": "dist/chaintrap.esm.js",
-  "browser": "dist/chaintrap.umd.js",
+  "browser": "dist/chaintrap.esm.js",
   "files": [
     "dist/chaintrap.cjs",
     "dist/chaintrap.esm.js",
@@ -20,8 +20,15 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/chaintrap.esm.js"
+      "default": "./dist/chaintrap.esm.js",
+      "node": "./dist/chaintrap.esm.js"
     },
+    "./abi/Diamond.json": "./abi/Diamond.json",
+    "./abi/OwnershipFacet.json": "./abi/OwnershipFacet.json",
+    "./abi/DiamondCutFacet.json":"./abi/DiamondCutFacet.json",
+    "./abi/DiamondLoupeFacet.json": "./abi/DiamondLoupeFacet.json",
+    "./abi/ArenaFacet.json": "./abi/ArenaFacet.json",
+    "./abi/ERC1155ArenaFacet.json": "./abi/ERC1155ArenaFacet.json",
     "./abi/*.json": "./abi/*.json"
   },
   "typesVersions": {
@@ -98,7 +105,6 @@
     }
   },
   "devDependencies": {
-    "@ensdomains/buffer": "^0.1.0",
     "@ensdomains/ens-contracts": "^0.0.11",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
     "@nomicfoundation/hardhat-foundry": "^1.0.1",

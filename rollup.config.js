@@ -2,21 +2,10 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import pkg from './package.json' assert {type: 'json'};
 
-export default [
+// The parts of ethers that are problematic appear to tree shaken out, hence no
+// externals here
 
-	// browser-friendly UMD build
-	{
-		input: 'chaintrap/chaintrap.js',
-		output: {
-			name: 'chaintrap',
-			file: pkg.browser,
-			format: 'umd'
-		},
-		plugins: [
-			resolve({preferBuiltins:true}), // so Rollup can find `ms`
-			commonjs() // so Rollup can convert `ms` to an ES module
-		]
-	},
+export default [
 
 	// CommonJS (for Node) and ES module (for bundlers) build.
 	// (We could have three entries in the configuration array
@@ -26,9 +15,7 @@ export default [
 	// `file` and `format` for each target)
 	{
 		input: 'chaintrap/chaintrap.js',
-		external: ['ms'],
 		output: [
-			{ file: pkg.main, format: 'es' },
 			{ file: pkg.module, format: 'es' }
 		],
 		plugins: [

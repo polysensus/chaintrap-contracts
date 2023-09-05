@@ -5,14 +5,13 @@ env:
   PROFILE: '{{.PROFILE | default ""}}'
   DEPLOYCLI: "node node_modules/@polysensus/diamond-deploy/dist/deploycli.esm.js"
 
-dotenv: [".env", '{{.ENV}}/.env', '{{.HOME}}/.env']
-
 vars:
   # The input file for diamond-deploy --exclu
   FACETS_EXCLUDE: abi/facets-exclude.json
   DIAMOND_DEPLOY_JSON: '{{.ENV}}/diamond-deploy.json'
   CICD_DEV_CURL: "curl -s -H 'Accept: application/vnd.github.v3.raw' -L https://api.github.com/repos/polysensus/cicd-dev-infra/contents"
   TUSKS: ".local/dev"
+  PROVIDER_ID: '{{.PROVIDER_ID | default "hh"}}'
 
 # tasks are primarily for actions local to this repository. task is for things
 # that usually don't need options (or can be configured once via a .env) use it
@@ -73,27 +72,24 @@ tasks:
           --verifier sourcify
 
   verify:diamond:
-    dotenv: [".env.op"]
     desc: verify the contracts
-    vars:
-      CONTRACT_ADDRESS: "0xeeabb17a56bd072b4e7b0a54c3e17B3605cB019F"
-      CONTRACT_ADDRESS_JULY23: "0x0c075885e9EBB701997bA3e1B8D291688Dc0bCEE"
-      CUTTER_FACET_ADDRESS: "0x986C13F497FE940707892c59030c04773DC0Fa08"
-
+    dotenv: [".env.{{.PROVIDER_ID}}"]
     cmds:
       - |
         # use https://louper.dev to inspect the facet addresses
+        [ -z $ARENASTATE_ARENA ] && echo 'ARENASTATE_ARENA must be provided' && exit 1
+        [ -z $ARENASTATE_DIAMOND_CUTTER ] && echo 'ARENASTATE_DIAMOND_CUTTER must be provided' && exit 1
+        [ ! -f .local/dev/arena-owner.addr ] && echo '.local/dev/arena-owner.addr must exist' && exit 1
 
         # Diamond constructor args abi like this
 
-        CONSTRUCTOR_ARGS=0x000000000000000000000000b179a6f44472a0446e003117dc870b5c99ccea22000000000000000000000000e2205b98c12c5c2f5e58299e7ef2247215cfbef6
-        CONSTRUCTOR_ARGS=$(cast abi-encode "constructor(address,address)" $(cat .local/dev/arena-owner.addr) {{.CUTTER_FACET_ADDRESS}})
+        CONSTRUCTOR_ARGS=$(cast abi-encode "constructor(address,address)" $(cat .local/dev/arena-owner.addr) $ARENASTATE_DIAMOND_CUTTER)
         echo $CONSTRUCTOR_ARGS
         forge verify-contract \
           --constructor-args $CONSTRUCTOR_ARGS \
           --chain 420 \
           --watch \
-            {{.CONTRACT_ADDRESS}}  \
+            $ARENASTATE_ARENA  \
             chaintrap/diamond/Diamond.sol:Diamond \
           --verifier etherscan \
           --verifier-url $ARENASTATE_ETHERSCAN_URL \
@@ -102,21 +98,19 @@ tasks:
 
   verify:erc1155arenafacet:
     desc: verify the contracts
-    dotenv: [".env.op"]
+    dotenv: [".env.{{.PROVIDER_ID}}"]
     vars:
-      CONTRACT_ADDRESS: "0xeE3e8972cfbC2D75cdB6cFc7e50Ad60d80E707a2"
-      CONTRACT_ADDRESS_JULY23: "0x8af7c7d19857a3596f735f5daff729291e9ceff0"
+      FACET_ADDRESS: '{{.FACET_ADDRESS | default ""}}'
     cmds:
       - |
         # use https://louper.dev to inspect the facet addresses
 
-        # Diamond constructor args abi like this
+        [ -z "{{.FACET_ADDRESS}}" ] && echo 'FACET_ADDRESS must be set' && exit 1
 
-        echo $CONSTRUCTOR_ARGS
         forge verify-contract \
           --chain 420 \
           --watch \
-            {{.CONTRACT_ADDRESS}}  \
+            {{.FACET_ADDRESS}}  \
             chaintrap/facets/arena/ERC1155ArenaFacet.sol:ERC1155ArenaFacet \
           --verifier etherscan \
           --verifier-url $ARENASTATE_ETHERSCAN_URL \
@@ -126,18 +120,20 @@ tasks:
 
   verify:arenafacet:
     desc: verify the contracts
-    dotenv: [".env.op"]
+    dotenv: [".env.{{.PROVIDER_ID}}"]
     vars:
-      CONTRACT_ADDRESS: "0x53033C2673585d484694c8ee2D00bad3E842baE7"
-      CONTRACT_ADDRESS_JULY23: "0x2603add762a2ab348329792b10a893194a075ab2"
+      FACET_ADDRESS: '{{.FACET_ADDRESS | default ""}}'
     cmds:
       - |
         # use https://louper.dev to inspect the facet addresses
 
+        [ -z "{{.FACET_ADDRESS}}" ] && echo 'FACET_ADDRESS must be set' && exit 1
+        echo "VERIFYING: {{.FACET_ADDRESS}}"
+
         forge verify-contract \
           --chain 420 \
           --watch \
-            {{.CONTRACT_ADDRESS}}  \
+            {{.FACET_ADDRESS}}  \
             chaintrap/facets/arena/ArenaFacet.sol:ArenaFacet \
           --verifier etherscan \
           --verifier-url $ARENASTATE_ETHERSCAN_URL \
@@ -145,18 +141,19 @@ tasks:
 
   verify:loupefacet:
     desc: verify the contracts
-    dotenv: [".env.op"]
+    dotenv: [".env.{{.PROVIDER_ID}}"]
     vars:
-      CONTRACT_ADDRESS: "0xddd7A4df943c0697e9a1C0e4a13D979f6a954BBF"
-      CONTRACT_ADDRESS_JULY23: "0xe2205b98c12c5c2f5e58299e7ef2247215cfbef6"
+      FACET_ADDRESS: '{{.FACET_ADDRESS | default ""}}'
     cmds:
       - |
         # use https://louper.dev to inspect the facet addresses
+        [ -z "{{.FACET_ADDRESS}}" ] && echo 'FACET_ADDRESS must be set' && exit 1
+        echo "VERIFYING: {{.FACET_ADDRESS}}"
 
         forge verify-contract \
           --chain 420 \
           --watch \
-            {{.CONTRACT_ADDRESS}}  \
+            {{.FACET_ADDRESS}}  \
             chaintrap/diamond/facets/DiamondLoupeFacet.sol:DiamondLoupeFacet \
           --verifier etherscan \
           --verifier-url $ARENASTATE_ETHERSCAN_URL \
@@ -164,19 +161,20 @@ tasks:
 
   verify:cutfacet:
     desc: verify the contracts
-    dotenv: [".env.op"]
-
+    dotenv: [".env.{{.PROVIDER_ID}}"]
     vars:
-      CONTRACT_ADDRESS: "0x986C13F497FE940707892c59030c04773DC0Fa08"
-      CONTRACT_ADDRESS_JULY23: "0xe2205b98c12c5c2f5e58299e7ef2247215cfbef6"
+      FACET_ADDRESS: '{{.FACET_ADDRESS | default ""}}'
+
     cmds:
       - |
         # use https://louper.dev to inspect the facet addresses
+        [ -z "{{.FACET_ADDRESS}}" ] && echo 'FACET_ADDRESS must be set' && exit 1
+        echo "VERIFYING: {{.FACET_ADDRESS}}"
 
         forge verify-contract \
           --chain 420 \
           --watch \
-            {{.CONTRACT_ADDRESS}}  \
+            {{.FACET_ADDRESS}}  \
             chaintrap/diamond/facets/DiamondCutFacet.sol:DiamondCutFacet \
           --verifier etherscan \
           --verifier-url $ARENASTATE_ETHERSCAN_URL \
@@ -185,18 +183,19 @@ tasks:
 
   verify:ownershipfacet:
     desc: verify the contracts
-    dotenv: [".env.op"]
+    dotenv: [".env.{{.PROVIDER_ID}}"]
     vars:
-      CONTRACT_ADDRESS: "0x02e3979935F2ecbE43C39F50457721E766D36216"
-      CONTRACT_ADDRESS_JULY23: "0xc4f6daafbff38e57100abb4e5ce5025e82075622"
+      FACET_ADDRESS: '{{.FACET_ADDRESS | default ""}}'
     cmds:
       - |
         # use https://louper.dev to inspect the facet addresses
+        [ -z "{{.FACET_ADDRESS}}" ] && echo 'FACET_ADDRESS must be set' && exit 1
+        echo "VERIFYING: {{.FACET_ADDRESS}}"
 
         forge verify-contract \
           --chain 420 \
           --watch \
-            {{.CONTRACT_ADDRESS}}  \
+            {{.FACET_ADDRESS}}  \
             chaintrap/diamond/facets/OwnershipFacet.sol:OwnershipFacet \
           --verifier etherscan \
           --verifier-url $ARENASTATE_ETHERSCAN_URL \

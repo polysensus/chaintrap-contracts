@@ -1,3 +1,4 @@
+.DS_Store
 .env.op
 commit.md
 .npmrc
@@ -13,3 +14,4 @@ node_modules
 abi
 dist
 hh-deploy.json
+.env.opgoerli
