@@ -1,5 +1,12 @@
 
 
+## [0.3.7](https://github.com/polysensus/chaintrap-contracts/compare/v0.3.6...v0.3.7) (2023-09-05)
+
+
+### Bug Fixes
+
+* externalize everything, see if we can get the issues with un-intentional commonjs treatment to go away ([df0729d](https://github.com/polysensus/chaintrap-contracts/commit/df0729d982e518f8fdd4eda0ed25240726516769))
+
 ## [0.3.6](https://github.com/polysensus/chaintrap-contracts/compare/v0.3.4...v0.3.6) (2023-09-03)
 
 
