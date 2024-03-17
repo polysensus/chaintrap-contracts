@@ -235,6 +235,18 @@ library LibTranscript {
         Accepted
     }
 
+    // countHalted counts the number of registrants that have been halted
+    function countHalted(
+        Transcript storage self
+    ) internal view returns (uint256) {
+        uint256 n = 0;
+        for (uint i = 0; i < self.registered.length; i++) {
+            if (self.cursors[self.registered[i]] == TRANSCRIPT_CURSOR_HALTED)
+                n++;
+        }
+        return n;
+    }
+
     function _transitionTypes(
         Transcript storage self
     ) internal view returns (TranscriptTransitionTypes storage) {
@@ -373,18 +385,35 @@ library LibTranscript {
     /// ---------------------------
     /// @dev actions & outcomes
 
+    function _haltParticipant(
+        Transcript storage self,
+        address participant
+    ) internal {
+        // Note: if the participant isn't registered, it can't impact the result of countHalted
+        uint256 lastEID = self.cursors[participant];
+        if (lastEID == 0) revert Transcript_NotRegistered();
+
+        self.cursors[participant] = TRANSCRIPT_CURSOR_HALTED;
+        emit TranscriptParticipantHalted(self.id, participant, lastEID);
+        console.log("halted participant %s", participant);
+    }
+
     function haltParticipant(
         Transcript storage self,
         TranscriptOutcome calldata argument
     ) internal {
-        uint256 lastEID = self.cursors[argument.participant];
-        self.cursors[argument.participant] = TRANSCRIPT_CURSOR_HALTED;
-        emit TranscriptParticipantHalted(
-            self.id,
-            argument.participant,
-            lastEID
-        );
-        console.log("halted participant %s", argument.participant);
+        self._haltParticipant(argument.participant);
+    }
+
+    function haltAllExcept(
+        Transcript storage self,
+        address participant
+    ) internal {
+        for (uint i = 0; i < self.registered.length; i++) {
+            if (self.registered[i] == participant) continue;
+
+            self._haltParticipant(self.registered[i]);
+        }
     }
 
     /// @dev decrements the player lives, and halts if 0

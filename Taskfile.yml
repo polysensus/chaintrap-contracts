@@ -52,6 +52,15 @@ tasks:
       - task: build:types
       - npx rollup -c
 
+  verify:deployed:
+    desc: verify contracts in a diamond-deploy deployment record file
+    dotenv: [".env.{{.PROVIDER_ID}}"]
+    vars:
+      DEPLOYED_JSON: '{{.DEPLOYED_JSON | default ""}}'
+    cmds:
+      - |
+        [ -z "{{.DEPLOYED_JSON}}" ] && echo 'DEPLOYED_JSON must be set' && exit 1
+
   verify:diamond:sourcify:
     desc: verify the contracts
     cmds:
@@ -65,7 +74,7 @@ tasks:
         echo $CONSTRUCTOR_ARGS
         forge verify-contract \
           --constructor-args $CONSTRUCTOR_ARGS \
-          --chain 420 \
+          --chain ${ARENASTATE_CHAINID} \
           --watch \
             0x0c075885e9EBB701997bA3e1B8D291688Dc0bCEE \
             chaintrap/diamond/Diamond.sol:Diamond \
@@ -87,7 +96,7 @@ tasks:
         echo $CONSTRUCTOR_ARGS
         forge verify-contract \
           --constructor-args $CONSTRUCTOR_ARGS \
-          --chain 420 \
+          --chain ${ARENASTATE_CHAINID} \
           --watch \
             $ARENASTATE_ARENA  \
             chaintrap/diamond/Diamond.sol:Diamond \
@@ -108,7 +117,7 @@ tasks:
         [ -z "{{.FACET_ADDRESS}}" ] && echo 'FACET_ADDRESS must be set' && exit 1
 
         forge verify-contract \
-          --chain 420 \
+          --chain ${ARENASTATE_CHAINID} \
           --watch \
             {{.FACET_ADDRESS}}  \
             chaintrap/facets/arena/ERC1155ArenaFacet.sol:ERC1155ArenaFacet \
@@ -130,14 +139,17 @@ tasks:
         [ -z "{{.FACET_ADDRESS}}" ] && echo 'FACET_ADDRESS must be set' && exit 1
         echo "VERIFYING: {{.FACET_ADDRESS}}"
 
+        export ETHERSCAN_API_KEY=$ARENASTATE_ETHERSCAN_API_KEY
+        echo  "ETHERSCAN_API_KEY=$ARENASTATE_ETHERSCAN_API_KEY"
+
         forge verify-contract \
-          --chain 420 \
+          --chain ${ARENASTATE_CHAINID} \
           --watch \
             {{.FACET_ADDRESS}}  \
             chaintrap/facets/arena/ArenaFacet.sol:ArenaFacet \
           --verifier etherscan \
           --verifier-url $ARENASTATE_ETHERSCAN_URL \
-          --etherscan-api-key=$ARENASTATE_ETHERSCAN_API_KEY
+          --etherscan-api-key $ARENASTATE_ETHERSCAN_API_KEY
 
   verify:loupefacet:
     desc: verify the contracts
@@ -151,7 +163,7 @@ tasks:
         echo "VERIFYING: {{.FACET_ADDRESS}}"
 
         forge verify-contract \
-          --chain 420 \
+          --chain ${ARENASTATE_CHAINID} \
           --watch \
             {{.FACET_ADDRESS}}  \
             chaintrap/diamond/facets/DiamondLoupeFacet.sol:DiamondLoupeFacet \
@@ -172,7 +184,7 @@ tasks:
         echo "VERIFYING: {{.FACET_ADDRESS}}"
 
         forge verify-contract \
-          --chain 420 \
+          --chain ${ARENASTATE_CHAINID} \
           --watch \
             {{.FACET_ADDRESS}}  \
             chaintrap/diamond/facets/DiamondCutFacet.sol:DiamondCutFacet \
@@ -193,7 +205,7 @@ tasks:
         echo "VERIFYING: {{.FACET_ADDRESS}}"
 
         forge verify-contract \
-          --chain 420 \
+          --chain ${ARENASTATE_CHAINID} \
           --watch \
             {{.FACET_ADDRESS}}  \
             chaintrap/diamond/facets/OwnershipFacet.sol:OwnershipFacet \
