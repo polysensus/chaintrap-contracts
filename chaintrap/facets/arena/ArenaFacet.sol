@@ -96,6 +96,9 @@ contract ArenaFacet is
             // 1. if the choice type was declared as a victory condition,
             // complete the game and transfer ownership to the participant.
 
+            // All other participants are trapped in the dungeon.
+            t.haltAllExcept(argument.participant);
+
             // complete is an irreversible state, no code exists to
             // 'un-complete'. this method can only be called by the current
             // holder of the game transcript token
@@ -129,12 +132,15 @@ contract ArenaFacet is
                 argument.proof.transitionType
             )
         ) {
-            // 3. Add a single life.
+            // 3. Remove a single life or consume a free life bonus.
             if (!t.trialistApplyFatality(argument)) {
                 return; // not fatal
             }
             // then the player ran out of lives
             t.haltParticipant(argument);
+
+            // If all participants are now halted the narrator is victorious
+            if (t.countHalted() == t.registered.length) t.complete();
         } else if (
             LibTranscript.arrayContains(
                 t._transitionTypes().haltParticipantTransitions,
@@ -145,6 +151,8 @@ contract ArenaFacet is
             // halt the participant. Note that this by passes lives
 
             t.haltParticipant(argument);
+            // If all participants are now halted the narrator is victorious
+            if (t.countHalted() == t.registered.length) t.complete();
         } else {
             // "reveal" the choices. we say reveal, but he act of including them
             // in the call data has already done that. this just emits the logs
