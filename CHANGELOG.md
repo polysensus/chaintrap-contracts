@@ -1,5 +1,7 @@
 
 
+## [0.3.8](https://github.com/polysensus/chaintrap-contracts/compare/v0.3.7...v0.3.8) (2024-03-24)
+
 ## [0.3.7](https://github.com/polysensus/chaintrap-contracts/compare/v0.3.6...v0.3.7) (2023-09-05)
 
 
