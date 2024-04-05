@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
 // DiamondNew should only be used on a freshly deployed (empty) chaintrap diamond
 

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
+import {IERC1155} from "@solidstate/contracts/interfaces/IERC1155.sol";
+import {ERC1155Base} from "@solidstate/contracts/token/ERC1155/base/ERC1155Base.sol";
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 import {ERC1155MetadataStorage} from "@solidstate/contracts/token/ERC1155/metadata/ERC1155Metadata.sol";
 
@@ -120,7 +122,7 @@ contract ERC1155ArenaFacet is
     )
         public
         view
-        override
+        override (ERC1155Base, IERC1155)
         returns (
             // whenNotPaused
             bool isOperator

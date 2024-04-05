@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
@@ -105,7 +105,7 @@ contract Transcript2KnowProofUtils {
         kp.proof[4] = hex"8c4e03aa1a345609a3550b6a1d33de710ecd0398f38c992344b78b0b4aaf4ff7";
     }
 
-    function proofID1StartArgs() internal view returns (TranscriptStartArgs memory) {
+    function proofID1StartArgs() internal pure returns (TranscriptStartArgs memory) {
 
         TranscriptStartArgs memory args;
         /* FIXME
@@ -118,7 +118,7 @@ contract Transcript2KnowProofUtils {
         return args;
     }
 
-    function proofID1StartArgsNParticipants(uint numParticipants) internal view returns (TranscriptStartArgs memory) {
+    function proofID1StartArgsNParticipants(uint numParticipants) internal pure returns (TranscriptStartArgs memory) {
 
         TranscriptStartArgs memory args;
         // FIXME
@@ -136,7 +136,7 @@ contract Transcript2KnowProofUtils {
 
     function proofID1CommitArgument(
         address participant, LibTranscript.Outcome outcome
-        )  internal view returns (TranscriptOutcome memory) {
+        )  internal pure returns (TranscriptOutcome memory) {
         TranscriptOutcome memory out;
         out.participant = participant;
         out.outcome =  outcome;

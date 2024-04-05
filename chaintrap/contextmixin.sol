@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
 /**
  * https://github.com/maticnetwork/pos-portal/blob/master/contracts/common/ContextMixin.sol

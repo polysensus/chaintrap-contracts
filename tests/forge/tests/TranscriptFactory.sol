@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
 import {Transcript_IsInitialised, Transcript_VerifyFailed} from "chaintrap/libtranscript.sol";
 import {LibTranscript, TranscriptStartArgs} from "chaintrap/libtranscript.sol";

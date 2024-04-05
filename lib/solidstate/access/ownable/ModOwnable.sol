@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
 import {IERC173} from "@solidstate/contracts/interfaces/IERC173.sol";
 import {IOwnableInternal} from "@solidstate/contracts/access/ownable/IOwnableInternal.sol";

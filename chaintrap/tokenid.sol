@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
 error TypeRequirementNotMet(uint256 have, uint256 expect);
 error TypeIDRequired(uint256 have);

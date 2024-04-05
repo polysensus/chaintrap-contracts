@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
 import {IDiamondCut} from "diamond/interfaces/IDiamondCut.sol";
 import {DiamondCutFacet} from "diamond/facets/DiamondCutFacet.sol";
