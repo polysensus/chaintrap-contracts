@@ -29,6 +29,9 @@ export class TXProfiler {
     this.movingAverageWindow = movingAverageWindow;
     this.updated = optional?.updated;
     this.now = () => Date.now();
+    this.fifo = [];
+    this.order = 1;
+    this.pending = {};
     this.reset();
   }
 

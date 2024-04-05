@@ -17,10 +17,13 @@ export default [
 	{
 		input: 'chaintrap/chaintrap.ts',
 		output: [
-			{ file: pkg.module, format: 'cjs' }
+			{ file: pkg.module, format: 'commonjs' }
 		],
 		plugins: [
-      typescript(),
+      // the output can be commonjs, provided we let the typescript plugin work
+      // with es
+      typescript({module: "esnext"}),
+      commonjs()
 		]
 	}
 ];
