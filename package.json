@@ -2,9 +2,9 @@
   "name": "@polysensus/chaintrap-contracts",
   "version": "0.3.8",
   "description": "smart contracts and supporting javascript for chaintrap",
-  "main": "dist/chaintrap.esm.js",
-  "module": "dist/chaintrap.esm.js",
-  "browser": "dist/chaintrap.esm.js",
+  "main": "dist/chaintrap.cjs",
+  "module": "dist/chaintrap.cjs",
+  "browser": "dist/chaintrap.cjs",
   "files": [
     "dist/chaintrap.cjs",
     "dist/chaintrap.esm.js",
@@ -19,8 +19,8 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/chaintrap.esm.js",
-      "node": "./dist/chaintrap.esm.js"
+      "default": "./dist/chaintrap.cjs",
+      "node": "./dist/chaintrap.cjs"
     },
     "./abi/Diamond.json": "./abi/Diamond.json",
     "./abi/OwnershipFacet.json": "./abi/OwnershipFacet.json",

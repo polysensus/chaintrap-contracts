@@ -17,12 +17,10 @@ export default [
 	{
 		input: 'chaintrap/chaintrap.ts',
 		output: [
-			{ file: pkg.module, format: 'es' }
+			{ file: pkg.module, format: 'cjs' }
 		],
 		plugins: [
       typescript(),
-			resolve({preferBuiltins:true}), // so Rollup can find `ms`
-			commonjs() // so Rollup can convert `ms` to an ES module
 		]
 	}
 ];
