@@ -165,7 +165,7 @@ library LibProofStack {
         ChoiceProof calldata args,
         StackState memory state,
         uint256 i
-    ) internal view returns (bytes32) {
+    ) internal pure returns (bytes32) {
         if (
             args.stack[i].inputRefs.length == 0 &&
             args.stack[i].proofRefs.length == 0
@@ -177,7 +177,7 @@ library LibProofStack {
         ChoiceProof calldata args,
         StackState memory state,
         uint256 i
-    ) internal view returns (bytes32) {
+    ) internal pure returns (bytes32) {
         StackProof calldata item = args.stack[i];
         ProofLeaf calldata leaf = args.leaves[i];
 

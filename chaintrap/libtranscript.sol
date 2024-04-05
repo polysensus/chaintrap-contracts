@@ -9,6 +9,82 @@ import {StackProof, ProofLeaf, LibProofStack, ChoiceProof, StackState} from "cha
 import {TrialistState, TrialistInitArgs, trialistIsInitialised, trialistInitCheck, trialistInit} from "chaintrap/libtrialiststate.sol";
 import {TranscriptInitArgs, TranscriptStartArgs} from "chaintrap/libtranscriptstructs.sol";
 
+event TranscriptCreated(
+    uint256 indexed id,
+    address indexed creator,
+    uint256 registrationLimit
+);
+event TranscriptStarted(uint256 indexed id);
+event TranscriptCompleted(uint256 indexed id);
+
+/// @dev emitted when a participant is registered
+event TranscriptRegistration(
+    uint256 indexed id,
+    address indexed participant,
+    bytes profile
+);
+
+event TranscriptParticipantHalted(
+    uint256 indexed id,
+    address indexed participant,
+    uint256 lastEID
+);
+
+event TranscriptParticipantLivesAdded(
+    uint256 indexed id,
+    address indexed participant,
+    uint256 lives,
+    uint256 added
+);
+event TranscriptParticipantLivesLost(
+    uint256 indexed id,
+    address indexed participant,
+    uint256 lives,
+    uint256 lost
+);
+
+/// @dev emited when a root is initialised or changed
+event TranscriptMerkleRootSet(
+    uint256 indexed id,
+    bytes32 indexed label,
+    bytes32 indexed root
+);
+
+/// ---------------------------
+/// @dev individual transcript entries (turns)
+
+/// @dev the choices that were revealed as a consequence of the *previous*
+/// transcript entry. The eid is 0 when setting the starting choices and
+/// data.
+event TranscriptEntryChoices(
+    uint256 indexed id,
+    address indexed participant,
+    uint256 eid,
+    ProofLeaf choices,
+    bytes data
+);
+
+/// @dev emitted when a participant commits to a choice.
+event TranscriptEntryCommitted(
+    uint256 indexed id,
+    address indexed participant,
+    uint256 eid,
+    bytes32 rootLabel,
+    uint256 inputChoice,
+    bytes data
+);
+
+/// @dev emitted when the transcript creator (or advocate) resolves a pending committed entry
+event TranscriptEntryOutcome(
+    uint256 indexed id,
+    address indexed participant,
+    uint256 eid,
+    address advocate,
+    bytes32 rootLabel,
+    LibTranscript.Outcome outcome,
+    bytes data
+);
+
 /// @dev Transcript records and verifies a series of interactions. Interactions
 /// are verified by having encoded them into merkle tries whose roots are
 /// commited when the transcript is initialised. A registered participant is
@@ -148,85 +224,6 @@ library LibTranscript {
         Started,
         Complete
     }
-
-    // NOTE: These are duplicated in facets due to complications with diamonds & ethers
-    /// See ITranscriptEvents.sol for full details of all Transcript* events
-
-    event TranscriptCreated(
-        uint256 indexed id,
-        address indexed creator,
-        uint256 registrationLimit
-    );
-    event TranscriptStarted(uint256 indexed id);
-    event TranscriptCompleted(uint256 indexed id);
-
-    /// @dev emitted when a participant is registered
-    event TranscriptRegistration(
-        uint256 indexed id,
-        address indexed participant,
-        bytes profile
-    );
-
-    event TranscriptParticipantHalted(
-        uint256 indexed id,
-        address indexed participant,
-        uint256 lastEID
-    );
-
-    event TranscriptParticipantLivesAdded(
-        uint256 indexed id,
-        address indexed participant,
-        uint256 lives,
-        uint256 added
-    );
-    event TranscriptParticipantLivesLost(
-        uint256 indexed id,
-        address indexed participant,
-        uint256 lives,
-        uint256 lost
-    );
-
-    /// @dev emited when a root is initialised or changed
-    event TranscriptMerkleRootSet(
-        uint256 indexed id,
-        bytes32 indexed label,
-        bytes32 indexed root
-    );
-
-    /// ---------------------------
-    /// @dev individual transcript entries (turns)
-
-    /// @dev the choices that were revealed as a consequence of the *previous*
-    /// transcript entry. The eid is 0 when setting the starting choices and
-    /// data.
-    event TranscriptEntryChoices(
-        uint256 indexed id,
-        address indexed participant,
-        uint256 eid,
-        ProofLeaf choices,
-        bytes data
-    );
-
-    /// @dev emitted when a participant commits to a choice.
-    event TranscriptEntryCommitted(
-        uint256 indexed id,
-        address indexed participant,
-        uint256 eid,
-        bytes32 rootLabel,
-        uint256 inputChoice,
-        bytes data
-    );
-
-    /// @dev emitted when the transcript creator (or advocate) resolves a pending committed entry
-    event TranscriptEntryOutcome(
-        uint256 indexed id,
-        address indexed participant,
-        uint256 eid,
-        address advocate,
-        bytes32 rootLabel,
-        Outcome outcome,
-        bytes data
-    );
 
     enum Outcome {
         Invalid,

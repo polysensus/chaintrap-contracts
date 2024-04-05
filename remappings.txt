@@ -2,7 +2,6 @@
 @openzeppelin/=node_modules/@openzeppelin/
 openzeppelin-solidity/=node_modules/@openzeppelin/
 chaintrap/=chaintrap/
-diamond/=chaintrap/diamond
 lib/=lib/
 facets/=chaintrap/facets/
 interfaces/=interfaces/

@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
 import {Transcript_IsInitialised, Transcript_VerifyFailed} from "chaintrap/libtranscript.sol";
-import {LibTranscript, Transcript, TranscriptInitArgs} from "chaintrap/libtranscript.sol";
+import {LibTranscript, Transcript, TranscriptInitArgs, TranscriptMerkleRootSet} from "chaintrap/libtranscript.sol";
 import {TrialistInitArgs} from "chaintrap/libtrialiststate.sol";
 
 import {TranscriptWithFactory, TranscriptInitUtils, Transcript2KnowProofUtils } from "tests/TranscriptUtils.sol";
@@ -76,8 +76,8 @@ contract LibGame__init is
         vm.expectEmit(true, true, true, true);
 
         // Should get one emit for each root
-        emit LibTranscript.TranscriptMerkleRootSet(1, "", "");
-        emit LibTranscript.TranscriptMerkleRootSet(1, "", "");
+        emit TranscriptMerkleRootSet(1, "", "");
+        emit TranscriptMerkleRootSet(1, "", "");
 
         f._init(1, address(1), TranscriptInitArgs({
             tokenURI: "tokenURI",

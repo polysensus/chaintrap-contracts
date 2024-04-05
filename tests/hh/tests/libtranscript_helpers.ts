@@ -1,16 +1,29 @@
-import hre from "hardhat";
-const ethers = hre.ethers;
+import { ethers } from "hardhat";
+// import hre from "hardhat";
 
-export function conditionInput(value) {
+export function conditionInput(value: any): string {
   return ethers.utils.hexlify(
     ethers.utils.zeroPad(ethers.utils.hexlify(value), 32)
   );
 }
 
-export async function createGame(arena, params) {
-  const rootLabels = [];
-  const roots = [];
-  const labeled = {};
+interface CreateGameParams {
+  tokenURI?: string;
+  registrationLimit?: number;
+  trialistArgs: any; // Update with appropriate type
+  roots: { [label: string]: string };
+  choiceInputTypes: any[]; // Update with appropriate type
+  transitionTypes: any[]; // Update with appropriate type
+  victoryTransitionTypes: any[]; // Update with appropriate type
+  haltParticipantTransitionTypes: any[]; // Update with appropriate type
+  livesIncrement: any[]; // Update with appropriate type
+  livesDecrement: any[]; // Update with appropriate type
+}
+
+export async function createGame(arena: any, params: CreateGameParams) {
+  const rootLabels: string[] = [];
+  const roots: string[] = [];
+  const labeled: { [label: string]: { label32: string; root: string } } = {};
 
   for (const [label, root] of Object.entries(params.roots)) {
     const label32 = ethers.utils.formatBytes32String(label);

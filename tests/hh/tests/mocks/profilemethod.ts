@@ -1,5 +1,8 @@
 export class MockProfileMethod {
-  constructor(receipts) {
+  private txhash: number;
+  private receipts: any[];
+
+  constructor(receipts: any[]) {
     this.txhash = 1;
     this.receipts = receipts;
   }

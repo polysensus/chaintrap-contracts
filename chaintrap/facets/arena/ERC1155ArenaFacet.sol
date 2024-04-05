@@ -14,12 +14,10 @@ import "chaintrap/erc1155/storage.sol";
 import {LibERC1155Arena} from "chaintrap/erc1155/liberc1155arena.sol";
 
 import {IERC1155Arena} from "chaintrap/interfaces/IERC1155Arena.sol";
-import {ITranscriptEvents} from "chaintrap/interfaces/ITranscriptEvents.sol";
 import {LibArenaStorage} from "chaintrap/arena/storage.sol";
 import {LibTranscript, Transcript, TranscriptInitArgs} from "chaintrap/libtranscript.sol";
 
 contract ERC1155ArenaFacet is
-    ITranscriptEvents,
     IERC1155Arena,
     SolidStateERC1155,
     ModOwnable,
@@ -122,7 +120,7 @@ contract ERC1155ArenaFacet is
     )
         public
         view
-        override (ERC1155Base, IERC1155)
+        override(ERC1155Base, IERC1155)
         returns (
             // whenNotPaused
             bool isOperator

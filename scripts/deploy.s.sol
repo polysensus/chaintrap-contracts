@@ -3,11 +3,11 @@ pragma solidity ^0.8.9;
 
 import "forge-std/Script.sol";
 
-import {IDiamondCut} from "diamond/interfaces/IDiamondCut.sol";
-import {DiamondCutFacet} from "diamond/facets/DiamondCutFacet.sol";
+import {IDiamondCut} from "chaintrap/diamond/interfaces/IDiamondCut.sol";
+import {DiamondCutFacet} from "chaintrap/diamond/facets/DiamondCutFacet.sol";
 import {DiamondNew, DiamondNewArgs, IDiamondNew} from "lib/upgradeinit/DiamondNew.sol";
 
-import {Diamond} from "diamond/Diamond.sol";
+import {Diamond} from "chaintrap/diamond/Diamond.sol";
 
 contract DeployScript is Script {
     IDiamondCut.FacetCut[] private _facetCuts;
