@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.9;
 
-import {TranscriptCommitment} from "lib/libtranscript.sol";
-import {TranscriptOutcome} from "lib/libtranscript.sol";
-import {TranscriptStartArgs} from "lib/libtranscript.sol";
+import {TranscriptCommitment} from "chaintrap/libtranscript.sol";
+import {TranscriptOutcome} from "chaintrap/libtranscript.sol";
+import {TranscriptStartArgs} from "chaintrap/libtranscript.sol";
 
 interface IArenaTranscript {
     function registerTrialist(uint256 gid, bytes calldata profile) external;

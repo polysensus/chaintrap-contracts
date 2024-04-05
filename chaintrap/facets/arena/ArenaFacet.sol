@@ -8,12 +8,12 @@ import "lib/solidstate/token/ERC1155/ModBalanceOf.sol";
 import "lib/solidstate/security/ModPausable.sol";
 import "lib/solidstate/access/ownable/ModOwnable.sol";
 
-import "lib/contextmixin.sol";
+import "chaintrap/contextmixin.sol";
 
-import "lib/interfaces/IArenaTranscript.sol";
+import "chaintrap/interfaces/IArenaTranscript.sol";
 
-import {LibArenaStorage} from "lib/arena/storage.sol";
-import {TRANSCRIPT_CURSOR_HALTED, LibTranscript, Transcript, TranscriptStartArgs} from "lib/libtranscript.sol";
+import {LibArenaStorage} from "chaintrap/arena/storage.sol";
+import {TRANSCRIPT_CURSOR_HALTED, LibTranscript, Transcript, TranscriptStartArgs} from "chaintrap/libtranscript.sol";
 
 error InsufficientBalance(address addr, uint256 id, uint256 balance);
 

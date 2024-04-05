@@ -2,8 +2,8 @@
 pragma solidity =0.8.9;
 
 /// @dev general structs for libtranscripts.sol live here
-import {ProofLeaf} from "lib/libproofstack.sol";
-import {TrialistInitArgs} from "lib/libtrialiststate.sol";
+import {ProofLeaf} from "chaintrap/libproofstack.sol";
+import {TrialistInitArgs} from "chaintrap/libtrialiststate.sol";
 
 /// @dev the arguments necessary for creating a game.
 /// Notice: this struct nests other structs so, due to our use of ERC 2535,

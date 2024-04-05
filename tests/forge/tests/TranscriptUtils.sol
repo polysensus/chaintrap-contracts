@@ -4,9 +4,9 @@ pragma solidity =0.8.9;
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
-import {TranscriptInitArgs} from "lib/libtranscript.sol";
-import {LibTranscript, TranscriptStartArgs, TranscriptOutcome} from "lib/libtranscript.sol";
-import {TrialistInitArgs} from "lib/libtrialiststate.sol";
+import {TranscriptInitArgs} from "chaintrap/libtranscript.sol";
+import {LibTranscript, TranscriptStartArgs, TranscriptOutcome} from "chaintrap/libtranscript.sol";
+import {TrialistInitArgs} from "chaintrap/libtrialiststate.sol";
 
 import {HEVM_ADDRESS} from "tests/constants.sol";
 import {TranscriptFactory} from "tests/TranscriptFactory.sol";

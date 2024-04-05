@@ -1,7 +1,7 @@
 
 pragma solidity =0.8.9;
 
-import {LibProofStack, StackProof, ProofLeaf, ChoiceProof, StackState } from "lib/libproofstack.sol";
+import {LibProofStack, StackProof, ProofLeaf, ChoiceProof, StackState } from "chaintrap/libproofstack.sol";
 
 contract LibProofStackFacade {
     mapping(bytes32 => bytes32) roots;

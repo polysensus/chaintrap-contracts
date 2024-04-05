@@ -1,5 +1,7 @@
 .DS_Store
+.envrc
 .env.op
+.env.secret
 commit.md
 .npmrc
 tmp

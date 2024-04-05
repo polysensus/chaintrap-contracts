@@ -4,10 +4,10 @@ pragma solidity =0.8.9;
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 import "hardhat/console.sol";
-import "lib/interfaces/ITranscriptErrors.sol";
-import {StackProof, ProofLeaf, LibProofStack, ChoiceProof, StackState} from "lib/libproofstack.sol";
-import {TrialistState, TrialistInitArgs, trialistIsInitialised, trialistInitCheck, trialistInit} from "lib/libtrialiststate.sol";
-import {TranscriptInitArgs, TranscriptStartArgs} from "lib/libtranscriptstructs.sol";
+import "chaintrap/interfaces/ITranscriptErrors.sol";
+import {StackProof, ProofLeaf, LibProofStack, ChoiceProof, StackState} from "chaintrap/libproofstack.sol";
+import {TrialistState, TrialistInitArgs, trialistIsInitialised, trialistInitCheck, trialistInit} from "chaintrap/libtrialiststate.sol";
+import {TranscriptInitArgs, TranscriptStartArgs} from "chaintrap/libtranscriptstructs.sol";
 
 /// @dev Transcript records and verifies a series of interactions. Interactions
 /// are verified by having encoded them into merkle tries whose roots are

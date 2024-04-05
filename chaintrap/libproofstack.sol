@@ -4,7 +4,7 @@ pragma solidity =0.8.9;
 import "hardhat/console.sol";
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "lib/interfaces/IProofStackErrors.sol";
+import "chaintrap/interfaces/IProofStackErrors.sol";
 
 struct ProofLeaf {
     uint256 typeId;
