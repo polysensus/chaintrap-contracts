@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
-import {TranscriptInitArgs} from "lib/libtranscript.sol";
+pragma solidity ^0.8.9;
+import {TranscriptInitArgs} from "chaintrap/libtranscript.sol";
 
 interface IERC1155Arena {
     /// ---------------------------------------------------

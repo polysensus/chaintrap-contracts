@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 import "@solidstate/contracts/security/PausableStorage.sol";
 
 // Mod xxx files implement modifiers and the readonly internal methods strictly

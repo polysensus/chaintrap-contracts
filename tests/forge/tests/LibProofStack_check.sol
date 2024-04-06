@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
 import {DSTest} from "forge-std/Test.sol";
 // import {vm} from "forge-std/Vm.sol";
 
-import {LibProofStack, StackProof, ProofLeaf} from "lib/libproofstack.sol";
+import {LibProofStack, StackProof, ProofLeaf} from "chaintrap/libproofstack.sol";
 
 import {LibProofStackFacade} from "tests/LibProofStack_Facade.sol";
 

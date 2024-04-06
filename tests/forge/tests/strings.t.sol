@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // @provenance project:https://github.com/Arachnid/solidity-stringutils
 // @provenance file:https://github.com/Arachnid/solidity-stringutils/blob/46983c6d9462a80229cf0d5bab8ea3b3ee31066c/src/strings.t.sol
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
 import 'ds-test/test.sol';
 import 'tests/strings.sol';

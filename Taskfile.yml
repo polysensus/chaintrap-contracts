@@ -40,8 +40,8 @@ tasks:
         npx prettier --write 'chaintrap/**/*.sol'
         npx prettier --write 'lib/**/*.sol'
         npx prettier --write  'scripts/**/*.sol'
-        npx prettier --write  'chaintrap/**/*.{js,mjs}'
-        npx prettier --write  'tests/hh/**/*.{js,mjs}'
+        npx prettier --write  'chaintrap/**/*.{js,mjs,ts}'
+        npx prettier --write  'tests/hh/**/*.{js,mjs,ts}'
 
 
   build:
@@ -275,7 +275,7 @@ tasks:
   test:hh:
     desc: run the hardhat tests
     cmds:
-      - npx mocha --require esm --timeout 20000  'tests/**/*.{mjs,js}'  {{.CLI_ARGS}}
+      - npx hardhat test
 
   deploy:
     cmds:

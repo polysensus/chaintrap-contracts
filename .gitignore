@@ -1,5 +1,8 @@
 .DS_Store
+typechain-types
+.envrc
 .env.op
+.env.secret
 commit.md
 .npmrc
 tmp

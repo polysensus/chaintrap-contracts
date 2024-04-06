@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
-import {Transcript_IsInitialised, Transcript_VerifyFailed} from "lib/libtranscript.sol";
-import {LibTranscript, Transcript, TranscriptInitArgs} from "lib/libtranscript.sol";
-import {TrialistInitArgs} from "lib/libtrialiststate.sol";
+import {Transcript_IsInitialised, Transcript_VerifyFailed} from "chaintrap/libtranscript.sol";
+import {LibTranscript, Transcript, TranscriptInitArgs} from "chaintrap/libtranscript.sol";
+import {TrialistInitArgs} from "chaintrap/libtrialiststate.sol";
 
 import {TranscriptWithFactory, TranscriptInitUtils } from "tests/TranscriptUtils.sol";
 

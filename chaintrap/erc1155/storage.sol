@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
-import "lib/erc1155/liberc1155arena.sol";
-import "lib/tokenid.sol";
+import "chaintrap/erc1155/liberc1155arena.sol";
+import "chaintrap/tokenid.sol";
 
 library ArenaERC1155Storage {
     struct Layout {

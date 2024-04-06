@@ -1,4 +1,4 @@
-export function pushFIFO(fifo, capacity, ...items) {
+export function pushFIFO<T>(fifo: T[], capacity: number, ...items: T[]): T[] {
   // easiest case, adding some items, not yet at capacity
   if (fifo.length + items.length < capacity) {
     fifo.push(...items);
@@ -14,7 +14,7 @@ export function pushFIFO(fifo, capacity, ...items) {
     return fifo;
   }
 
-  // items.length is < capactiy, fifo.length + items.length is >
+  // items.length is < capacity, fifo.length + items.length is >
 
   // make room with shift
   const remove = fifo.length + items.length - capacity;

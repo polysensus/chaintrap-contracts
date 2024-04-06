@@ -1,11 +1,10 @@
 {
   "name": "@polysensus/chaintrap-contracts",
-  "type": "module",
   "version": "0.3.8",
   "description": "smart contracts and supporting javascript for chaintrap",
-  "main": "dist/chaintrap.esm.js",
-  "module": "dist/chaintrap.esm.js",
-  "browser": "dist/chaintrap.esm.js",
+  "main": "dist/chaintrap.cjs",
+  "module": "dist/chaintrap.cjs",
+  "browser": "dist/chaintrap.cjs",
   "files": [
     "dist/chaintrap.cjs",
     "dist/chaintrap.esm.js",
@@ -20,8 +19,8 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/chaintrap.esm.js",
-      "node": "./dist/chaintrap.esm.js"
+      "default": "./dist/chaintrap.cjs",
+      "node": "./dist/chaintrap.cjs"
     },
     "./abi/Diamond.json": "./abi/Diamond.json",
     "./abi/OwnershipFacet.json": "./abi/OwnershipFacet.json",
@@ -116,13 +115,17 @@
     "@release-it/conventional-changelog": "^7.0.0",
     "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-node-resolve": "^15.0.2",
+    "@rollup/plugin-typescript": "^11.1.6",
     "@solidstate/abi": "^0.0.52",
     "@solidstate/contracts": "^0.0.52",
     "@solidstate/library": "^0.0.52",
     "@solidstate/spec": "^0.0.52",
     "@typechain/ethers-v5": "^10.2.0",
     "@typechain/hardhat": "^6.1.5",
-    "chai": "^4.3.6",
+    "@types/chai": "^4.3.14",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.12.4",
+    "chai": "^4.4.1",
     "chai-ethers": "^0.0.1",
     "dotenv": "^16.0.3",
     "eslint": "^8.14.0",
@@ -141,8 +144,9 @@
     "prettier-plugin-solidity": "^1.1.3",
     "release-it": "^16.1.5",
     "rollup": "^3.20.2",
-    "ts-node": "^10.9.1",
-    "typechain": "^8.1.1",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typechain": "^8.3.2",
     "typescript": "^5.0.4",
     "vitest": "^0.29.8"
   }

@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
+import {IERC1155} from "@solidstate/contracts/interfaces/IERC1155.sol";
+import {ERC1155Base} from "@solidstate/contracts/token/ERC1155/base/ERC1155Base.sol";
 import {SolidStateERC1155} from "@solidstate/contracts/token/ERC1155/SolidStateERC1155.sol";
 import {ERC1155MetadataStorage} from "@solidstate/contracts/token/ERC1155/metadata/ERC1155Metadata.sol";
 
 import "lib/solidstate/security/ModPausable.sol";
 import "lib/solidstate/access/ownable/ModOwnable.sol";
-import "lib/contextmixin.sol";
-import "lib/erc1155/storage.sol";
+import "chaintrap/contextmixin.sol";
+import "chaintrap/erc1155/storage.sol";
 
-import {LibERC1155Arena} from "lib/erc1155/liberc1155arena.sol";
+import {LibERC1155Arena} from "chaintrap/erc1155/liberc1155arena.sol";
 
-import {IERC1155Arena} from "lib/interfaces/IERC1155Arena.sol";
-import {ITranscriptEvents} from "lib/interfaces/ITranscriptEvents.sol";
-import {LibArenaStorage} from "lib/arena/storage.sol";
-import {LibTranscript, Transcript, TranscriptInitArgs} from "lib/libtranscript.sol";
+import {IERC1155Arena} from "chaintrap/interfaces/IERC1155Arena.sol";
+import {LibArenaStorage} from "chaintrap/arena/storage.sol";
+import {LibTranscript, Transcript, TranscriptInitArgs} from "chaintrap/libtranscript.sol";
 
 contract ERC1155ArenaFacet is
-    ITranscriptEvents,
     IERC1155Arena,
     SolidStateERC1155,
     ModOwnable,
@@ -120,7 +120,7 @@ contract ERC1155ArenaFacet is
     )
         public
         view
-        override
+        override(ERC1155Base, IERC1155)
         returns (
             // whenNotPaused
             bool isOperator

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
 import {IERC1155BaseInternal} from "@solidstate/contracts/token/ERC1155/base/IERC1155BaseInternal.sol";
 import {ERC1155BaseStorage} from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseStorage.sol";
 
-import "lib/erc1155/storage.sol";
-import "lib/tokenid.sol";
+import "chaintrap/erc1155/storage.sol";
+import "chaintrap/tokenid.sol";
 
 error TokenNotBoundBy(uint256, uint256);
 

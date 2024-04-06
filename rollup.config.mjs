@@ -1,3 +1,4 @@
+import typescript from "@rollup/plugin-typescript";
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import pkg from './package.json' assert {type: 'json'};
@@ -14,13 +15,15 @@ export default [
 	// an array for the `output` option, where we can specify
 	// `file` and `format` for each target)
 	{
-		input: 'chaintrap/chaintrap.js',
+		input: 'chaintrap/chaintrap.ts',
 		output: [
-			{ file: pkg.module, format: 'es' }
+			{ file: pkg.module, format: 'commonjs' }
 		],
 		plugins: [
-			resolve({preferBuiltins:true}), // so Rollup can find `ms`
-			commonjs() // so Rollup can convert `ms` to an ES module
+      // the output can be commonjs, provided we let the typescript plugin work
+      // with es
+      typescript({module: "esnext"}),
+      commonjs()
 		]
 	}
 ];

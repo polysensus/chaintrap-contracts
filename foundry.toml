@@ -1,12 +1,11 @@
 [profile.default]
-# solc_version = '0.8.13'
-solc_version = '0.8.9'
+solc_version = "0.8.22"
 optmizer = true
 # optmizer_runs = 200
 src = 'chaintrap'
 test = 'tests/forge/tests'
 out = 'build/forge/out'
-libs = ['node_modules']
+libs = ["node_modules", "lib"]
 verbosity = 4
 # fs_permissions = [{ access = "read-write", path = "./"}]
 fs_permissions = [
@@ -24,5 +23,9 @@ fs_permissions = [
 src = 'chaintrap'
 out = 'build/forge/out'
 libs = ['node_modules']
+[rpc_endpoints]
+opsepolia = "${SEPOLIA_RPC_URL}"
+[etherscan]
+opsepolia = { key = "${ETHERSCAN_API_KEY}", url = "${ETHERSCAN_URL}" }
 
 # See more config options https://github.com/gakonst/foundry/tree/master/config

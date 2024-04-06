@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.9;
+pragma solidity ^0.8.9;
 
-import {Transcript_IsInitialised, Transcript_VerifyFailed} from "lib/libtranscript.sol";
-import {LibTranscript, TranscriptStartArgs} from "lib/libtranscript.sol";
-import {Transcript, TranscriptInitArgs} from "lib/libtranscript.sol";
-import {TranscriptCommitment, TranscriptOutcome} from "lib/libtranscript.sol";
+import {Transcript_IsInitialised, Transcript_VerifyFailed} from "chaintrap/libtranscript.sol";
+import {LibTranscript, TranscriptStartArgs} from "chaintrap/libtranscript.sol";
+import {Transcript, TranscriptInitArgs} from "chaintrap/libtranscript.sol";
+import {TranscriptCommitment, TranscriptOutcome} from "chaintrap/libtranscript.sol";
 
 /*
  TranscriptFactory creates a new Transcript storage entry on demand and implements

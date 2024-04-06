@@ -1,15 +1,13 @@
-import hre from "hardhat";
-const ethers = hre.ethers;
+import { ethers } from "hardhat";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { deployArenaFixture } from "./deploy.js";
-import { createArenaProxy } from "./arenaproxy.js";
+import { deployArenaFixture } from "./deploy";
+import { createArenaProxy } from "./arenaproxy";
+import { createGame } from "./libtranscript_helpers";
 
-import { createGame } from "./libtranscript_helpers.js";
-
-describe("LibTranscript_registerParticipant", async function () {
-  let proxy;
-  let owner;
+describe("LibTranscript_registerParticipant", function () {
+  let proxy: string;
+  let owner: ethers.Signer;
 
   it("Should register participant", async function () {
     // Need a fresh proxy to get the gids we expect
