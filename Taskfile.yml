@@ -38,7 +38,6 @@ tasks:
     cmds:
       - |
         npx prettier --write 'chaintrap/**/*.sol'
-        npx prettier --write 'lib/**/*.sol'
         npx prettier --write  'scripts/**/*.sol'
         npx prettier --write  'chaintrap/**/*.{js,mjs,ts}'
         npx prettier --write  'tests/hh/**/*.{js,mjs,ts}'
