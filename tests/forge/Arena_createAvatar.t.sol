@@ -9,21 +9,13 @@ import {LibTestDeploy} from "tests/LibTestDeploy.sol";
 import {TokenID, maskTypeField} from "chaintrap/tokenid.sol";
 import {IERC1155Arena} from "chaintrap/interfaces/IERC1155Arena.sol";
 import {AvatarInitArgs} from "chaintrap/libavatar.sol";
+import {Arena_setup} from "tests/Arena_setup.sol";
 
 contract Arena_createAvatar is
-    Test {
-
-    address tokenDeployer;
-    address operator;
-
-    IERC1155Arena arena;
+    Arena_setup {
 
     function setUp() public {
-
-      tokenDeployer = vm.addr(1);
-      operator = vm.addr(10);
-
-      arena = IERC1155Arena(LibTestDeploy.newChaintrapArena(vm, tokenDeployer, operator));
+      setup_deployedArena();
     }
 
     function test_deployOk() public view {

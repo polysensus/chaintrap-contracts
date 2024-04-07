@@ -35,17 +35,6 @@ contract ERC1155ArenaFacet is
     /// ---------------------------------------------------
     //
 
-    /*
-    function mintModerator() external whenNotPaused onlyOwner {
-
-    }
-   function mintNarrator() external whenNotPaused returns (uint256) {
-     return 0;
-   }
-   function mintRaider() external whenNotPaused returns (uint256) {
-    return 0;
-   }*/
-
     function createAvatar(
         AvatarInitArgs calldata args,
         uint256 avatarType
@@ -99,25 +88,7 @@ contract ERC1155ArenaFacet is
     function setURI(string memory newuri) public whenNotPaused onlyOwner {
         ERC1155MetadataStorage.layout().baseURI = newuri;
     }
-    /*
-  function mint(
-      address account,
-      uint256 id,
-      uint256 amount,
-      bytes memory data // whenNotPaused // onlyOwner
-  ) public {
-      _mint(account, id, amount, data);
-  }
-  
-  function mintBatch(
-      address to,
-      uint256[] memory ids,
-      uint256[] memory amounts,
-      bytes memory data // whenNotPaused // onlyOwner
-  ) public {
-      _mintBatch(to, ids, amounts, data);
-  }
-  */
+
     function _beforeTokenTransfer(
         address operator,
         address from,
