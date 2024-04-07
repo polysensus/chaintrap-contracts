@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import "forge-std/Test.sol";
-import "forge-std/Vm.sol";
+import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {stdError} from "forge-std/StdError.sol";
 
 import {Transcript_IsInitialised, Transcript_VerifyFailed} from "chaintrap/libtranscript.sol";
 import {LibTranscript, Transcript, TranscriptInitArgs} from "chaintrap/libtranscript.sol";
@@ -13,9 +14,8 @@ import {TranscriptWithFactory, TranscriptInitUtils } from "tests/TranscriptUtils
 contract LibGame_verifyRoot is
     TranscriptWithFactory,
     TranscriptInitUtils,
-    DSTest {
+    Test {
     using LibTranscript  for Transcript;
-    using stdStorage for StdStorage;
 
     function test_verifyRoot() public {
 

@@ -6,6 +6,7 @@ env:
   DEPLOYCLI: "node node_modules/@polysensus/diamond-deploy/dist/deploycli.esm.js"
 
 vars:
+  FORGE_ARTIFACTS: '{{.FORGE_ARTIFACTS | default "build/forge"}}'
   # The input file for diamond-deploy --exclu
   FACETS_EXCLUDE: abi/facets-exclude.json
   DIAMOND_DEPLOY_JSON: '{{.ENV}}/diamond-deploy.json'
@@ -222,9 +223,10 @@ tasks:
       - task: build:diamond-deploy
       - |
         echo "copying abi files from build"
-        cp build/forge/out/Diamond.sol/Diamond.json abi/
-        cp build/forge/out/DiamondNew.sol/DiamondNew.json abi/
-        for d in $(ls -d build/forge/out/*Facet.sol); do cp $d/*Facet.json abi/; done
+        
+        cp {{.FORGE_ARTIFACTS}}/Diamond.sol/Diamond.json abi/
+        cp {{.FORGE_ARTIFACTS}}/DiamondNew.sol/DiamondNew.json abi/
+        for d in $(ls -d {{.FORGE_ARTIFACTS}}/*Facet.sol); do cp $d/*Facet.json abi/; done
       
   build:types:
     desc: "generate typescript types using typechain"
@@ -246,7 +248,7 @@ tasks:
       - |
         ${DEPLOYCLI} \
           select \
-          --select-excluded -I facet -i build/forge/out \
+          --select-excluded -I facet -i {{.FORGE_ARTIFACTS}} \
           | tee {{.FACETS_EXCLUDE}}
 
   build:diamond-deploy:
@@ -255,7 +257,7 @@ tasks:
       - |
         ${DEPLOYCLI} \
           list \
-          -I facet -i build/forge/out \
+          -I facet -i {{.FORGE_ARTIFACTS}} \
           -n Diamond DiamondNew \
           --exclude {{.FACETS_EXCLUDE}} \
           --format json | tee {{.DIAMOND_DEPLOY_JSON}}
@@ -325,7 +327,7 @@ tasks:
     cmds:
       - |
         ${DEPLOYCLI} select \
-          -I facet -i build/forge/out \
+          -I facet -i {{.FORGE_ARTIFACTS}} \
           -n Diamond DiamondNew \
           --show-collisions --format json
 
@@ -335,7 +337,7 @@ tasks:
       - |
         ${DEPLOYCLI} \
           list \
-          -I facet -i build/forge/out \
+          -I facet -i {{.FORGE_ARTIFACTS}} \
           -n Diamond DiamondNew \
           --exclude {{.FACETS_EXCLUDE}} \
           --format json
@@ -346,7 +348,7 @@ tasks:
       - |
         ${DEPLOYCLI} \
           list \
-          -I facet -i build/forge/out \
+          -I facet -i {{.FORGE_ARTIFACTS}} \
           -n Diamond DiamondNew \
           --exclude {{.FACETS_EXCLUDE}} \
           --format json | jq -r .[].name | tr -s '\n' ' '

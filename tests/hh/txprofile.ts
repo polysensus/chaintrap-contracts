@@ -1,6 +1,6 @@
 import chai from "chai";
 const { expect } = chai;
-import { TXProfiler } from "../../../chaintrap/txprofile";
+import { TXProfiler } from "../../chaintrap/txprofile";
 
 import { MockProfileMethod } from "./mocks/profilemethod";
 import { MockProfileClock } from "./mocks/profileclock";

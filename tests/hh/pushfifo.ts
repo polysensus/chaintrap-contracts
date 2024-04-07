@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { pushFIFO } from "../../../chaintrap/fifo";
+import { pushFIFO } from "../../chaintrap/fifo";
 
 describe("pushFIFO", function () {
   it("Should add one to empty fifo", function () {

@@ -14,7 +14,7 @@ import {TranscriptWithFactory, TranscriptInitUtils } from "tests/TranscriptUtils
 contract LibGame_checkRoot is
     TranscriptWithFactory,
     TranscriptInitUtils,
-    DSTest {
+    Test {
     using LibTranscript  for Transcript;
     using stdStorage for StdStorage;
 

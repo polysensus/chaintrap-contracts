@@ -1,6 +1,6 @@
 .DS_Store
 typechain-types
-contract_artifacts
+build/forge
 build/hh
 .envrc
 .env.op
