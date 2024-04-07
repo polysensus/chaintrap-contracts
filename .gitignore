@@ -1,5 +1,7 @@
 .DS_Store
 typechain-types
+contract_artifacts
+build/hh
 .envrc
 .env.op
 .env.secret

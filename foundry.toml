@@ -3,25 +3,26 @@ solc_version = "0.8.22"
 optmizer = true
 # optmizer_runs = 200
 src = 'chaintrap'
-test = 'tests/forge/tests'
-out = 'build/forge/out'
+test = 'tests/forge'
+out = 'build/forge'
+cache = 'cache/forge'
 libs = ["node_modules", "lib"]
 verbosity = 4
 # fs_permissions = [{ access = "read-write", path = "./"}]
 fs_permissions = [
-    { access = "read", path = "build/forge/out/DiamondLoupeFacet.sol"},
-    { access = "read", path = "build/forge/out/OwnershipFacet.sol"},
-    { access = "read", path = "build/forge/out/ERC165Facet.sol"},
-    { access = "read", path = "build/forge/out/ERC173Facet.sol"},
-    { access = "read", path = "build/forge/out/ArenaFacet.sol"},
-    { access = "read", path = "build/forge/out/ArenaCalls.sol"},
-    { access = "read", path = "build/forge/out/ArenaERC1155.sol"},
-    { access = "read", path = "build/forge/out/ArenaTranscripts.sol"},
+    { access = "read", path = "build/forge/DiamondLoupeFacet.sol"},
+    { access = "read", path = "build/forge/OwnershipFacet.sol"},
+    { access = "read", path = "build/forge/ERC165Facet.sol"},
+    { access = "read", path = "build/forge/ERC173Facet.sol"},
+    { access = "read", path = "build/forge/ArenaFacet.sol"},
+    { access = "read", path = "build/forge/ArenaCalls.sol"},
+    { access = "read", path = "build/forge/ArenaERC1155.sol"},
+    { access = "read", path = "build/forge/ArenaTranscripts.sol"},
     ]
 
 [profile.hardhat]
 src = 'chaintrap'
-out = 'build/forge/out'
+out = 'build/forge'
 libs = ['node_modules']
 [rpc_endpoints]
 opsepolia = "${SEPOLIA_RPC_URL}"

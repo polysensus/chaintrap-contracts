@@ -48,8 +48,8 @@ const config: HardhatUserConfig = {
     // using hardhat-foundry to get hh to work with foundry & get the benefit
     // of source remap this means using sources here is redundant.
     // sources: "chaintrap",
-    tests: "./tests/hh/tests",
-    cache: "./build/hh/cache",
+    tests: "tests/hh",
+    cache: "cache/hh",
     artifacts: "build/hh/artifacts"
   }
 };

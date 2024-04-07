@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 error TypeRequirementNotMet(uint256 have, uint256 expect);
 error TypeIDRequired(uint256 have);
 error TypedNFTRequired(uint256 have);
+error InvalidTokenType(uint256);
 
 // Use this to generate masks
 // def shx(n, shift): return '0x' + '0' * (64 - len(hex(n<<shift)) + 2) + hex(n<<shift)[2:]
@@ -130,10 +131,22 @@ library TokenID {
     uint256 constant ID_TYPE_MASK = uint256(0xffffffff) << ID_TYPE_SHIFT;
 
     // No public facing nft type creation.
+    uint256 constant NFT_FIRST_TYPE = (1 << ID_TYPE_SHIFT);
     uint256 constant GAME_TYPE = (1 << ID_TYPE_SHIFT);
     uint256 constant TRANSCRIPT_TYPE = (2 << ID_TYPE_SHIFT);
     uint256 constant FURNITURE_TYPE = (3 << ID_TYPE_SHIFT);
     uint256 constant GAME2_TYPE = (4 << ID_TYPE_SHIFT);
-    uint256 constant LAST_FIXED_TYPE = FURNITURE_TYPE;
+    uint256 constant FIRST_AVATAR_TYPE = (64 << ID_TYPE_SHIFT);
+    uint256 constant MAX_AVATAR_TYPES = 32;
+    uint256 constant MODERATOR_AVATAR = ((FIRST_AVATAR_TYPE + 0) <<
+        ID_TYPE_SHIFT);
+    uint256 constant NARRATOR_AVATAR = ((FIRST_AVATAR_TYPE + 1) <<
+        ID_TYPE_SHIFT);
+    uint256 constant RAIDER_AVATAR = ((FIRST_AVATAR_TYPE + 2) << ID_TYPE_SHIFT);
+    uint256 constant FIRST_TICKET_TYPE = FIRST_AVATAR_TYPE + MAX_AVATAR_TYPES;
+    uint256 constant NARRATOR_TICKET = ((FIRST_TICKET_TYPE + 0) <<
+        ID_TYPE_SHIFT);
+    uint256 constant RAIDER_TICKET = ((FIRST_TICKET_TYPE + 1) << ID_TYPE_SHIFT);
+    uint256 constant LAST_FIXED_TYPE = RAIDER_TICKET;
     uint256 constant MAX_FIXED_TYPE = (4096 << ID_TYPE_SHIFT);
 }

@@ -16,6 +16,7 @@ import {LibERC1155Arena} from "chaintrap/erc1155/liberc1155arena.sol";
 import {IERC1155Arena} from "chaintrap/interfaces/IERC1155Arena.sol";
 import {LibArenaStorage} from "chaintrap/arena/storage.sol";
 import {LibTranscript, Transcript, TranscriptInitArgs} from "chaintrap/libtranscript.sol";
+import {LibAvatar, AvatarInitArgs} from "chaintrap/libavatar.sol";
 
 contract ERC1155ArenaFacet is
     IERC1155Arena,
@@ -27,10 +28,39 @@ contract ERC1155ArenaFacet is
     /// All arena actions which mint or transfer tokens are implemented on this
     /// facet.
     using LibTranscript for Transcript;
+    using LibArenaStorage for LibArenaStorage.Layout;
 
     /// ---------------------------------------------------
     /// @dev game setup creation & player signup
     /// ---------------------------------------------------
+    //
+
+    /*
+    function mintModerator() external whenNotPaused onlyOwner {
+
+    }
+   function mintNarrator() external whenNotPaused returns (uint256) {
+     return 0;
+   }
+   function mintRaider() external whenNotPaused returns (uint256) {
+    return 0;
+   }*/
+
+    function createAvatar(
+        AvatarInitArgs calldata args,
+        uint256 avatarType
+    ) external whenNotPaused returns (uint256) {
+        // XXX: TODO: require caller pay in utility token
+        uint256 id = LibAvatar.newAvatarId(avatarType);
+
+        _mint(_msgSender(), id, 1, "AVATAR");
+
+        if (bytes(args.tokenURI).length > 0) {
+            _setTokenURI(id, args.tokenURI);
+        }
+
+        return id;
+    }
 
     /// @notice mint a new game
     function createGame(
@@ -38,10 +68,10 @@ contract ERC1155ArenaFacet is
     ) external whenNotPaused returns (uint256) {
         LibArenaStorage.Layout storage s = LibArenaStorage.layout();
 
-        uint256 id = TokenID.GAME2_TYPE | uint256(s.lastGameId);
-        s.lastGameId++;
+        uint256 id = TokenID.GAME2_TYPE | s.nextSeq(TokenID.GAME2_TYPE);
 
         _mint(_msgSender(), id, 1, "GAME_TYPE");
+
         if (bytes(initArgs.tokenURI).length > 0) {
             _setTokenURI(id, initArgs.tokenURI);
         }
@@ -69,25 +99,25 @@ contract ERC1155ArenaFacet is
     function setURI(string memory newuri) public whenNotPaused onlyOwner {
         ERC1155MetadataStorage.layout().baseURI = newuri;
     }
-
-    function mint(
-        address account,
-        uint256 id,
-        uint256 amount,
-        bytes memory data // whenNotPaused // onlyOwner
-    ) public {
-        _mint(account, id, amount, data);
-    }
-
-    function mintBatch(
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data // whenNotPaused // onlyOwner
-    ) public {
-        _mintBatch(to, ids, amounts, data);
-    }
-
+    /*
+  function mint(
+      address account,
+      uint256 id,
+      uint256 amount,
+      bytes memory data // whenNotPaused // onlyOwner
+  ) public {
+      _mint(account, id, amount, data);
+  }
+  
+  function mintBatch(
+      address to,
+      uint256[] memory ids,
+      uint256[] memory amounts,
+      bytes memory data // whenNotPaused // onlyOwner
+  ) public {
+      _mintBatch(to, ids, amounts, data);
+  }
+  */
     function _beforeTokenTransfer(
         address operator,
         address from,
@@ -101,8 +131,8 @@ contract ERC1155ArenaFacet is
     }
 
     /**
-     @dev https://ethereum.stackexchange.com/questions/56749/retrieve-chain-id-of-the-executing-chain-from-a-solidity-contract
-     */
+   @dev https://ethereum.stackexchange.com/questions/56749/retrieve-chain-id-of-the-executing-chain-from-a-solidity-contract
+   */
     function getChainID() internal view returns (uint256) {
         uint256 id;
         assembly {

@@ -3,6 +3,7 @@
 openzeppelin-solidity/=node_modules/@openzeppelin/
 chaintrap/=chaintrap/
 lib/=lib/
+erc6551/=lib/erc6551/src/
 facets/=chaintrap/facets/
 interfaces/=interfaces/
 tests/=tests/forge/tests/
