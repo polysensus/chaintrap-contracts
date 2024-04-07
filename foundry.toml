@@ -5,7 +5,7 @@ optmizer = true
 src = 'chaintrap'
 test = 'tests/forge'
 out = 'build/forge'
-cache = 'cache/forge'
+cache_path = 'cache/forge'
 libs = ["node_modules", "lib"]
 verbosity = 4
 # fs_permissions = [{ access = "read-write", path = "./"}]
